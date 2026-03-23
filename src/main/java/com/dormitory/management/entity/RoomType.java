@@ -1,5 +1,6 @@
 package com.dormitory.management.entity;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,22 +23,25 @@ import lombok.ToString;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "building")
-public class Building extends BaseEntity {
+@Table(name = "room_type")
+public class RoomType extends BaseEntity {
 
-    @Column(name = "name", nullable = false, length = 150)
+    @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-    @Column(name = "total_floors", nullable = false)
-    private int totalFloors;
+    @Column(name = "capacity", nullable = false)
+    private int capacity;
 
-    @Column(name = "description", length = 1000)
-    private String description;
+    @Column(name = "base_price", nullable = false, precision = 18, scale = 2)
+    private BigDecimal basePrice;
+
+    @Column(name = "gender_allowed", nullable = false, length = 20)
+    private String genderAllowed;
 
     @JsonIgnore
     @Builder.Default
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    @OneToMany(mappedBy = "building")
+    @OneToMany(mappedBy = "roomType")
     private List<Room> rooms = new ArrayList<>();
 }
