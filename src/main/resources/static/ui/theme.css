@@ -1,0 +1,130 @@
+:root {
+    --color-primary: #0EA5A5;
+    --color-primary-hover: #0B8F8F;
+    --color-secondary: #3B82F6;
+    --color-accent: #10B981;
+
+    --color-bg-page: #F8FAFC;
+    --color-bg-card: #FFFFFF;
+
+    --color-text-main: #0F172A;
+    --color-text-muted: #475569;
+    --color-border: #E2E8F0;
+
+    --color-success: #16A34A;
+    --color-warning: #D97706;
+    --color-danger: #DC2626;
+
+    --radius-base: 12px;
+    --shadow-soft: 0 4px 12px rgba(15, 23, 42, 0.06);
+
+    --space-section-mobile: 24px;
+    --space-section-desktop: 32px;
+    --container-max-width: 1200px;
+
+    --font-heading: "Be Vietnam Pro", sans-serif;
+    --font-body: "Inter", sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background: var(--color-bg-page);
+    color: var(--color-text-main);
+    font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--color-text-main);
+}
+
+.container {
+    width: 100%;
+    max-width: var(--container-max-width);
+    margin-inline: auto;
+    padding-inline: 16px;
+}
+
+.section {
+    padding-block: var(--space-section-mobile);
+}
+
+@media (min-width: 768px) {
+    .section {
+        padding-block: var(--space-section-desktop);
+    }
+}
+
+.card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-base);
+    box-shadow: var(--shadow-soft);
+}
+
+.btn {
+    border: 1px solid transparent;
+    border-radius: var(--radius-base);
+    font-family: var(--font-body);
+    font-weight: 500;
+    line-height: 1;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.btn-primary {
+    background: var(--color-primary);
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background: var(--color-primary-hover);
+}
+
+.btn-secondary {
+    background: var(--color-bg-card);
+    color: var(--color-primary);
+    border-color: var(--color-border);
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-success {
+    background: rgba(22, 163, 74, 0.12);
+    color: var(--color-success);
+}
+
+.badge-warning {
+    background: rgba(217, 119, 6, 0.12);
+    color: var(--color-warning);
+}
+
+.badge-danger {
+    background: rgba(220, 38, 38, 0.12);
+    color: var(--color-danger);
+}
+
+:focus-visible {
+    outline: 2px solid var(--color-secondary);
+    outline-offset: 2px;
+}
