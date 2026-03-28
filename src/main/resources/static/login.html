@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dormitory Management - Đăng nhập</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        accent: '#10B981',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626'
+                    },
+                    boxShadow: {
+                        soft: '0 4px 12px rgba(15, 23, 42, 0.06)'
+                    },
+                    borderRadius: {
+                        base: '12px'
+                    },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-image:
+                radial-gradient(circle at 15% 20%, rgba(14, 165, 165, 0.12), transparent 32%),
+                radial-gradient(circle at 80% 0%, rgba(59, 130, 246, 0.12), transparent 30%),
+                linear-gradient(150deg, #f8fafc 0%, #eef8ff 48%, #f8fafc 100%);
+            min-height: 100vh;
+        }
+
+        .float-in {
+            animation: floatIn 550ms ease-out both;
+        }
+
+        @keyframes floatIn {
+            from {
+                opacity: 0;
+                transform: translateY(14px) scale(0.985);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body class="font-body text-text-main">
+    <main class="min-h-screen flex items-center justify-center px-4 py-8">
+        <div class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+            <section class="hidden lg:flex rounded-base shadow-soft border border-border bg-bg-card p-8 flex-col justify-between float-in">
+                <div>
+                    <p class="inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-medium">Dormitory Management</p>
+                    <h1 class="font-heading text-3xl leading-tight mt-4">Quản lý ký túc xá hiện đại, nhanh và an toàn</h1>
+                    <p class="text-text-muted mt-4 text-[15px] leading-relaxed">
+                        Hệ thống phân quyền rõ ràng cho Admin và Sinh viên, tối ưu vận hành phòng, hợp đồng, sự cố và thanh toán.
+                    </p>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mt-8">
+                    <div class="rounded-base border border-border p-4 bg-white/70">
+                        <p class="text-xs text-text-muted">Role mẫu</p>
+                        <p class="font-heading text-lg mt-1">ROLE_ADMIN</p>
+                    </div>
+                    <div class="rounded-base border border-border p-4 bg-white/70">
+                        <p class="text-xs text-text-muted">Role mẫu</p>
+                        <p class="font-heading text-lg mt-1">ROLE_STUDENT</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="rounded-base shadow-soft border border-border bg-bg-card p-6 sm:p-8 float-in">
+                <div class="mb-6">
+                    <h2 class="font-heading text-2xl">Tài khoản hệ thống</h2>
+                    <p class="text-text-muted mt-2 text-sm">Đăng nhập hoặc tạo mới tài khoản Student để truy cập hệ thống.</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mb-5 p-1 rounded-base bg-slate-100">
+                    <button id="showLoginTab" type="button" class="rounded-base bg-white text-text-main text-sm font-medium py-2 border border-border">
+                        Đăng nhập
+                    </button>
+                    <button id="showRegisterTab" type="button" class="rounded-base text-text-muted text-sm font-medium py-2 border border-transparent">
+                        Đăng ký Student
+                    </button>
+                </div>
+
+                <form id="loginForm" class="space-y-4" novalidate>
+                    <div>
+                        <label for="username" class="block text-sm font-medium mb-2">Tên đăng nhập</label>
+                        <input id="username" name="username" type="text" autocomplete="username" required
+                            class="w-full rounded-base border border-border px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                            placeholder="admin hoặc student">
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium mb-2">Mật khẩu</label>
+                        <input id="password" name="password" type="password" autocomplete="current-password" required
+                            class="w-full rounded-base border border-border px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                            placeholder="Nhập mật khẩu">
+                    </div>
+                    <button type="submit"
+                        class="w-full rounded-base bg-primary hover:bg-primary-hover text-white font-medium py-3 transition-colors">
+                        Đăng nhập
+                    </button>
+                </form>
+
+                <form id="registerForm" class="space-y-4 hidden" novalidate>
+                    <div>
+                        <label for="registerFullName" class="block text-sm font-medium mb-2">Họ và tên</label>
+                        <input id="registerFullName" name="registerFullName" type="text" required
+                            class="w-full rounded-base border border-border px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                            placeholder="Nguyen Van A">
+                    </div>
+                    <div>
+                        <label for="registerUsername" class="block text-sm font-medium mb-2">Tên đăng nhập</label>
+                        <input id="registerUsername" name="registerUsername" type="text" required
+                            class="w-full rounded-base border border-border px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                            placeholder="student_new">
+                    </div>
+                    <div>
+                        <label for="registerEmail" class="block text-sm font-medium mb-2">Email</label>
+                        <input id="registerEmail" name="registerEmail" type="email"
+                            class="w-full rounded-base border border-border px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                            placeholder="student@example.com">
+                    </div>
+                    <div>
+                        <label for="registerPassword" class="block text-sm font-medium mb-2">Mật khẩu</label>
+                        <input id="registerPassword" name="registerPassword" type="password" required
+                            class="w-full rounded-base border border-border px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                            placeholder="Tối thiểu 6 ký tự">
+                    </div>
+                    <button type="submit"
+                        class="w-full rounded-base bg-secondary hover:bg-blue-600 text-white font-medium py-3 transition-colors">
+                        Đăng ký tài khoản Student
+                    </button>
+                </form>
+
+                <div class="mt-4 text-sm text-text-muted">
+                    Tài khoản mẫu: <span class="font-medium">admin/admin123</span> hoặc <span class="font-medium">student/student123</span>
+                </div>
+
+                <div id="message" class="mt-4 hidden rounded-base px-4 py-3 text-sm"></div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        const showLoginTab = document.getElementById('showLoginTab');
+        const showRegisterTab = document.getElementById('showRegisterTab');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const message = document.getElementById('message');
+
+        const token = localStorage.getItem('dormitory_access_token');
+        if (token) {
+            window.location.href = '/home.html';
+        }
+
+        function setActiveTab(tab) {
+            const isLogin = tab === 'login';
+            loginForm.classList.toggle('hidden', !isLogin);
+            registerForm.classList.toggle('hidden', isLogin);
+
+            showLoginTab.classList.toggle('bg-white', isLogin);
+            showLoginTab.classList.toggle('text-text-main', isLogin);
+            showLoginTab.classList.toggle('border-border', isLogin);
+            showLoginTab.classList.toggle('text-text-muted', !isLogin);
+
+            showRegisterTab.classList.toggle('bg-white', !isLogin);
+            showRegisterTab.classList.toggle('text-text-main', !isLogin);
+            showRegisterTab.classList.toggle('border-border', !isLogin);
+            showRegisterTab.classList.toggle('text-text-muted', isLogin);
+
+            message.classList.add('hidden');
+        }
+
+        function showMessage(type, text) {
+            message.classList.remove('hidden', 'bg-red-50', 'text-danger', 'bg-green-50', 'text-success', 'border');
+            if (type === 'error') {
+                message.classList.add('bg-red-50', 'text-danger', 'border', 'border-red-100');
+            } else {
+                message.classList.add('bg-green-50', 'text-success', 'border', 'border-green-100');
+            }
+            message.textContent = text;
+        }
+
+        showLoginTab.addEventListener('click', () => setActiveTab('login'));
+        showRegisterTab.addEventListener('click', () => setActiveTab('register'));
+
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            showMessage('success', 'Đang đăng nhập...');
+
+            const payload = {
+                username: document.getElementById('username').value.trim(),
+                password: document.getElementById('password').value
+            };
+
+            try {
+                const response = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message || 'Đăng nhập thất bại');
+                }
+
+                localStorage.setItem('dormitory_access_token', data.result.accessToken);
+                showMessage('success', 'Đăng nhập thành công. Đang chuyển vào trang Home...');
+                setTimeout(() => {
+                    window.location.href = '/home.html';
+                }, 400);
+            } catch (error) {
+                showMessage('error', error.message || 'Có lỗi xảy ra khi đăng nhập');
+            }
+        });
+
+        registerForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            showMessage('success', 'Đang tạo tài khoản Student...');
+
+            const payload = {
+                fullName: document.getElementById('registerFullName').value.trim(),
+                username: document.getElementById('registerUsername').value.trim(),
+                email: document.getElementById('registerEmail').value.trim(),
+                password: document.getElementById('registerPassword').value
+            };
+
+            try {
+                const response = await fetch('/api/v1/auth/register/student', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Đăng ký thất bại');
+                }
+
+                showMessage('success', 'Đăng ký thành công. Bạn có thể đăng nhập ngay.');
+                registerForm.reset();
+                document.getElementById('username').value = payload.username;
+                setActiveTab('login');
+            } catch (error) {
+                showMessage('error', error.message || 'Có lỗi xảy ra khi đăng ký');
+            }
+        });
+    </script>
+</body>
+
+</html>

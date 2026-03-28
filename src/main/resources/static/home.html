@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dormitory Management - Home</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        accent: '#10B981',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626'
+                    },
+                    boxShadow: {
+                        soft: '0 4px 12px rgba(15, 23, 42, 0.06)'
+                    },
+                    borderRadius: {
+                        base: '12px'
+                    },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+    <header class="border-b border-border bg-bg-card">
+        <div class="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between">
+            <div>
+                <p class="text-xs text-text-muted">Dormitory Management</p>
+                <h1 class="font-heading text-xl">Trang Home</h1>
+            </div>
+            <button id="logoutBtn" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium transition-colors">
+                Đăng xuất
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-[1200px] mx-auto px-4 py-6">
+        <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+            <h2 class="font-heading text-2xl">Xin chào, <span id="fullName">...</span></h2>
+            <p class="text-text-muted mt-2">Bạn đã đăng nhập thành công vào hệ thống.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                <div class="rounded-base border border-border p-4">
+                    <p class="text-xs text-text-muted">Username</p>
+                    <p id="username" class="text-lg font-medium mt-1">...</p>
+                </div>
+                <div class="rounded-base border border-border p-4">
+                    <p class="text-xs text-text-muted">Email</p>
+                    <p id="email" class="text-lg font-medium mt-1">...</p>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <p class="text-sm font-medium">Vai trò</p>
+                <div id="roles" class="mt-2 flex flex-wrap gap-2"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const token = localStorage.getItem('dormitory_access_token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        async function loadCurrentUser() {
+            try {
+                const response = await fetch('/api/v1/auth/me', {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Phiên đăng nhập không hợp lệ');
+                }
+
+                const user = data.result;
+                document.getElementById('fullName').textContent = user.fullName;
+                document.getElementById('username').textContent = user.username;
+                document.getElementById('email').textContent = user.email || 'No email';
+
+                const rolesContainer = document.getElementById('roles');
+                rolesContainer.innerHTML = '';
+                user.roles.forEach((role) => {
+                    const badge = document.createElement('span');
+                    badge.className = 'inline-flex items-center rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium';
+                    badge.textContent = role;
+                    rolesContainer.appendChild(badge);
+                });
+            } catch (error) {
+                localStorage.removeItem('dormitory_access_token');
+                window.location.href = '/login.html';
+            }
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('dormitory_access_token');
+            window.location.href = '/login.html';
+        });
+
+        loadCurrentUser();
+    </script>
+</body>
+
+</html>
