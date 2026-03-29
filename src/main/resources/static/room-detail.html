@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sơ đồ Phòng - Ký Túc Xá Sinh Viên</title>
+    <title>Sơ đồ phòng - Ký túc xá sinh viên</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
@@ -37,9 +37,9 @@
 </head>
 <body class="font-body text-text-main bg-bg-page min-h-screen">
     <header class="border-b border-border bg-bg-card">
-        <div class="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div class="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <button onclick="history.back()" class="p-2 text-text-muted hover:bg-slate-100 rounded-lg" title="Quay lại" aria-label="Quay lại">
+                <button id="btnBack" class="p-2 text-text-muted hover:bg-slate-100 rounded-lg" title="Quay lại" aria-label="Quay lại">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
@@ -49,13 +49,13 @@
                     <h1 id="roomTitle" class="font-heading text-xl"></h1>
                 </div>
             </div>
-            <a href="/rooms.html" class="text-sm font-medium text-primary hover:underline">Quản lý phòng →</a>
+            <button id="btnExitNoSave" class="text-sm font-medium text-text-muted hover:text-text-main">Thoát không lưu</button>
         </div>
     </header>
 
-    <main class="max-w-2xl mx-auto px-4 py-8">
-        <section class="bg-bg-card rounded-base border border-border shadow-soft p-6 mb-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <main class="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        <section class="bg-bg-card rounded-base border border-border shadow-soft p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                     <h3 class="font-heading text-lg mb-2">Thông tin phòng</h3>
                     <div class="space-y-2 text-sm">
@@ -79,12 +79,29 @@
                 </div>
             </div>
 
-            <div id="bedLayout" class="text-center">
-                <p class="text-text-muted mb-4">Đang tải sơ đồ giường...</p>
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+                <button id="btnAddBed" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Thêm giường</button>
+                <button id="btnDeleteBed" class="rounded-base border border-danger text-danger px-3 py-2 text-sm font-medium hover:bg-red-50">Xóa giường đã chọn</button>
+                <span id="hintText" class="text-xs text-text-muted">Chọn giường trống để di chuyển, sau đó bấm vào vị trí trống mong muốn.</span>
+            </div>
+
+            <div id="bedLayout" class="rounded-base border border-border bg-slate-50 p-4">
+                <div class="w-28 mx-auto mb-4 rounded-full bg-slate-200 text-text-muted text-xs font-medium py-1 text-center">Cửa ra vào</div>
+                <div id="slotGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+            </div>
+
+            <div id="saveBar" class="hidden mt-4 rounded-base border border-warning bg-amber-50 px-4 py-3">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-sm text-warning">Bạn có thay đổi chưa lưu.</p>
+                    <div class="flex items-center gap-2">
+                        <button id="btnDiscard" class="rounded-base border border-border px-3 py-1.5 text-sm hover:bg-white">Hoàn tác</button>
+                        <button id="btnSave" class="rounded-base bg-primary text-white px-3 py-1.5 text-sm hover:bg-primary-hover">Lưu thay đổi</button>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <section id="bedsSection" class="bg-bg-card rounded-base border border-border shadow-soft p-6 hidden">
+        <section id="bedsSection" class="bg-bg-card rounded-base border border-border shadow-soft p-6">
             <h3 class="font-heading text-lg mb-4">Danh sách giường</h3>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -102,80 +119,363 @@
     </main>
 
     <script>
+        const MAX_BEDS = 8;
         const urlParams = new URLSearchParams(window.location.search);
-        const roomId = urlParams.get('id');
+        const roomId = Number(urlParams.get('id'));
+        const token = localStorage.getItem('dormitory_access_token');
+
+        let roomInfo = null;
+        let originalBeds = [];
+        let draftBeds = [];
+        let selectedPosition = null;
+
         if (!roomId) {
-            document.getElementById('bedLayout').innerHTML = '<p class="text-danger">Không tìm thấy ID phòng.</p>';
+            document.getElementById('bedLayout').innerHTML = '<p class="text-danger text-center">Không tìm thấy ID phòng.</p>';
         } else {
-            loadRoom(roomId);
+            initialize();
         }
 
-        async function loadRoom(id) {
-            try {
-                const res = await fetch(`/api/v1/rooms/${id}`);
-                const data = await res.json();
-                const room = data.result;
-                if (!room) throw new Error('Phòng không tồn tại');
-                
-                document.getElementById('roomTitle').textContent = `Phòng ${room.roomNumber}`;
-                document.getElementById('buildingName').textContent = room.buildingName || '-';
-                document.getElementById('roomType').textContent = room.roomTypeName || '-';
-                document.getElementById('status').innerHTML = `<span class="px-2 py-1 rounded-full text-xs font-medium ${room.status === 'FULL' ? 'bg-red-100 text-danger' : 'bg-green-100 text-success'}">${room.status || 'TRONG'}</span>`;
-                
-                const beds = room.beds || [];
-                document.getElementById('totalBeds').textContent = beds.length;
-                const freeCount = beds.filter(b => !b.isOccupied).length;
-                document.getElementById('freeBeds').textContent = freeCount;
+        function cloneBeds(beds) {
+            return beds
+                .map((bed) => ({
+                    id: bed.id,
+                    bedNumber: bed.bedNumber,
+                    isOccupied: !!bed.isOccupied,
+                    studentName: bed.studentName || null
+                }))
+                .sort((a, b) => a.bedNumber - b.bedNumber);
+        }
 
-                // Sơ đồ visual (grid layout based on capacity)
-                renderBedLayout(beds);
-                renderBedsTable(beds);
-                document.getElementById('bedsSection').classList.remove('hidden');
+        function bedSnapshot(beds) {
+            return JSON.stringify(cloneBeds(beds).map((bed) => ({
+                id: bed.id,
+                bedNumber: bed.bedNumber,
+                isOccupied: bed.isOccupied,
+                studentName: bed.studentName || null
+            })));
+        }
 
-            } catch (err) {
-                document.getElementById('bedLayout').innerHTML = `<p class="text-danger">Lỗi: ${err.message}</p>`;
+        function hasUnsavedChanges() {
+            return bedSnapshot(originalBeds) !== bedSnapshot(draftBeds);
+        }
+
+        function updateSaveBar() {
+            const bar = document.getElementById('saveBar');
+            if (hasUnsavedChanges()) {
+                bar.classList.remove('hidden');
+            } else {
+                bar.classList.add('hidden');
             }
         }
 
-        function renderBedLayout(beds) {
-            const capacity = beds.length;
-            let gridCols = 'grid-cols-4'; // default 8-bed 2x4
-            if (capacity <= 4) gridCols = 'grid-cols-2'; // 2x2
-            else if (capacity <= 6) gridCols = 'grid-cols-3'; // 2x3
-
-            document.getElementById('bedLayout').innerHTML = `
-                <div class="max-w-md mx-auto p-6 bg-gradient-to-br from-slate-50 to-white rounded-xl border-4 border-slate-200 shadow-xl">
-                    <p class="text-sm font-medium mb-6 text-slate-700">Sơ đồ giường (nhìn từ trên xuống)</p>
-                    <div class="${gridCols} gap-3 justify-items-center">
-                        ${beds.map(bed => {
-                            const color = bed.isOccupied ? 'bg-danger text-white shadow-danger/25 border-danger' : 'bg-success text-white shadow-success/25 border-success';
-                            const label = bed.isOccupied ? (bed.studentName || 'Đã thuê') : 'Trống';
-                            return `
-                                <div class="w-20 h-20 rounded-lg border-4 flex flex-col items-center justify-center p-2 shadow-lg ${color} relative group cursor-pointer hover:scale-105 transition-all">
-                                    <div class="text-xs font-bold">${bed.bedNumber}</div>
-                                    <div class="text-xs mt-0.5">${label}</div>
-                                    ${bed.isOccupied ? `<div class="absolute -top-2 -right-2 w-5 h-5 bg-warning rounded-full flex items-center justify-center text-xs font-bold border-2 border-white shadow">!</div>` : ''}
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-            `;
+        function getBedById(id) {
+            return draftBeds.find((bed) => Number(bed.id) === Number(id));
         }
 
-        function renderBedsTable(beds) {
-            document.getElementById('bedsTable').innerHTML = beds.map(bed => `
+        function getBedByNumber(position) {
+            return draftBeds.find((bed) => Number(bed.bedNumber) === Number(position));
+        }
+
+        function normalizeStatusLabel(status) {
+            if (status === 'FULL') return 'Đã đầy';
+            if (status === 'MAINTENANCE') return 'Bảo trì';
+            return 'Còn trống';
+        }
+
+        function renderStats() {
+            document.getElementById('totalBeds').textContent = String(draftBeds.length);
+            const freeCount = draftBeds.filter((bed) => !bed.isOccupied).length;
+            document.getElementById('freeBeds').textContent = String(freeCount);
+        }
+
+        function renderBedsTable() {
+            const tbody = document.getElementById('bedsTable');
+            const sortedBeds = cloneBeds(draftBeds);
+            if (!sortedBeds.length) {
+                tbody.innerHTML = '<tr><td class="px-4 py-3 text-text-muted" colspan="3">Phòng chưa có giường.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = sortedBeds.map((bed) => `
                 <tr class="border-t border-slate-100 hover:bg-slate-50">
                     <td class="px-4 py-3 font-medium">Giường ${bed.bedNumber}</td>
                     <td class="px-4 py-3">${bed.studentName || '-'}</td>
                     <td class="px-4 py-3">
                         <span class="px-2 py-1 rounded-full text-xs font-medium ${bed.isOccupied ? 'bg-red-100 text-danger' : 'bg-green-100 text-success'}">
-                            ${bed.isOccupied ? 'Đã thuê' : 'Trống'}
+                            ${bed.isOccupied ? 'Đã có sinh viên' : 'Trống'}
                         </span>
                     </td>
                 </tr>
             `).join('');
         }
+
+        function renderSlotGrid() {
+            const grid = document.getElementById('slotGrid');
+            grid.innerHTML = '';
+
+            for (let position = 1; position <= MAX_BEDS; position++) {
+                const bed = getBedByNumber(position);
+                const isSelected = bed && selectedPosition === position;
+                const slot = document.createElement('button');
+                slot.type = 'button';
+                slot.className = `rounded-base border p-3 min-h-24 text-left transition ${bed ? 'bg-white border-border hover:border-primary' : 'border-dashed border-border bg-slate-50 hover:bg-white'} ${isSelected ? 'ring-2 ring-primary border-primary' : ''}`;
+                slot.dataset.position = String(position);
+
+                if (!bed) {
+                    slot.innerHTML = `
+                        <p class="text-xs text-text-muted">Vị trí ${position}</p>
+                        <p class="text-sm font-medium mt-1">Trống</p>
+                        <p class="text-xs text-text-muted mt-2">Có thể đặt giường</p>
+                    `;
+                } else {
+                    const statusLabel = bed.isOccupied ? 'Đang sử dụng' : 'Sẵn sàng di chuyển';
+                    const statusClass = bed.isOccupied ? 'text-danger' : 'text-success';
+                    slot.innerHTML = `
+                        <p class="text-xs text-text-muted">Vị trí ${position}</p>
+                        <p class="text-sm font-medium mt-1">Giường ${position}</p>
+                        <p class="text-xs mt-2 ${statusClass}">${statusLabel}</p>
+                    `;
+                }
+
+                grid.appendChild(slot);
+            }
+        }
+
+        function renderAll() {
+            renderStats();
+            renderSlotGrid();
+            renderBedsTable();
+            updateSaveBar();
+        }
+
+        function addBed() {
+            if (draftBeds.length >= MAX_BEDS) {
+                alert('Mỗi phòng chỉ có tối đa 8 giường.');
+                return;
+            }
+
+            for (let position = 1; position <= MAX_BEDS; position++) {
+                if (getBedByNumber(position)) {
+                    continue;
+                }
+                draftBeds.push({
+                    id: null,
+                    bedNumber: position,
+                    isOccupied: false,
+                    studentName: null
+                });
+                selectedPosition = null;
+                renderAll();
+                return;
+            }
+        }
+
+        function deleteSelectedBed() {
+            if (!selectedPosition) {
+                alert('Vui lòng chọn một giường để xóa.');
+                return;
+            }
+
+            const bed = getBedByNumber(selectedPosition);
+            if (!bed) {
+                selectedPosition = null;
+                renderAll();
+                return;
+            }
+
+            if (bed.isOccupied || bed.studentName) {
+                alert('Không thể xóa giường đã có sinh viên đăng ký.');
+                return;
+            }
+
+            draftBeds = draftBeds.filter((item) => item.bedNumber !== selectedPosition);
+            selectedPosition = null;
+            renderAll();
+        }
+
+        function moveSelectedBedTo(position) {
+            if (!selectedPosition) {
+                return;
+            }
+
+            const targetBed = getBedByNumber(position);
+            if (targetBed) {
+                return;
+            }
+
+            const selected = getBedByNumber(selectedPosition);
+            if (!selected) {
+                selectedPosition = null;
+                renderAll();
+                return;
+            }
+
+            if (selected.isOccupied || selected.studentName) {
+                alert('Không thể đổi vị trí giường đã có sinh viên đăng ký.');
+                return;
+            }
+
+            selected.bedNumber = position;
+            selectedPosition = null;
+            renderAll();
+        }
+
+        function handleSlotClick(position) {
+            const clickedBed = getBedByNumber(position);
+
+            if (!clickedBed && selectedPosition) {
+                moveSelectedBedTo(position);
+                return;
+            }
+
+            if (!clickedBed) {
+                return;
+            }
+
+            if (clickedBed.isOccupied || clickedBed.studentName) {
+                selectedPosition = null;
+                renderAll();
+                return;
+            }
+
+            if (selectedPosition === clickedBed.bedNumber) {
+                selectedPosition = null;
+            } else {
+                selectedPosition = clickedBed.bedNumber;
+            }
+            renderAll();
+        }
+
+        function authHeaders(json = false) {
+            const headers = {};
+            if (json) {
+                headers['Content-Type'] = 'application/json';
+            }
+            if (token) {
+                headers.Authorization = `Bearer ${token}`;
+            }
+            return headers;
+        }
+
+        async function saveLayout() {
+            const payload = {
+                beds: cloneBeds(draftBeds).map((bed) => ({
+                    id: bed.id,
+                    bedNumber: bed.bedNumber
+                }))
+            };
+
+            const response = await fetch(`/api/v1/rooms/${roomId}/beds/layout`, {
+                method: 'PUT',
+                headers: authHeaders(true),
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Không thể lưu sơ đồ giường');
+            }
+
+            roomInfo = data.result;
+            originalBeds = cloneBeds(roomInfo.beds || []);
+            draftBeds = cloneBeds(originalBeds);
+            selectedPosition = null;
+            renderRoomInfo();
+            renderAll();
+        }
+
+        function discardChanges() {
+            draftBeds = cloneBeds(originalBeds);
+            selectedPosition = null;
+            renderAll();
+        }
+
+        async function confirmExitWithChanges() {
+            const saveThenExit = confirm('Bạn có thay đổi chưa lưu. Nhấn OK để Lưu và thoát, Cancel để chọn tiếp.');
+            if (saveThenExit) {
+                try {
+                    await saveLayout();
+                    history.back();
+                } catch (error) {
+                    alert(error.message || 'Không thể lưu dữ liệu.');
+                }
+                return;
+            }
+
+            const leaveNoSave = confirm('Thoát không lưu thay đổi?');
+            if (leaveNoSave) {
+                history.back();
+            }
+        }
+
+        function renderRoomInfo() {
+            document.getElementById('roomTitle').textContent = `Phòng ${roomInfo.roomNumber}`;
+            document.getElementById('buildingName').textContent = roomInfo.buildingName || '-';
+            document.getElementById('roomType').textContent = roomInfo.roomTypeName || '-';
+            const statusClass = roomInfo.status === 'FULL' ? 'bg-red-100 text-danger' : 'bg-green-100 text-success';
+            document.getElementById('status').innerHTML = `<span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">${normalizeStatusLabel(roomInfo.status)}</span>`;
+        }
+
+        async function initialize() {
+            try {
+                const response = await fetch(`/api/v1/rooms/${roomId}`);
+                const payload = await response.json();
+                if (!response.ok || !payload.result) {
+                    throw new Error(payload.message || 'Không tải được thông tin phòng');
+                }
+
+                roomInfo = payload.result;
+                originalBeds = cloneBeds(roomInfo.beds || []);
+                draftBeds = cloneBeds(originalBeds);
+                renderRoomInfo();
+                renderAll();
+            } catch (error) {
+                document.getElementById('bedLayout').innerHTML = `<p class="text-danger text-center">Lỗi: ${error.message}</p>`;
+            }
+        }
+
+        document.getElementById('slotGrid').addEventListener('click', (event) => {
+            const slot = event.target.closest('button[data-position]');
+            if (!slot) return;
+            handleSlotClick(Number(slot.dataset.position));
+        });
+
+        document.getElementById('btnAddBed').addEventListener('click', addBed);
+        document.getElementById('btnDeleteBed').addEventListener('click', deleteSelectedBed);
+        document.getElementById('btnDiscard').addEventListener('click', discardChanges);
+        document.getElementById('btnSave').addEventListener('click', async () => {
+            try {
+                await saveLayout();
+                alert('Đã lưu sơ đồ giường thành công.');
+            } catch (error) {
+                alert(error.message || 'Không thể lưu sơ đồ giường.');
+            }
+        });
+
+        document.getElementById('btnBack').addEventListener('click', async () => {
+            if (hasUnsavedChanges()) {
+                await confirmExitWithChanges();
+                return;
+            }
+            history.back();
+        });
+
+        document.getElementById('btnExitNoSave').addEventListener('click', async () => {
+            if (hasUnsavedChanges()) {
+                const leaveNoSave = confirm('Bạn có thay đổi chưa lưu. Thoát không lưu?');
+                if (!leaveNoSave) {
+                    return;
+                }
+            }
+            history.back();
+        });
+
+        window.addEventListener('beforeunload', (event) => {
+            if (!hasUnsavedChanges()) {
+                return;
+            }
+            event.preventDefault();
+            event.returnValue = '';
+        });
     </script>
 </body>
 </html>

@@ -1,9 +1,9 @@
 package com.dormitory.management.service;
 
-import java.util.List;
-
 import com.dormitory.management.dto.common.PagedResponseDTO;
 import com.dormitory.management.dto.room.BedDTO;
+import com.dormitory.management.dto.room.BedLayoutRequestDTO;
+import com.dormitory.management.dto.room.BedOccupancyRequestDTO;
 import com.dormitory.management.dto.room.RoomDTO;
 import com.dormitory.management.dto.room.RoomRequestDTO;
 import com.dormitory.management.entity.enums.RoomStatus;
@@ -28,4 +28,8 @@ public interface RoomService {
     void deleteRoom(Long id);
 
     PagedResponseDTO<BedDTO> getBedsByRoomId(Long roomId, int page, int size, String sortBy, String direction);
+
+        BedDTO updateBedOccupancy(Long roomId, Long bedId, BedOccupancyRequestDTO request);
+
+        RoomDTO saveBedLayout(Long roomId, BedLayoutRequestDTO request);
 }

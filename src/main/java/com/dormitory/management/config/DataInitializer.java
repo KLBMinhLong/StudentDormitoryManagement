@@ -11,10 +11,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.dormitory.management.entity.AppUser;
 import com.dormitory.management.entity.Building;
 import com.dormitory.management.entity.Role;
+import com.dormitory.management.entity.Bed;
 import com.dormitory.management.entity.Room;
 import com.dormitory.management.entity.RoomType;
 import com.dormitory.management.entity.enums.RoomStatus;
 import com.dormitory.management.repository.AppUserRepository;
+import com.dormitory.management.repository.BedRepository;
 import com.dormitory.management.repository.BuildingRepository;
 import com.dormitory.management.repository.RoleRepository;
 import com.dormitory.management.repository.RoomRepository;
@@ -31,6 +33,7 @@ public class DataInitializer {
     private final BuildingRepository buildingRepository;
     private final RoomRepository roomRepository;
     private final RoomTypeRepository roomTypeRepository;
+    private final BedRepository bedRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Bean
@@ -39,6 +42,7 @@ public class DataInitializer {
             initializeBuildingData();
             initializeRoomTypeData();
             initializeRoomData();
+            initializeBedData();
 
             Role adminRole = findOrCreateRole("ROLE_ADMIN");
             Role studentRole = findOrCreateRole("ROLE_STUDENT");
@@ -137,6 +141,50 @@ public class DataInitializer {
         upsertRoomType("Phòng 4 người", 4, new BigDecimal("1200000"), "Nam/Nữ");
         upsertRoomType("Phòng 8 người", 8, new BigDecimal("850000"), "Nam/Nữ");
         upsertRoomType("Phòng VIP", 2, new BigDecimal("2500000"), "Nam/Nữ");
+    }
+
+    private void initializeBedData() {
+        for (Room room : roomRepository.findAll()) {
+            int capacity = resolveRoomCapacity(room);
+            var existingBeds = bedRepository.findByRoomIdOrderByBedNumberAsc(room.getId());
+
+            for (int bedNumber = 1; bedNumber <= capacity; bedNumber++) {
+                int currentNumber = bedNumber;
+                boolean exists = existingBeds.stream().anyMatch((bed) -> bed.getBedNumber() == currentNumber);
+                if (exists) {
+                    continue;
+                }
+
+                Bed newBed = Bed.builder()
+                        .bedNumber(bedNumber)
+                        .isOccupied(false)
+                        .room(room)
+                        .student(null)
+                        .build();
+                bedRepository.save(newBed);
+            }
+
+            for (Bed bed : existingBeds) {
+                if (bed.getBedNumber() <= capacity) {
+                    continue;
+                }
+                if (bed.isOccupied() || bed.getStudent() != null) {
+                    continue;
+                }
+                bedRepository.delete(bed);
+            }
+        }
+    }
+
+    private int resolveRoomCapacity(Room room) {
+        if (room.getRoomType() == null || room.getRoomType().getId() == null) {
+            return 0;
+        }
+
+        return roomTypeRepository.findById(room.getRoomType().getId())
+                .map(RoomType::getCapacity)
+                .map((capacity) -> Math.min(capacity, 8))
+                .orElse(0);
     }
 
     private void upsertRoomType(String name, int capacity, BigDecimal basePrice, String genderAllowed) {

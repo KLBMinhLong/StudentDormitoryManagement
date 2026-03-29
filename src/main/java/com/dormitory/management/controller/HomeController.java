@@ -43,7 +43,7 @@ public class HomeController {
 
     @GetMapping("/rooms")
     public String roomsPage() {
-        return "forward:/admin/rooms.html";
+        return "redirect:/admin/rooms";
     }
 
     @GetMapping("/admin/rooms")

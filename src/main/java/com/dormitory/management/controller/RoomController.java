@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.dormitory.management.dto.common.ApiResponse;
 import com.dormitory.management.dto.common.PagedResponseDTO;
 import com.dormitory.management.dto.room.BedDTO;
+import com.dormitory.management.dto.room.BedLayoutRequestDTO;
+import com.dormitory.management.dto.room.BedOccupancyRequestDTO;
 import com.dormitory.management.dto.room.RoomDTO;
 import com.dormitory.management.dto.room.RoomRequestDTO;
 import com.dormitory.management.entity.enums.RoomStatus;
@@ -83,5 +85,22 @@ public class RoomController {
             @RequestParam(defaultValue = "asc") String direction) {
         PagedResponseDTO<BedDTO> result = roomService.getBedsByRoomId(roomId, page, size, sortBy, direction);
         return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), "Get beds successfully", result));
+    }
+
+    @PutMapping("/{roomId}/beds/{bedId}/occupancy")
+    public ResponseEntity<ApiResponse<BedDTO>> updateBedOccupancy(
+            @PathVariable Long roomId,
+            @PathVariable Long bedId,
+            @Valid @RequestBody BedOccupancyRequestDTO request) {
+        BedDTO result = roomService.updateBedOccupancy(roomId, bedId, request);
+        return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), "Update bed occupancy successfully", result));
+    }
+
+    @PutMapping("/{roomId}/beds/layout")
+    public ResponseEntity<ApiResponse<RoomDTO>> saveBedLayout(
+            @PathVariable Long roomId,
+            @Valid @RequestBody BedLayoutRequestDTO request) {
+        RoomDTO result = roomService.saveBedLayout(roomId, request);
+        return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), "Save bed layout successfully", result));
     }
 }

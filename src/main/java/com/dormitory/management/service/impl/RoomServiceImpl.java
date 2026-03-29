@@ -2,7 +2,11 @@ package com.dormitory.management.service.impl;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.dormitory.management.dto.common.PagedResponseDTO;
 import com.dormitory.management.dto.room.BedDTO;
+import com.dormitory.management.dto.room.BedLayoutItemDTO;
+import com.dormitory.management.dto.room.BedLayoutRequestDTO;
+import com.dormitory.management.dto.room.BedOccupancyRequestDTO;
 import com.dormitory.management.dto.room.RoomDTO;
 import com.dormitory.management.dto.room.RoomRequestDTO;
 import com.dormitory.management.entity.Bed;
@@ -131,7 +138,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-        public PagedResponseDTO<BedDTO> getBedsByRoomId(Long roomId, int page, int size, String sortBy, String direction) {
+    public PagedResponseDTO<BedDTO> getBedsByRoomId(Long roomId, int page, int size, String sortBy, String direction) {
         roomRepository.findById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found with id: " + roomId));
 
@@ -167,6 +174,111 @@ public class RoomServiceImpl implements RoomService {
             .totalPages(totalPages)
             .last(last)
             .build();
+        }
+
+        @Override
+        @Transactional
+        public BedDTO updateBedOccupancy(Long roomId, Long bedId, BedOccupancyRequestDTO request) {
+        Room room = roomRepository.findById(roomId)
+            .orElseThrow(() -> new ResourceNotFoundException("Room not found with id: " + roomId));
+
+        Bed bed = bedRepository.findByIdAndRoomId(bedId, roomId)
+            .orElseThrow(() -> new ResourceNotFoundException("Bed not found with id: " + bedId + " in room: " + roomId));
+
+        bed.setOccupied(Boolean.TRUE.equals(request.getOccupied()));
+        if (!bed.isOccupied()) {
+            bed.setStudent(null);
+        }
+
+        Bed updated = bedRepository.save(bed);
+        updateRoomStatusByOccupancy(room);
+        return toBedDto(updated);
+    }
+
+    @Override
+    @Transactional
+    public RoomDTO saveBedLayout(Long roomId, BedLayoutRequestDTO request) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Room not found with id: " + roomId));
+
+        List<BedLayoutItemDTO> requestedBeds = request == null || request.getBeds() == null
+                ? List.of()
+                : request.getBeds();
+
+        if (requestedBeds.size() > 8) {
+            throw new IllegalArgumentException("Mỗi phòng chỉ được tối đa 8 giường");
+        }
+
+        Set<Integer> positions = new HashSet<>();
+        for (BedLayoutItemDTO item : requestedBeds) {
+            int bedNumber = item.getBedNumber() == null ? 0 : item.getBedNumber();
+            if (bedNumber < 1 || bedNumber > 8) {
+                throw new IllegalArgumentException("Vị trí giường phải trong khoảng từ 1 đến 8");
+            }
+            if (!positions.add(bedNumber)) {
+                throw new IllegalArgumentException("Vị trí giường bị trùng, vui lòng kiểm tra lại");
+            }
+        }
+
+        List<Bed> existingBeds = bedRepository.findByRoomIdOrderByBedNumberAsc(roomId);
+        Map<Long, Bed> existingById = new HashMap<>();
+        for (Bed bed : existingBeds) {
+            existingById.put(bed.getId(), bed);
+        }
+
+        Set<Long> incomingIds = new HashSet<>();
+        for (BedLayoutItemDTO item : requestedBeds) {
+            if (item.getId() == null) {
+                continue;
+            }
+
+            Bed existing = existingById.get(item.getId());
+            if (existing == null) {
+                throw new IllegalArgumentException("Giường không tồn tại trong phòng hiện tại");
+            }
+
+            incomingIds.add(item.getId());
+            boolean occupied = existing.isOccupied() || existing.getStudent() != null;
+            if (occupied && existing.getBedNumber() != item.getBedNumber()) {
+                throw new IllegalArgumentException("Không thể đổi vị trí giường đã có sinh viên đăng ký");
+            }
+        }
+
+        List<Bed> removableBeds = new ArrayList<>();
+        for (Bed bed : existingBeds) {
+            if (incomingIds.contains(bed.getId())) {
+                continue;
+            }
+            boolean occupied = bed.isOccupied() || bed.getStudent() != null;
+            if (occupied) {
+                throw new IllegalArgumentException("Không thể xóa giường đã có sinh viên đăng ký");
+            }
+            removableBeds.add(bed);
+        }
+
+        if (!removableBeds.isEmpty()) {
+            bedRepository.deleteAll(removableBeds);
+        }
+
+        for (BedLayoutItemDTO item : requestedBeds) {
+            if (item.getId() != null) {
+                Bed existing = existingById.get(item.getId());
+                existing.setBedNumber(item.getBedNumber());
+                bedRepository.save(existing);
+                continue;
+            }
+
+            Bed newBed = Bed.builder()
+                    .bedNumber(item.getBedNumber())
+                    .isOccupied(false)
+                    .room(room)
+                    .student(null)
+                    .build();
+            bedRepository.save(newBed);
+        }
+
+        updateRoomStatusByOccupancy(room);
+        return getRoomById(roomId);
     }
 
     private void syncBedsForRoom(Room room, int capacity) {
