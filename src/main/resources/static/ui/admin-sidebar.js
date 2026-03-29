@@ -22,6 +22,11 @@
             label: 'Quản lý giường',
             icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 11h18v6H3zM6 11V7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4M3 17v2M21 17v2"/></svg>'
         },
+        students: {
+            href: '/admin/student_management.html',
+            label: 'Quản lý sinh viên',
+            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+        },
         userHome: {
             href: '/home',
             label: 'Trang người dùng',
@@ -65,7 +70,7 @@
         const opts = options || {};
         const mountId = opts.mountId || 'adminSidebarMount';
         const active = opts.active || 'dashboard';
-        const caption = opts.caption || 'Tac vu quan tri';
+        const caption = opts.caption || 'Tác vụ quản trị';
 
         const mountPoint = document.getElementById(mountId);
         const layout = document.getElementById('adminLayout');
@@ -87,6 +92,7 @@
             renderMenuItem('buildings', active) +
             renderMenuItem('rooms', active) +
             renderMenuItem('beds', active) +
+            renderMenuItem('students', active) +
             renderMenuItem('userHome', active) +
             '  </nav>' +
             '  <button id="adminSidebarLogout" type="button" class="sidebar-logout mt-4 w-full rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-2 text-sm font-medium inline-flex items-center justify-center gap-2">' +
@@ -112,7 +118,7 @@
         if (logoutBtn) {
             logoutBtn.addEventListener('click', function () {
                 localStorage.removeItem('dormitory_access_token');
-                window.location.href = '/login';
+                window.location.href = '/login.html';
             });
         }
 
