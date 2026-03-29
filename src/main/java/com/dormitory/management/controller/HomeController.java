@@ -30,4 +30,9 @@ public class HomeController {
     public String adminPage() {
         return "forward:/admin.html";
     }
+
+    @GetMapping("/buildings")
+    public String buildingsPage() {
+        return "forward:/buildings.html";
+    }
 }

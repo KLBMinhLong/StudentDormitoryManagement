@@ -53,6 +53,8 @@ public class SecurityConfig {
                                 "/home.html",
                                 "/admin",
                                 "/admin.html",
+                                "/buildings",
+                                "/buildings.html",
                                 "/ui/**",
                                 "/error")
                         .permitAll()
