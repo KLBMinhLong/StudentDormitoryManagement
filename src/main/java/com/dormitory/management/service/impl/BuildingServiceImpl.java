@@ -40,6 +40,7 @@ public class BuildingServiceImpl implements BuildingService {
     public BuildingDTO createBuilding(BuildingRequestDTO request) {
         Building building = new Building();
         building.setName(request.getName().trim());
+        building.setTotalFloors(request.getTotalFloors());
         building.setDescription(request.getDescription());
 
         Building saved = buildingRepository.save(building);
@@ -51,6 +52,7 @@ public class BuildingServiceImpl implements BuildingService {
     public BuildingDTO updateBuilding(Long id, BuildingRequestDTO request) {
         Building existing = findBuildingOrThrow(id);
         existing.setName(request.getName().trim());
+        existing.setTotalFloors(request.getTotalFloors());
         existing.setDescription(request.getDescription());
 
         Building updated = buildingRepository.save(existing);
@@ -73,6 +75,7 @@ public class BuildingServiceImpl implements BuildingService {
         return BuildingDTO.builder()
                 .id(building.getId())
                 .name(building.getName())
+                .totalFloors(building.getTotalFloors())
                 .description(building.getDescription())
                 .createdAt(building.getCreatedAt())
                 .updatedAt(building.getUpdatedAt())

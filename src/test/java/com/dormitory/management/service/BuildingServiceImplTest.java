@@ -41,11 +41,13 @@ class BuildingServiceImplTest {
     void setUp() {
         mockBuilding = Building.builder()
                 .name("Tòa A")
+            .totalFloors(5)
                 .description("Mô tả tòa A")
                 .build();
 
         mockRequest = BuildingRequestDTO.builder()
                 .name("Tòa A")
+            .totalFloors(5)
                 .description("Mô tả tòa A")
                 .build();
     }
@@ -61,6 +63,7 @@ class BuildingServiceImplTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("Tòa A");
+        assertThat(result.get(0).getTotalFloors()).isEqualTo(5);
         assertThat(result.get(0).getDescription()).isEqualTo("Mô tả tòa A");
     }
 
@@ -84,6 +87,7 @@ class BuildingServiceImplTest {
         BuildingDTO result = buildingService.getBuildingById(1L);
 
         assertThat(result.getName()).isEqualTo("Tòa A");
+        assertThat(result.getTotalFloors()).isEqualTo(5);
         assertThat(result.getDescription()).isEqualTo("Mô tả tòa A");
     }
 
@@ -107,6 +111,7 @@ class BuildingServiceImplTest {
         BuildingDTO result = buildingService.createBuilding(mockRequest);
 
         assertThat(result.getName()).isEqualTo("Tòa A");
+        assertThat(result.getTotalFloors()).isEqualTo(5);
         assertThat(result.getDescription()).isEqualTo("Mô tả tòa A");
         verify(buildingRepository).save(any(Building.class));
     }
@@ -116,14 +121,16 @@ class BuildingServiceImplTest {
     void createBuilding_trimsName() {
         BuildingRequestDTO requestWithSpaces = BuildingRequestDTO.builder()
                 .name("  Tòa B  ")
+            .totalFloors(6)
                 .description(null)
                 .build();
-        Building trimmedBuilding = Building.builder().name("Tòa B").description(null).build();
+        Building trimmedBuilding = Building.builder().name("Tòa B").totalFloors(6).description(null).build();
         when(buildingRepository.save(any(Building.class))).thenReturn(trimmedBuilding);
 
         BuildingDTO result = buildingService.createBuilding(requestWithSpaces);
 
         assertThat(result.getName()).isEqualTo("Tòa B");
+        assertThat(result.getTotalFloors()).isEqualTo(6);
     }
 
     // ── updateBuilding ──────────────────────────────────────────────────────
@@ -133,10 +140,12 @@ class BuildingServiceImplTest {
     void updateBuilding_found_returnsUpdatedDto() {
         BuildingRequestDTO updateRequest = BuildingRequestDTO.builder()
                 .name("Tòa B")
+            .totalFloors(8)
                 .description("Mô tả tòa B")
                 .build();
         Building updatedBuilding = Building.builder()
                 .name("Tòa B")
+            .totalFloors(8)
                 .description("Mô tả tòa B")
                 .build();
 
@@ -146,6 +155,7 @@ class BuildingServiceImplTest {
         BuildingDTO result = buildingService.updateBuilding(1L, updateRequest);
 
         assertThat(result.getName()).isEqualTo("Tòa B");
+        assertThat(result.getTotalFloors()).isEqualTo(8);
         assertThat(result.getDescription()).isEqualTo("Mô tả tòa B");
         verify(buildingRepository).save(mockBuilding);
     }

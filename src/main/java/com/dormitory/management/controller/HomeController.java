@@ -23,16 +23,36 @@ public class HomeController {
 
     @GetMapping("/home")
     public String homePage() {
-        return "forward:/home.html";
+        return "forward:/user/home.html";
     }
 
     @GetMapping("/admin")
     public String adminPage() {
-        return "forward:/admin.html";
+        return "forward:/admin/index.html";
     }
 
     @GetMapping("/buildings")
     public String buildingsPage() {
-        return "forward:/buildings.html";
+        return "forward:/admin/buildings.html";
+    }
+
+    @GetMapping("/admin/buildings")
+    public String adminBuildingsPage() {
+        return "forward:/admin/buildings.html";
+    }
+
+    @GetMapping("/rooms")
+    public String roomsPage() {
+        return "forward:/admin/rooms.html";
+    }
+
+    @GetMapping("/admin/rooms")
+    public String adminRoomsPage() {
+        return "forward:/admin/rooms.html";
+    }
+
+    @GetMapping("/admin/beds")
+    public String adminBedsPage() {
+        return "forward:/admin/beds.html";
     }
 }

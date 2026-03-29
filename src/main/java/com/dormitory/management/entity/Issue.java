@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "issue")
 public class Issue extends BaseEntity {
 
-    @Column(name = "description", nullable = false, length = 1000)
+    @Column(name = "description", nullable = false, columnDefinition = "nvarchar(1000)")
     private String description;
 
     @Enumerated(EnumType.STRING)

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KTX - Quản lý giường</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="/ui/admin-sidebar.js" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+    <div id="adminLayout" class="max-w-[1200px] mx-auto p-4 md:p-6 min-h-screen">
+        <div class="admin-grid grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6 min-h-[calc(100vh-3rem)]">
+            <div id="adminSidebarMount"></div>
+
+            <main class="space-y-6">
+
+                <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                    <h2 class="font-heading text-2xl">Danh sách giường theo phòng</h2>
+                    <p class="text-sm text-text-muted mt-1">Chọn phòng để xem chi tiết danh sách giường và trạng thái sử dụng.</p>
+
+                    <div class="mt-4">
+                        <label for="roomSelect" class="block text-sm font-medium mb-1.5">Chọn phòng</label>
+                        <select id="roomSelect" class="w-full md:w-[320px] rounded-base border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="">Đang tải danh sách phòng...</option>
+                        </select>
+                    </div>
+
+                    <div class="mt-4 overflow-x-auto rounded-base border border-border">
+                        <table class="w-full min-w-[720px] text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-border text-text-muted text-left text-xs uppercase tracking-wide font-medium">
+                                    <th class="px-4 py-3 w-16">ID</th>
+                                    <th class="px-4 py-3">Giường số</th>
+                                    <th class="px-4 py-3">Phòng</th>
+                                    <th class="px-4 py-3">Sinh viên</th>
+                                    <th class="px-4 py-3 w-32">Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bedBody" class="divide-y divide-border">
+                                <tr>
+                                    <td colspan="5" class="px-4 py-8 text-center text-text-muted">Vui lòng chọn phòng để xem danh sách giường.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="bedPagination" class="mt-4 flex items-center justify-end gap-2"></div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const ITEMS_PER_PAGE = 10;
+        const token = localStorage.getItem('dormitory_access_token');
+
+        let rooms = [];
+        let bedItems = [];
+        let selectedRoomName = '';
+
+        if (!token) {
+            window.location.href = '/login';
+        }
+
+        function initAdminSidebar() {
+            if (!window.AdminSidebar || typeof window.AdminSidebar.mount !== 'function') {
+                window.setTimeout(initAdminSidebar, 50);
+                return;
+            }
+
+            window.AdminSidebar.mount({
+                mountId: 'adminSidebarMount',
+                active: 'beds',
+                caption: 'Tác vụ quản trị'
+            });
+        }
+
+        initAdminSidebar();
+
+        function escHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function paginate(items, page) {
+            const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
+            const safePage = Math.min(Math.max(page, 1), totalPages);
+            const start = (safePage - 1) * ITEMS_PER_PAGE;
+            return {
+                safePage,
+                totalPages,
+                data: items.slice(start, start + ITEMS_PER_PAGE)
+            };
+        }
+
+        function renderPagination(page, totalPages) {
+            const container = document.getElementById('bedPagination');
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `
+                <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === 1 ? 'disabled' : ''} data-page="${page - 1}">Trước</button>
+                <span class="text-sm text-text-muted">Trang ${page}/${totalPages}</span>
+                <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === totalPages ? 'disabled' : ''} data-page="${page + 1}">Sau</button>
+            `;
+
+            container.querySelectorAll('button[data-page]').forEach((btn) => {
+                btn.addEventListener('click', () => renderBeds(Number(btn.dataset.page)));
+            });
+        }
+
+        function renderBeds(page) {
+            const body = document.getElementById('bedBody');
+            const paged = paginate(bedItems, page);
+
+            if (!paged.data.length) {
+                body.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-text-muted">Phòng này chưa có giường.</td></tr>';
+                document.getElementById('bedPagination').innerHTML = '';
+                return;
+            }
+
+            body.innerHTML = paged.data.map((bed) => {
+                const occupied = !!bed.isOccupied;
+                const statusText = occupied ? 'Đã sử dụng' : 'Còn trống';
+                const statusClass = occupied ? 'bg-red-100 text-danger' : 'bg-green-100 text-success';
+                return `
+                    <tr>
+                        <td class="px-4 py-3 text-xs font-mono text-text-muted">${bed.id ?? '-'}</td>
+                        <td class="px-4 py-3 font-medium">Giường ${bed.bedNumber ?? '-'}</td>
+                        <td class="px-4 py-3">${escHtml(selectedRoomName || '-')}</td>
+                        <td class="px-4 py-3">${escHtml(bed.studentName || 'Chưa có')}</td>
+                        <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">${statusText}</span></td>
+                    </tr>
+                `;
+            }).join('');
+
+            renderPagination(paged.safePage, paged.totalPages);
+        }
+
+        async function ensureAdmin() {
+            const response = await fetch('/api/v1/auth/me', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.message || 'Phiên đăng nhập không hợp lệ');
+
+            const roles = Array.isArray(payload.result?.roles) ? payload.result.roles : [];
+            if (!roles.includes('ROLE_ADMIN')) {
+                window.location.href = '/home';
+            }
+        }
+
+        async function loadRooms() {
+            const response = await fetch('/api/v1/rooms', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.message || 'Không tải được danh sách phòng');
+            rooms = Array.isArray(payload.result) ? payload.result : [];
+
+            const select = document.getElementById('roomSelect');
+            if (!rooms.length) {
+                select.innerHTML = '<option value="">Chưa có phòng</option>';
+                return;
+            }
+
+            select.innerHTML = '<option value="">Chọn phòng...</option>' + rooms
+                .map((room) => `<option value="${room.id}">${escHtml(room.roomNumber)} - ${escHtml(room.buildingName || 'Chưa gán')}</option>`)
+                .join('');
+        }
+
+        async function loadBedsByRoom(roomId) {
+            const room = rooms.find((item) => Number(item.id) === Number(roomId));
+            selectedRoomName = room ? room.roomNumber : '';
+
+            const response = await fetch(`/api/v1/rooms/${roomId}/beds`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.message || 'Không tải được danh sách giường');
+            bedItems = Array.isArray(payload.result) ? payload.result : [];
+            renderBeds(1);
+        }
+
+        document.getElementById('roomSelect').addEventListener('change', async (event) => {
+            const roomId = event.target.value;
+            if (!roomId) {
+                bedItems = [];
+                selectedRoomName = '';
+                document.getElementById('bedBody').innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-text-muted">Vui lòng chọn phòng để xem danh sách giường.</td></tr>';
+                document.getElementById('bedPagination').innerHTML = '';
+                return;
+            }
+
+            try {
+                await loadBedsByRoom(roomId);
+            } catch {
+                bedItems = [];
+                document.getElementById('bedBody').innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-danger">Không tải được danh sách giường.</td></tr>';
+                document.getElementById('bedPagination').innerHTML = '';
+            }
+        });
+
+        (async () => {
+            try {
+                await ensureAdmin();
+                await loadRooms();
+            } catch {
+                localStorage.removeItem('dormitory_access_token');
+                window.location.href = '/login';
+            }
+        })();
+    </script>
+</body>
+</html>

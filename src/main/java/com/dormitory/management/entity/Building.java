@@ -25,13 +25,13 @@ import lombok.ToString;
 @Table(name = "building")
 public class Building extends BaseEntity {
 
-    @Column(name = "name", nullable = false, length = 150)
+    @Column(name = "name", nullable = false, columnDefinition = "nvarchar(150)")
     private String name;
 
     @Column(name = "total_floors", nullable = false)
     private int totalFloors;
 
-    @Column(name = "description", length = 1000)
+    @Column(name = "description", columnDefinition = "nvarchar(1000)")
     private String description;
 
     @JsonIgnore

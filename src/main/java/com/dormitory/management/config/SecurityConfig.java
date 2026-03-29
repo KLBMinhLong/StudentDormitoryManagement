@@ -50,11 +50,16 @@ public class SecurityConfig {
                                 "/register",
                                 "/register.html",
                                 "/home",
+                                "/user/**",
                                 "/home.html",
                                 "/admin",
+                                "/admin/**",
                                 "/admin.html",
                                 "/buildings",
                                 "/buildings.html",
+                                "/rooms",
+                                "/rooms.html",
+                                "/room-detail.html",
                                 "/ui/**",
                                 "/error")
                         .permitAll()

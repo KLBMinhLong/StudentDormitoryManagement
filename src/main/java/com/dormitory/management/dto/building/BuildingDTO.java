@@ -17,6 +17,7 @@ public class BuildingDTO {
 
     private Long id;
     private String name;
+    private int totalFloors;
     private String description;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

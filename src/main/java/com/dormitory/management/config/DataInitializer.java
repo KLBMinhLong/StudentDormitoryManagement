@@ -8,8 +8,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.dormitory.management.entity.AppUser;
+import com.dormitory.management.entity.Building;
 import com.dormitory.management.entity.Role;
 import com.dormitory.management.repository.AppUserRepository;
+import com.dormitory.management.repository.BuildingRepository;
 import com.dormitory.management.repository.RoleRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -20,11 +22,14 @@ public class DataInitializer {
 
     private final RoleRepository roleRepository;
     private final AppUserRepository appUserRepository;
+    private final BuildingRepository buildingRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Bean
     public CommandLineRunner initializeAuthData() {
         return args -> {
+            initializeBuildingData();
+
             Role adminRole = findOrCreateRole("ROLE_ADMIN");
             Role studentRole = findOrCreateRole("ROLE_STUDENT");
 
@@ -52,6 +57,24 @@ public class DataInitializer {
                 appUserRepository.save(studentUser);
             }
         };
+    }
+
+    private void initializeBuildingData() {
+        upsertBuilding("Tòa A", "Toa A", 5, "Khu tòa dành cho sinh viên nam");
+        upsertBuilding("Tòa B", "Toa B", 5, "Khu tòa dành cho sinh viên nữ");
+        upsertBuilding("Tòa C", "Toa C", 7, "Khu tòa phòng học tập và sinh hoạt");
+        upsertBuilding("Tòa D", "Toa D", 9, "Khu tòa mở rộng cho sinh viên mới");
+    }
+
+    private void upsertBuilding(String canonicalName, String legacyName, int totalFloors, String description) {
+        Building building = buildingRepository.findByNameIgnoreCase(canonicalName)
+                .or(() -> buildingRepository.findByNameIgnoreCase(legacyName))
+                .orElseGet(Building::new);
+
+        building.setName(canonicalName);
+        building.setTotalFloors(totalFloors);
+        building.setDescription(description);
+        buildingRepository.save(building);
     }
 
     private Role findOrCreateRole(String roleName) {
