@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KTX - Trang người dùng</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        success: '#16A34A'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+    <header class="border-b border-border bg-bg-card">
+        <div class="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between gap-4">
+            <div>
+                <p class="text-xs text-text-muted">Ký túc xá sinh viên</p>
+                <h1 class="font-heading text-xl">Trang thông tin tòa nhà và phòng</h1>
+            </div>
+            <nav class="flex items-center gap-2">
+                <a href="/home" class="rounded-base border border-border bg-primary text-white px-3 py-2 text-sm font-medium">Trang chủ</a>
+                <a href="/login" id="loginBtn" class="rounded-base border border-border px-3 py-2 text-sm font-medium text-text-main hover:bg-slate-50">Đăng nhập</a>
+                <a href="/admin" id="adminBtn" class="hidden rounded-base border border-border px-3 py-2 text-sm font-medium text-text-main hover:bg-slate-50">Trang admin</a>
+                <button id="logoutBtn" class="hidden rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium transition-colors">Đăng xuất</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-[1200px] mx-auto px-4 py-6">
+        <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+            <h2 class="font-heading text-2xl">Tổng quan</h2>
+            <p class="text-text-muted mt-2">Danh sách tòa nhà và phòng hiển thị công khai cho người dùng.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <div class="rounded-base border border-border p-4">
+                    <p class="text-xs text-text-muted">Số lượng tòa nhà</p>
+                    <p id="buildingCount" class="text-2xl font-heading mt-1">0</p>
+                </div>
+                <div class="rounded-base border border-border p-4">
+                    <p class="text-xs text-text-muted">Tổng số tầng</p>
+                    <p id="totalFloors" class="text-2xl font-heading mt-1">0</p>
+                </div>
+                <div class="rounded-base border border-border p-4">
+                    <p class="text-xs text-text-muted">Trạng thái đăng nhập</p>
+                    <p id="authState" class="text-lg font-medium mt-1">Khách</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="rounded-base bg-bg-card border border-border shadow-soft p-6 mt-6">
+            <div class="flex items-center justify-between gap-4 mb-4">
+                <h3 class="font-heading text-xl">Danh sách tòa nhà</h3>
+                <a href="/admin/buildings" id="adminManageLink" class="hidden text-sm text-primary hover:underline">Quản lý tòa nhà</a>
+            </div>
+            <div id="buildingGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"></div>
+            <div id="buildingPagination" class="mt-4 flex items-center justify-end gap-2"></div>
+        </section>
+
+        <section class="rounded-base bg-bg-card border border-border shadow-soft p-6 mt-6">
+            <h3 class="font-heading text-xl">Danh sách phòng</h3>
+            <div class="mt-4 overflow-x-auto border border-border rounded-base">
+                <table class="w-full min-w-[760px]">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="text-left text-sm text-text-muted px-4 py-3">Mã</th>
+                            <th class="text-left text-sm text-text-muted px-4 py-3">Số phòng</th>
+                            <th class="text-left text-sm text-text-muted px-4 py-3">Tòa nhà</th>
+                            <th class="text-left text-sm text-text-muted px-4 py-3">Loại phòng</th>
+                            <th class="text-left text-sm text-text-muted px-4 py-3">Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody id="roomBody"></tbody>
+                </table>
+            </div>
+            <div id="roomPagination" class="mt-4 flex items-center justify-end gap-2"></div>
+        </section>
+
+        <div id="message" class="hidden mt-4 rounded-base px-4 py-3 text-sm"></div>
+    </main>
+
+    <script>
+        const ITEMS_PER_PAGE = 10;
+        const token = localStorage.getItem('dormitory_access_token');
+        const buildingCount = document.getElementById('buildingCount');
+        const totalFloors = document.getElementById('totalFloors');
+        const authState = document.getElementById('authState');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const adminBtn = document.getElementById('adminBtn');
+        const adminManageLink = document.getElementById('adminManageLink');
+        const buildingGrid = document.getElementById('buildingGrid');
+        const roomBody = document.getElementById('roomBody');
+        const message = document.getElementById('message');
+        const buildingPagination = document.getElementById('buildingPagination');
+        const roomPagination = document.getElementById('roomPagination');
+
+        let buildingItems = [];
+        let roomItems = [];
+        let buildingPage = 1;
+        let roomPage = 1;
+
+        if (token) {
+            authState.textContent = 'Đã đăng nhập';
+            loginBtn.classList.add('hidden');
+            logoutBtn.classList.remove('hidden');
+        }
+
+        function showMessage(type, text) {
+            message.className = 'mt-4 rounded-base px-4 py-3 text-sm';
+            if (type === 'error') {
+                message.classList.add('bg-red-50', 'text-red-700', 'border', 'border-red-100');
+            } else {
+                message.classList.add('bg-green-50', 'text-success', 'border', 'border-green-100');
+            }
+            message.textContent = text;
+            message.classList.remove('hidden');
+        }
+
+        function escHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function paginate(items, page) {
+            const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
+            const safePage = Math.min(Math.max(page, 1), totalPages);
+            const start = (safePage - 1) * ITEMS_PER_PAGE;
+            return {
+                safePage,
+                totalPages,
+                data: items.slice(start, start + ITEMS_PER_PAGE)
+            };
+        }
+
+        function renderPagination(container, page, totalPages, onChange) {
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const start = Math.max(1, page - 2);
+            const end = Math.min(totalPages, page + 2);
+            let pageButtons = '';
+            for (let i = start; i <= end; i++) {
+                const active = i === page;
+                pageButtons += `<button class="rounded-base border px-3 py-1.5 text-sm ${active ? 'border-primary bg-primary text-white' : 'border-border hover:bg-slate-50'}" data-page="${i}">${i}</button>`;
+            }
+
+            const total = container.id === 'buildingPagination' ? buildingItems.length : roomItems.length;
+            const startResult = (page - 1) * ITEMS_PER_PAGE + 1;
+            const endResult = Math.min(page * ITEMS_PER_PAGE, total);
+
+            container.innerHTML = `
+                <p class="text-sm text-text-muted">Hiển thị ${startResult}-${endResult} trên tổng số ${total} kết quả</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === 1 ? 'disabled' : ''} data-page="${page - 1}">Trước</button>
+                    ${pageButtons}
+                    <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === totalPages ? 'disabled' : ''} data-page="${page + 1}">Sau</button>
+                </div>
+            `;
+
+            container.querySelectorAll('button[data-page]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    onChange(Number(btn.dataset.page));
+                    document.querySelector('main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            });
+        }
+
+        function renderBuildingList(page) {
+            const floorSum = buildingItems.reduce((sum, item) => sum + (Number(item.totalFloors) || 0), 0);
+            buildingCount.textContent = String(buildingItems.length);
+            totalFloors.textContent = String(floorSum);
+
+            const paged = paginate(buildingItems, page);
+            buildingPage = paged.safePage;
+
+            if (!paged.data.length) {
+                buildingGrid.innerHTML = '<p class="text-sm text-text-muted">Chưa có dữ liệu tòa nhà.</p>';
+                buildingPagination.innerHTML = '';
+                return;
+            }
+
+            buildingGrid.innerHTML = paged.data.map((item) => `
+                <article class="rounded-base border border-border p-4 bg-white">
+                    <p class="text-xs text-text-muted">Tòa nhà</p>
+                    <h4 class="font-heading text-lg mt-1">${escHtml(item.name || '-')}</h4>
+                    <p class="text-sm mt-2 text-text-muted">Số tầng: <strong class="text-text-main">${Number(item.totalFloors) || 0}</strong></p>
+                    <p class="text-sm mt-2 text-text-muted">${escHtml(item.description || 'Chưa cập nhật mô tả')}</p>
+                </article>
+            `).join('');
+
+            renderPagination(buildingPagination, buildingPage, paged.totalPages, renderBuildingList);
+        }
+
+        function renderRoomList(page) {
+            const paged = paginate(roomItems, page);
+            roomPage = paged.safePage;
+
+            if (!paged.data.length) {
+                roomBody.innerHTML = '<tr class="border-t border-border"><td colspan="5" class="px-4 py-3 text-sm text-text-muted">Chưa có dữ liệu phòng.</td></tr>';
+                roomPagination.innerHTML = '';
+                return;
+            }
+
+            roomBody.innerHTML = paged.data.map((item) => `
+                <tr class="border-t border-border">
+                    <td class="px-4 py-3 text-sm">${item.id ?? '-'}</td>
+                    <td class="px-4 py-3 text-sm">${escHtml(item.roomNumber || '-')}</td>
+                    <td class="px-4 py-3 text-sm">${escHtml(item.buildingName || 'Chưa gán')}</td>
+                    <td class="px-4 py-3 text-sm">${escHtml(item.roomTypeName || 'Chưa gán')}</td>
+                    <td class="px-4 py-3 text-sm">${escHtml(item.status || '-')}</td>
+                </tr>
+            `).join('');
+
+            renderPagination(roomPagination, roomPage, paged.totalPages, renderRoomList);
+        }
+
+        async function checkCurrentUser() {
+            if (!token) return;
+            try {
+                const response = await fetch('/api/v1/auth/me', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!response.ok) return;
+                const payload = await response.json();
+                const roles = Array.isArray(payload.result?.roles) ? payload.result.roles : [];
+                if (roles.includes('ROLE_ADMIN')) {
+                    adminBtn.classList.remove('hidden');
+                    adminManageLink.classList.remove('hidden');
+                }
+            } catch {
+                // Keep public behavior on auth errors.
+            }
+        }
+
+        async function loadData() {
+            try {
+                const [buildingResponse, roomResponse] = await Promise.all([
+                    fetch('/api/v1/buildings?page=0&size=500&sortBy=id&direction=desc'),
+                    fetch('/api/v1/rooms?page=0&size=500&sortBy=id&direction=desc')
+                ]);
+
+                const buildingPayload = await buildingResponse.json();
+                const roomPayload = await roomResponse.json();
+
+                if (!buildingResponse.ok) {
+                    throw new Error(buildingPayload.message || 'Không tải được danh sách tòa nhà');
+                }
+                if (!roomResponse.ok) {
+                    throw new Error(roomPayload.message || 'Không tải được danh sách phòng');
+                }
+
+                buildingItems = Array.isArray(buildingPayload.result?.content) ? buildingPayload.result.content : [];
+                roomItems = Array.isArray(roomPayload.result?.content) ? roomPayload.result.content : [];
+
+                renderBuildingList(1);
+                renderRoomList(1);
+                showMessage('success', 'Tải dữ liệu thành công.');
+            } catch (error) {
+                showMessage('error', error.message || 'Có lỗi xảy ra khi tải dữ liệu.');
+            }
+        }
+
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('dormitory_access_token');
+            window.location.reload();
+        });
+
+        Promise.all([checkCurrentUser(), loadData()]);
+    </script>
+</body>
+
+</html>

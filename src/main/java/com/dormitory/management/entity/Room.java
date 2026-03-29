@@ -31,7 +31,7 @@ import lombok.ToString;
 @Table(name = "room")
 public class Room extends BaseEntity {
 
-    @Column(name = "room_number", nullable = false, length = 20)
+    @Column(name = "room_number", nullable = false, columnDefinition = "nvarchar(20)")
     private String roomNumber;
 
     @Enumerated(EnumType.STRING)

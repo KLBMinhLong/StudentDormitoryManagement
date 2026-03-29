@@ -1,13 +1,12 @@
 package com.dormitory.management.service;
 
-import java.util.List;
-
 import com.dormitory.management.dto.building.BuildingDTO;
 import com.dormitory.management.dto.building.BuildingRequestDTO;
+import com.dormitory.management.dto.common.PagedResponseDTO;
 
 public interface BuildingService {
 
-    List<BuildingDTO> getAllBuildings();
+    PagedResponseDTO<BuildingDTO> getAllBuildings(int page, int size, String sortBy, String direction);
 
     BuildingDTO getBuildingById(Long id);
 

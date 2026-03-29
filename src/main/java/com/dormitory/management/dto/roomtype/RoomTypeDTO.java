@@ -1,6 +1,6 @@
-package com.dormitory.management.dto.building;
+package com.dormitory.management.dto.roomtype;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,12 +13,11 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BuildingDTO {
+public class RoomTypeDTO {
 
     private Long id;
     private String name;
-    private int totalFloors;
-    private String description;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private int capacity;
+    private BigDecimal basePrice;
+    private String genderAllowed;
 }

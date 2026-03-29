@@ -30,7 +30,7 @@ import lombok.ToString;
         })
 public class Role extends BaseEntity {
 
-    @Column(name = "role_name", nullable = false, length = 50)
+        @Column(name = "role_name", nullable = false, columnDefinition = "nvarchar(50)")
     private String roleName;
 
     @JsonIgnore

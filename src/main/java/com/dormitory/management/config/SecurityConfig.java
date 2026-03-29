@@ -50,14 +50,22 @@ public class SecurityConfig {
                                 "/register",
                                 "/register.html",
                                 "/home",
+                                "/user/**",
                                 "/home.html",
                                 "/admin",
+                                "/admin/**",
                                 "/admin.html",
+                                "/buildings",
+                                "/buildings.html",
+                                "/rooms",
+                                "/rooms.html",
+                                "/room-detail.html",
                                 "/ui/**",
                                 "/error")
                         .permitAll()
-                            .requestMatchers(HttpMethod.GET, "/api/v1/buildings/**", "/api/v1/rooms/**").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/api/v1/buildings/**", "/api/v1/rooms/**", "/api/v1/room-types/**").permitAll()
                         .requestMatchers("/api/v1/buildings/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/v1/rooms/**", "/api/v1/room-types/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/v1/student/**").hasAnyAuthority("ROLE_STUDENT", "ROLE_ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex

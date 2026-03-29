@@ -31,16 +31,16 @@ import lombok.NoArgsConstructor;
         })
 public class AppUser extends BaseEntity {
 
-    @Column(name = "username", nullable = false, length = 50)
+        @Column(name = "username", nullable = false, columnDefinition = "nvarchar(50)")
     private String username;
 
-    @Column(name = "password", nullable = false, length = 255)
+        @Column(name = "password", nullable = false, columnDefinition = "nvarchar(255)")
     private String password;
 
-    @Column(name = "full_name", nullable = false, length = 150)
+        @Column(name = "full_name", nullable = false, columnDefinition = "nvarchar(150)")
     private String fullName;
 
-    @Column(name = "email", length = 120)
+        @Column(name = "email", columnDefinition = "nvarchar(120)")
     private String email;
 
     @Builder.Default

@@ -128,3 +128,99 @@ h6 {
     outline: 2px solid var(--color-secondary);
     outline-offset: 2px;
 }
+
+.admin-sidebar-shell {
+    min-height: calc(100vh - 3rem);
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-sidebar-shell .sidebar-app-title,
+.admin-sidebar-shell .sidebar-brand,
+.admin-sidebar-shell .sidebar-caption,
+.admin-sidebar-shell .sidebar-item-label,
+.admin-sidebar-shell .sidebar-logout-label {
+    transition: opacity 180ms ease;
+}
+
+.admin-sidebar-shell .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-sidebar-shell .sidebar-item-icon {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+}
+
+#adminLayout.sidebar-icons-only {
+    max-width: 1320px;
+}
+
+#adminLayout .admin-grid {
+    grid-template-columns: 260px minmax(0, 1fr);
+}
+
+#adminLayout.sidebar-icons-only .admin-sidebar-shell {
+    width: 72px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+#adminLayout.sidebar-icons-only .admin-grid {
+    grid-template-columns: 72px minmax(0, 1fr);
+}
+
+#adminLayout.sidebar-icons-only .sidebar-item-label,
+#adminLayout.sidebar-icons-only .sidebar-brand,
+#adminLayout.sidebar-icons-only .sidebar-caption,
+#adminLayout.sidebar-icons-only .sidebar-app-title,
+#adminLayout.sidebar-icons-only .sidebar-logout-label {
+    display: none;
+}
+
+#adminLayout.sidebar-icons-only .sidebar-item,
+#adminLayout.sidebar-icons-only .sidebar-logout {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+    gap: 0;
+}
+
+#adminLayout.sidebar-icons-only .sidebar-top {
+    justify-content: center;
+}
+
+@media (max-width: 767px) {
+    #adminLayout .admin-grid,
+    #adminLayout.sidebar-icons-only .admin-grid {
+        grid-template-columns: 1fr;
+    }
+
+    #adminLayout.sidebar-icons-only .admin-sidebar-shell {
+        width: auto;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    #adminLayout.sidebar-icons-only .sidebar-item-label,
+    #adminLayout.sidebar-icons-only .sidebar-brand,
+    #adminLayout.sidebar-icons-only .sidebar-caption,
+    #adminLayout.sidebar-icons-only .sidebar-app-title,
+    #adminLayout.sidebar-icons-only .sidebar-logout-label {
+        display: inline;
+    }
+
+    #adminLayout.sidebar-icons-only .sidebar-item,
+    #adminLayout.sidebar-icons-only .sidebar-logout {
+        justify-content: flex-start;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    #adminLayout.sidebar-icons-only .sidebar-top {
+        justify-content: space-between;
+    }
+}
