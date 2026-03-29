@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ký Túc Xá Sinh Viên - Trang admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        warning: '#D97706'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+    <header class="border-b border-border bg-bg-card">
+        <div class="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between gap-4">
+            <div>
+                <p class="text-xs text-text-muted">Ký Túc Xá Sinh Viên</p>
+                <h1 class="font-heading text-xl">Trang quản trị</h1>
+            </div>
+            <nav class="flex items-center gap-2">
+                <a href="/home" class="rounded-base border border-border px-3 py-2 text-sm font-medium text-text-main hover:bg-slate-50">Trang chủ</a>
+                <a href="/admin" class="rounded-base border border-border bg-primary text-white px-3 py-2 text-sm font-medium">Trang admin</a>
+                <button id="logoutBtn" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium transition-colors">Đăng xuất</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-[1200px] mx-auto px-4 py-6">
+        <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+            <h2 class="font-heading text-2xl">Xin chào quản trị viên, <span id="fullName">...</span></h2>
+            <p class="text-text-muted mt-2">Bạn đang ở khu vực quản trị dành cho tài khoản admin.</p>
+
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="/api/v1/buildings" class="rounded-base border border-border p-4 hover:bg-slate-50 transition-colors">
+                    <p class="text-xs text-text-muted">API quản lý</p>
+                    <p class="mt-1 font-medium">Danh sách tòa nhà</p>
+                </a>
+                <a href="/home" class="rounded-base border border-border p-4 hover:bg-slate-50 transition-colors">
+                    <p class="text-xs text-text-muted">Điều hướng</p>
+                    <p class="mt-1 font-medium">Trang chủ người dùng</p>
+                </a>
+                <div class="rounded-base border border-border p-4 bg-orange-50">
+                    <p class="text-xs text-text-muted">Vai trò hiện tại</p>
+                    <p id="adminRoles" class="mt-1 font-medium text-warning">...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const token = localStorage.getItem('dormitory_access_token');
+        if (!token) {
+            window.location.href = '/login';
+        }
+
+        async function loadCurrentUser() {
+            try {
+                const response = await fetch('/api/v1/auth/me', {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Phiên đăng nhập không hợp lệ');
+                }
+
+                const user = data.result;
+                const roles = Array.isArray(user.roles) ? user.roles : [];
+                const isAdmin = roles.includes('ROLE_ADMIN');
+
+                if (!isAdmin) {
+                    window.location.href = '/home';
+                    return;
+                }
+
+                document.getElementById('fullName').textContent = user.fullName;
+                document.getElementById('adminRoles').textContent = roles.join(', ');
+            } catch (error) {
+                localStorage.removeItem('dormitory_access_token');
+                window.location.href = '/login';
+            }
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('dormitory_access_token');
+            window.location.href = '/login';
+        });
+
+        loadCurrentUser();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ký Túc Xá Sinh Viên - Đăng nhập</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        danger: '#DC2626',
+                        success: '#16A34A'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+    <header class="bg-bg-card border-b border-border">
+        <div class="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between">
+            <h1 class="font-heading text-lg">Ký Túc Xá Sinh Viên</h1>
+            <nav class="flex items-center gap-2">
+                <a href="/login" class="px-3 py-2 rounded-base border border-border text-sm bg-primary text-white">Đăng nhập</a>
+                <a href="/register" class="px-3 py-2 rounded-base border border-border text-sm text-text-main hover:bg-slate-50">Đăng ký</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-[1200px] mx-auto px-4 py-8">
+        <section class="max-w-md mx-auto rounded-base border border-border bg-bg-card shadow-soft p-6">
+            <h2 class="font-heading text-2xl">Đăng nhập</h2>
+            <p class="text-text-muted mt-2 text-sm">Vui lòng nhập tài khoản để tiếp tục.</p>
+
+            <form id="loginForm" class="mt-6 space-y-4" novalidate>
+                <div>
+                    <label for="username" class="block text-sm font-medium mb-2">Tên đăng nhập</label>
+                    <input id="username" type="text" required class="w-full rounded-base border border-border px-4 py-3" placeholder="admin">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium mb-2">Mật khẩu</label>
+                    <input id="password" type="password" required class="w-full rounded-base border border-border px-4 py-3" placeholder="Nhập mật khẩu">
+                </div>
+                <button type="submit" class="w-full rounded-base bg-primary hover:bg-primary-hover text-white py-3 font-medium transition-colors">Đăng nhập</button>
+            </form>
+
+            <p class="text-sm text-text-muted mt-4">Chưa có tài khoản? <a href="/register" class="text-secondary font-medium">Đăng ký ngay</a></p>
+            <div id="message" class="hidden mt-4 rounded-base px-4 py-3 text-sm"></div>
+        </section>
+    </main>
+
+    <script>
+        const token = localStorage.getItem('dormitory_access_token');
+        if (token) {
+            window.location.href = '/home';
+        }
+
+        const form = document.getElementById('loginForm');
+        const message = document.getElementById('message');
+
+        function showMessage(type, text) {
+            message.className = 'mt-4 rounded-base px-4 py-3 text-sm';
+            if (type === 'error') {
+                message.classList.add('bg-red-50', 'text-danger', 'border', 'border-red-100');
+            } else {
+                message.classList.add('bg-green-50', 'text-success', 'border', 'border-green-100');
+            }
+            message.textContent = text;
+        }
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            showMessage('success', 'Đang đăng nhập...');
+
+            const payload = {
+                username: document.getElementById('username').value.trim(),
+                password: document.getElementById('password').value
+            };
+
+            try {
+                const response = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Đăng nhập thất bại');
+                }
+
+                localStorage.setItem('dormitory_access_token', data.result.accessToken);
+
+                const roles = Array.isArray(data.result?.user?.roles) ? data.result.user.roles : [];
+                const isAdmin = roles.includes('ROLE_ADMIN');
+
+                showMessage('success', 'Đăng nhập thành công, đang chuyển trang...');
+                setTimeout(() => {
+                    window.location.href = isAdmin ? '/admin' : '/home';
+                }, 350);
+            } catch (error) {
+                showMessage('error', error.message || 'Có lỗi xảy ra');
+            }
+        });
+    </script>
+</body>
+
+</html>

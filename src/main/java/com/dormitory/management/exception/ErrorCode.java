@@ -7,6 +7,8 @@ public enum ErrorCode {
     SUCCESS(200, "Success"),
     CREATED(201, "Created"),
     NO_CONTENT(204, "No content"),
+    UNAUTHORIZED(401, "Unauthorized"),
+    FORBIDDEN(403, "Forbidden"),
     BAD_REQUEST(400, "Validation error"),
     NOT_FOUND(404, "Resource not found"),
     INTERNAL_SERVER_ERROR(500, "Internal server error");
