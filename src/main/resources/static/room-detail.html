@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sơ đồ Phòng - Ký Túc Xá Sinh Viên</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        success: '#16A34A',
+                        danger: '#DC2626',
+                        warning: '#D97706'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+    <header class="border-b border-border bg-bg-card">
+        <div class="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <button onclick="history.back()" class="p-2 text-text-muted hover:bg-slate-100 rounded-lg" title="Quay lại" aria-label="Quay lại">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <div>
+                    <p class="text-xs text-text-muted">Sơ đồ giường</p>
+                    <h1 id="roomTitle" class="font-heading text-xl"></h1>
+                </div>
+            </div>
+            <a href="/rooms.html" class="text-sm font-medium text-primary hover:underline">Quản lý phòng →</a>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto px-4 py-8">
+        <section class="bg-bg-card rounded-base border border-border shadow-soft p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                    <h3 class="font-heading text-lg mb-2">Thông tin phòng</h3>
+                    <div class="space-y-2 text-sm">
+                        <p><span class="text-text-muted">Tòa nhà:</span> <span id="buildingName">-</span></p>
+                        <p><span class="text-text-muted">Loại:</span> <span id="roomType">-</span></p>
+                        <p><span class="text-text-muted">Trạng thái:</span> <span id="status">-</span></p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-heading text-lg mb-2">Thống kê</h3>
+                    <div class="grid grid-cols-2 gap-4 text-center p-4 bg-slate-50 rounded-base">
+                        <div>
+                            <p class="text-2xl font-heading" id="totalBeds">0</p>
+                            <p class="text-xs text-text-muted">Tổng giường</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-heading text-success" id="freeBeds">0</p>
+                            <p class="text-xs text-text-muted">Còn trống</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="bedLayout" class="text-center">
+                <p class="text-text-muted mb-4">Đang tải sơ đồ giường...</p>
+            </div>
+        </section>
+
+        <section id="bedsSection" class="bg-bg-card rounded-base border border-border shadow-soft p-6 hidden">
+            <h3 class="font-heading text-lg mb-4">Danh sách giường</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="text-left px-4 py-3 text-text-muted">Giường</th>
+                            <th class="text-left px-4 py-3 text-text-muted w-48">Sinh viên</th>
+                            <th class="text-left px-4 py-3 text-text-muted w-24">Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bedsTable"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('id');
+        if (!roomId) {
+            document.getElementById('bedLayout').innerHTML = '<p class="text-danger">Không tìm thấy ID phòng.</p>';
+        } else {
+            loadRoom(roomId);
+        }
+
+        async function loadRoom(id) {
+            try {
+                const res = await fetch(`/api/v1/rooms/${id}`);
+                const data = await res.json();
+                const room = data.result;
+                if (!room) throw new Error('Phòng không tồn tại');
+                
+                document.getElementById('roomTitle').textContent = `Phòng ${room.roomNumber}`;
+                document.getElementById('buildingName').textContent = room.buildingName || '-';
+                document.getElementById('roomType').textContent = room.roomTypeName || '-';
+                document.getElementById('status').innerHTML = `<span class="px-2 py-1 rounded-full text-xs font-medium ${room.status === 'FULL' ? 'bg-red-100 text-danger' : 'bg-green-100 text-success'}">${room.status || 'TRONG'}</span>`;
+                
+                const beds = room.beds || [];
+                document.getElementById('totalBeds').textContent = beds.length;
+                const freeCount = beds.filter(b => !b.isOccupied).length;
+                document.getElementById('freeBeds').textContent = freeCount;
+
+                // Sơ đồ visual (grid layout based on capacity)
+                renderBedLayout(beds);
+                renderBedsTable(beds);
+                document.getElementById('bedsSection').classList.remove('hidden');
+
+            } catch (err) {
+                document.getElementById('bedLayout').innerHTML = `<p class="text-danger">Lỗi: ${err.message}</p>`;
+            }
+        }
+
+        function renderBedLayout(beds) {
+            const capacity = beds.length;
+            let gridCols = 'grid-cols-4'; // default 8-bed 2x4
+            if (capacity <= 4) gridCols = 'grid-cols-2'; // 2x2
+            else if (capacity <= 6) gridCols = 'grid-cols-3'; // 2x3
+
+            document.getElementById('bedLayout').innerHTML = `
+                <div class="max-w-md mx-auto p-6 bg-gradient-to-br from-slate-50 to-white rounded-xl border-4 border-slate-200 shadow-xl">
+                    <p class="text-sm font-medium mb-6 text-slate-700">Sơ đồ giường (nhìn từ trên xuống)</p>
+                    <div class="${gridCols} gap-3 justify-items-center">
+                        ${beds.map(bed => {
+                            const color = bed.isOccupied ? 'bg-danger text-white shadow-danger/25 border-danger' : 'bg-success text-white shadow-success/25 border-success';
+                            const label = bed.isOccupied ? (bed.studentName || 'Đã thuê') : 'Trống';
+                            return `
+                                <div class="w-20 h-20 rounded-lg border-4 flex flex-col items-center justify-center p-2 shadow-lg ${color} relative group cursor-pointer hover:scale-105 transition-all">
+                                    <div class="text-xs font-bold">${bed.bedNumber}</div>
+                                    <div class="text-xs mt-0.5">${label}</div>
+                                    ${bed.isOccupied ? `<div class="absolute -top-2 -right-2 w-5 h-5 bg-warning rounded-full flex items-center justify-center text-xs font-bold border-2 border-white shadow">!</div>` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderBedsTable(beds) {
+            document.getElementById('bedsTable').innerHTML = beds.map(bed => `
+                <tr class="border-t border-slate-100 hover:bg-slate-50">
+                    <td class="px-4 py-3 font-medium">Giường ${bed.bedNumber}</td>
+                    <td class="px-4 py-3">${bed.studentName || '-'}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${bed.isOccupied ? 'bg-red-100 text-danger' : 'bg-green-100 text-success'}">
+                            ${bed.isOccupied ? 'Đã thuê' : 'Trống'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

@@ -101,7 +101,8 @@
                             <th class="text-left text-sm text-text-muted px-4 py-3">Tòa nhà</th>
                             <th class="text-left text-sm text-text-muted px-4 py-3">Loại phòng</th>
                             <th class="text-left text-sm text-text-muted px-4 py-3">Trạng thái</th>
-                        </tr>
+                            <th class="text-left text-sm text-text-muted px-4 py-3 w-32">Thao tác</th>
+                    </tr>
                     </thead>
                     <tbody id="roomBody"></tbody>
                 </table>
@@ -158,6 +159,9 @@
                     <td class="px-4 py-3 text-sm">${item.buildingName ?? 'Chưa gán'}</td>
                     <td class="px-4 py-3 text-sm">${item.roomTypeName ?? 'Chưa gán'}</td>
                     <td class="px-4 py-3 text-sm">${item.status ?? '-'}</td>
+                    <td class="px-4 py-3">
+                        <a href="/room-detail.html?id=${item.id}" class="text-primary hover:underline font-medium text-sm">Chi tiết</a>
+                    </td>
                 </tr>
             `).join('');
             roomCount.textContent = String(items.length);

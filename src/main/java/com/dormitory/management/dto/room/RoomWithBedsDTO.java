@@ -4,15 +4,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.util.List;
-import com.dormitory.management.dto.room.BedDTO;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RoomDTO {
-
+public class RoomWithBedsDTO {
     private Long id;
     private String roomNumber;
     private String status;
@@ -20,3 +19,4 @@ public class RoomDTO {
     private String roomTypeName;
     private List<BedDTO> beds;
 }
+
