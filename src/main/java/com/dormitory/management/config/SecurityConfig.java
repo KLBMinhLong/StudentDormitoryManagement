@@ -60,6 +60,12 @@ public class SecurityConfig {
                                 "/rooms",
                                 "/rooms.html",
                                 "/room-detail.html",
+<<<<<<< Updated upstream
+=======
+                                "/student_management.html",
+                                "/student-profile.html",
+                                "/contract_registration.html",
+>>>>>>> Stashed changes
                                 "/ui/**",
                                 "/error")
                         .permitAll()

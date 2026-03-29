@@ -12,7 +12,8 @@ public interface BedRepository extends JpaRepository<Bed, Long> {
     List<Bed> findByRoomIdOrderByBedNumberAsc(Long roomId);
 
     Optional<Bed> findByIdAndRoomId(Long id, Long roomId);
-    
-    void deleteByRoomId(Long roomId);
-}
 
+    void deleteByRoomId(Long roomId);
+
+    boolean existsByRoomIdAndIsOccupiedFalse(Long roomId);
+}
