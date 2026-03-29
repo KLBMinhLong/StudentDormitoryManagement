@@ -1,5 +1,6 @@
 package com.dormitory.management.config;
 
+import java.math.BigDecimal;
 import java.util.Set;
 
 import org.springframework.boot.CommandLineRunner;
@@ -10,9 +11,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.dormitory.management.entity.AppUser;
 import com.dormitory.management.entity.Building;
 import com.dormitory.management.entity.Role;
+import com.dormitory.management.entity.Room;
+import com.dormitory.management.entity.RoomType;
+import com.dormitory.management.entity.enums.RoomStatus;
 import com.dormitory.management.repository.AppUserRepository;
 import com.dormitory.management.repository.BuildingRepository;
 import com.dormitory.management.repository.RoleRepository;
+import com.dormitory.management.repository.RoomRepository;
+import com.dormitory.management.repository.RoomTypeRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,12 +29,16 @@ public class DataInitializer {
     private final RoleRepository roleRepository;
     private final AppUserRepository appUserRepository;
     private final BuildingRepository buildingRepository;
+    private final RoomRepository roomRepository;
+    private final RoomTypeRepository roomTypeRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Bean
     public CommandLineRunner initializeAuthData() {
         return args -> {
             initializeBuildingData();
+            initializeRoomTypeData();
+            initializeRoomData();
 
             Role adminRole = findOrCreateRole("ROLE_ADMIN");
             Role studentRole = findOrCreateRole("ROLE_STUDENT");
@@ -57,6 +67,87 @@ public class DataInitializer {
                 appUserRepository.save(studentUser);
             }
         };
+    }
+
+    private void initializeRoomData() {
+        Building buildingA = buildingRepository.findByNameIgnoreCase("Tòa A")
+                .orElseThrow(() -> new IllegalStateException("Building Tòa A not found"));
+        Building buildingB = buildingRepository.findByNameIgnoreCase("Tòa B")
+                .orElseThrow(() -> new IllegalStateException("Building Tòa B not found"));
+        Building buildingC = buildingRepository.findByNameIgnoreCase("Tòa C")
+            .orElseThrow(() -> new IllegalStateException("Building Tòa C not found"));
+        Building buildingD = buildingRepository.findByNameIgnoreCase("Tòa D")
+            .orElseThrow(() -> new IllegalStateException("Building Tòa D not found"));
+
+        RoomType roomType8 = roomTypeRepository.findByNameIgnoreCase("Phòng 8 người")
+            .orElseThrow(() -> new IllegalStateException("Room type Phòng 8 người not found"));
+        RoomType roomType4 = roomTypeRepository.findByNameIgnoreCase("Phòng 4 người")
+            .orElseThrow(() -> new IllegalStateException("Room type Phòng 4 người not found"));
+        RoomType roomTypeVip = roomTypeRepository.findByNameIgnoreCase("Phòng VIP")
+            .orElseThrow(() -> new IllegalStateException("Room type Phòng VIP not found"));
+
+        seedRoomsForBuilding(buildingA, "A", roomType8, roomType4, roomTypeVip);
+        seedRoomsForBuilding(buildingB, "B", roomType8, roomType4, roomTypeVip);
+        seedRoomsForBuilding(buildingC, "C", roomType8, roomType4, roomTypeVip);
+        seedRoomsForBuilding(buildingD, "D", roomType8, roomType4, roomTypeVip);
+    }
+
+        private void seedRoomsForBuilding(
+            Building building,
+            String buildingCode,
+            RoomType roomType8,
+            RoomType roomType4,
+            RoomType roomTypeVip) {
+        for (int floor = 1; floor <= building.getTotalFloors(); floor++) {
+            for (int roomNumber = 1; roomNumber <= 16; roomNumber++) {
+                String code = String.format("%s%d%02d", buildingCode, floor, roomNumber);
+
+                if (roomRepository.existsByBuildingIdAndRoomNumberIgnoreCase(building.getId(), code)) {
+                    continue;
+                }
+
+                RoomType roomType = resolveRoomTypeByRoomIndex(roomNumber, roomType8, roomType4, roomTypeVip);
+
+                Room room = Room.builder()
+                        .roomNumber(code)
+                        .status(RoomStatus.AVAILABLE)
+                        .building(building)
+                        .roomType(roomType)
+                        .build();
+                roomRepository.save(room);
+            }
+        }
+    }
+
+    private RoomType resolveRoomTypeByRoomIndex(
+            int roomIndex,
+            RoomType roomType8,
+            RoomType roomType4,
+            RoomType roomTypeVip) {
+        if (roomIndex <= 8) {
+            return roomType8;
+        }
+        if (roomIndex <= 14) {
+            return roomType4;
+        }
+        return roomTypeVip;
+    }
+
+    private void initializeRoomTypeData() {
+        upsertRoomType("Phòng 4 người", 4, new BigDecimal("1200000"), "Nam/Nữ");
+        upsertRoomType("Phòng 8 người", 8, new BigDecimal("850000"), "Nam/Nữ");
+        upsertRoomType("Phòng VIP", 2, new BigDecimal("2500000"), "Nam/Nữ");
+    }
+
+    private void upsertRoomType(String name, int capacity, BigDecimal basePrice, String genderAllowed) {
+        RoomType roomType = roomTypeRepository.findByNameIgnoreCase(name)
+                .orElseGet(RoomType::new);
+
+        roomType.setName(name);
+        roomType.setCapacity(capacity);
+        roomType.setBasePrice(basePrice);
+        roomType.setGenderAllowed(genderAllowed);
+        roomTypeRepository.save(roomType);
     }
 
     private void initializeBuildingData() {

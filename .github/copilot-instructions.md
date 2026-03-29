@@ -34,7 +34,24 @@ These rules are mandatory for AI-generated code in this repository.
 - Mapping is required via ModelMapper or MapStruct.
 - Service layer handles mapping and business logic; controller orchestrates request/response only.
 
-## 5) UI Consistency Rule
+## 5) Pagination Rule (List API)
+
+- All list-returning endpoints MUST implement pagination.
+- Default page size: **10 items per page**.
+- Pagination request parameters:
+  - `page`: default `0` (zero-based index).
+  - `size`: default `10`.
+  - `sortBy`: default `id` (or `createdAt`).
+  - `direction`: default `desc`.
+- Pagination response wrapper:
+  - Use `PagedResponseDTO<T> { content, pageNo, pageSize, totalElements, totalPages, last }`.
+  - Place the paged object inside `ApiResponse<T>.result`.
+- UI pagination behavior:
+  - Use Previous/Next buttons combined with page numbers.
+  - Always show: `Hiển thị X-Y trên tổng số Z kết quả`.
+  - Smooth-scroll to top of list/cards after page change.
+
+## 6) UI Consistency Rule
 
 For all web UI tasks in this project:
 
@@ -66,3 +83,12 @@ For all web UI tasks in this project:
   - avoid purple-dominant palettes for this project
 - Keep components consistent across pages (button, input, card, table, badge).
 - Enforce accessibility: semantic HTML, visible focus, keyboard navigation, sufficient color contrast.
+- Text content rule: all Vietnamese UI labels/messages/placeholders must use full diacritics.
+- Input data rule: user-entered Vietnamese content must preserve diacritics (do not strip accents).
+
+## 7) Vietnamese Diacritics Rule (Strict)
+
+- Do NOT use non-diacritic Vietnamese in UI text.
+- Applies to: page titles, headings, labels, placeholders, button text, table headers, toasts, modal content, validation/error messages.
+- If a page contains mixed text (with and without diacritics), normalize all Vietnamese UI text to full diacritics.
+- Keep backend/user input values exactly as entered, including diacritics.

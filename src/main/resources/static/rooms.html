@@ -194,13 +194,13 @@
         // Load all data
         async function loadData() {
             const [buildingsRes, roomTypesRes, roomsRes] = await Promise.all([
-                fetch('/api/v1/buildings'),
-                fetch('/api/v1/room-types'), // Assume exists from prior task
-                fetch(API_BASE)
+                fetch('/api/v1/buildings?page=0&size=500&sortBy=id&direction=asc'),
+                fetch('/api/v1/room-types?page=0&size=500&sortBy=id&direction=asc'), // Assume exists from prior task
+                fetch(`${API_BASE}?page=0&size=500&sortBy=id&direction=desc`)
             ]);
-            buildings = await buildingsRes.json().then(d => d.result || []);
-            roomTypes = await roomTypesRes.json().then(d => d.result || []);
-            renderRows(await roomsRes.json().then(d => d.result || []));
+            buildings = await buildingsRes.json().then(d => d.result?.content || []);
+            roomTypes = await roomTypesRes.json().then(d => d.result?.content || []);
+            renderRows(await roomsRes.json().then(d => d.result?.content || []));
             populateSelects();
         }
 

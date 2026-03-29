@@ -1,8 +1,29 @@
 package com.dormitory.management.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.query.Param;
 
 import com.dormitory.management.entity.Room;
+import com.dormitory.management.entity.enums.RoomStatus;
 
 public interface RoomRepository extends JpaRepository<Room, Long> {
+
+		@Query("""
+						select r from Room r
+						where (:buildingId is null or r.building.id = :buildingId)
+							and (:status is null or r.status = :status)
+							and (:keyword is null or lower(r.roomNumber) like lower(concat('%', :keyword, '%')))
+						""")
+		Page<Room> findByFilters(
+				@Param("buildingId") Long buildingId,
+				@Param("status") RoomStatus status,
+				@Param("keyword") String keyword,
+				Pageable pageable);
+
+		boolean existsByBuildingIdAndRoomNumberIgnoreCase(Long buildingId, String roomNumber);
+
+		boolean existsByBuildingIdAndRoomNumberIgnoreCaseAndIdNot(Long buildingId, String roomNumber, Long id);
 }

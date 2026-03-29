@@ -1,12 +1,15 @@
 package com.dormitory.management.service.impl;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.dormitory.management.dto.building.BuildingDTO;
 import com.dormitory.management.dto.building.BuildingRequestDTO;
+import com.dormitory.management.dto.common.PagedResponseDTO;
 import com.dormitory.management.entity.Building;
 import com.dormitory.management.exception.ResourceNotFoundException;
 import com.dormitory.management.repository.BuildingRepository;
@@ -22,11 +25,11 @@ public class BuildingServiceImpl implements BuildingService {
     private final BuildingRepository buildingRepository;
 
     @Override
-    public List<BuildingDTO> getAllBuildings() {
-        return buildingRepository.findAll()
-                .stream()
-                .map(this::toDto)
-                .toList();
+    public PagedResponseDTO<BuildingDTO> getAllBuildings(int page, int size, String sortBy, String direction) {
+        Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        Page<BuildingDTO> result = buildingRepository.findAll(pageable).map(this::toDto);
+        return PagedResponseDTO.fromPage(result);
     }
 
     @Override

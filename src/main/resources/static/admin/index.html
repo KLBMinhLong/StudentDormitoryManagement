@@ -146,14 +146,31 @@
                 return;
             }
 
+            const start = Math.max(1, page - 2);
+            const end = Math.min(totalPages, page + 2);
+            let pageButtons = '';
+            for (let i = start; i <= end; i++) {
+                const active = i === page;
+                pageButtons += `<button class="rounded-base border px-3 py-1.5 text-sm ${active ? 'border-primary bg-primary text-white' : 'border-border hover:bg-slate-50'}" data-page="${i}">${i}</button>`;
+            }
+
+            const startResult = (page - 1) * ITEMS_PER_PAGE + 1;
+            const endResult = Math.min(page * ITEMS_PER_PAGE, buildingItems.length);
+
             container.innerHTML = `
-                <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === 1 ? 'disabled' : ''} data-page="${page - 1}">Trước</button>
-                <span class="text-sm text-text-muted">Trang ${page}/${totalPages}</span>
-                <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === totalPages ? 'disabled' : ''} data-page="${page + 1}">Sau</button>
+                <p class="text-sm text-text-muted">Hiển thị ${startResult}-${endResult} trên tổng số ${buildingItems.length} kết quả</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === 1 ? 'disabled' : ''} data-page="${page - 1}">Trước</button>
+                    ${pageButtons}
+                    <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === totalPages ? 'disabled' : ''} data-page="${page + 1}">Sau</button>
+                </div>
             `;
 
             container.querySelectorAll('button[data-page]').forEach((btn) => {
-                btn.addEventListener('click', () => onChange(Number(btn.dataset.page)));
+                btn.addEventListener('click', () => {
+                    onChange(Number(btn.dataset.page));
+                    document.querySelector('main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
             });
         }
 
@@ -203,8 +220,8 @@
 
         async function loadDashboardStats() {
             const [buildingResponse, roomResponse] = await Promise.all([
-                fetch('/api/v1/buildings', { headers: { Authorization: `Bearer ${token}` } }),
-                fetch('/api/v1/rooms', { headers: { Authorization: `Bearer ${token}` } })
+                fetch('/api/v1/buildings?page=0&size=500&sortBy=id&direction=desc', { headers: { Authorization: `Bearer ${token}` } }),
+                fetch('/api/v1/rooms?page=0&size=500&sortBy=id&direction=desc', { headers: { Authorization: `Bearer ${token}` } })
             ]);
 
             const buildingPayload = await buildingResponse.json();
@@ -217,13 +234,14 @@
                 throw new Error(roomPayload.message || 'Không tải được danh sách phòng');
             }
 
-            buildingItems = Array.isArray(buildingPayload.result) ? buildingPayload.result : [];
-            const rooms = Array.isArray(roomPayload.result) ? roomPayload.result : [];
+            buildingItems = Array.isArray(buildingPayload.result?.content) ? buildingPayload.result.content : [];
+            const rooms = Array.isArray(roomPayload.result?.content) ? roomPayload.result.content : [];
             const floors = buildingItems.reduce((sum, item) => sum + (Number(item.totalFloors) || 0), 0);
+            const roomTotal = typeof roomPayload.result?.totalElements === 'number' ? roomPayload.result.totalElements : rooms.length;
 
             document.getElementById('buildingCount').textContent = String(buildingItems.length);
             document.getElementById('floorsCount').textContent = String(floors);
-            document.getElementById('roomCount').textContent = String(rooms.length);
+            document.getElementById('roomCount').textContent = String(roomTotal);
 
             renderBuildings(1);
         }

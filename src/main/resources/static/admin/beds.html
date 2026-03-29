@@ -187,12 +187,12 @@
         }
 
         async function loadRooms() {
-            const response = await fetch('/api/v1/rooms', {
+            const response = await fetch('/api/v1/rooms?page=0&size=500&sortBy=id&direction=desc', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const payload = await response.json();
             if (!response.ok) throw new Error(payload.message || 'Không tải được danh sách phòng');
-            rooms = Array.isArray(payload.result) ? payload.result : [];
+            rooms = Array.isArray(payload.result?.content) ? payload.result.content : [];
 
             const select = document.getElementById('roomSelect');
             if (!rooms.length) {
@@ -214,7 +214,7 @@
             });
             const payload = await response.json();
             if (!response.ok) throw new Error(payload.message || 'Không tải được danh sách giường');
-            bedItems = Array.isArray(payload.result) ? payload.result : [];
+            bedItems = Array.isArray(payload.result?.content) ? payload.result.content : [];
             renderBeds(1);
         }
 

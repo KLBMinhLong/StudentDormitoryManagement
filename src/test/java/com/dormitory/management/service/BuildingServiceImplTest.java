@@ -14,12 +14,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.dormitory.management.dto.building.BuildingDTO;
 import com.dormitory.management.dto.building.BuildingRequestDTO;
+import com.dormitory.management.dto.common.PagedResponseDTO;
 import com.dormitory.management.entity.Building;
 import com.dormitory.management.exception.ResourceNotFoundException;
 import com.dormitory.management.repository.BuildingRepository;
@@ -57,24 +60,24 @@ class BuildingServiceImplTest {
     @Test
     @DisplayName("getAllBuildings - trả về danh sách DTO khi có dữ liệu")
     void getAllBuildings_returnsDtoList() {
-        when(buildingRepository.findAll()).thenReturn(List.of(mockBuilding));
+        when(buildingRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(mockBuilding)));
 
-        List<BuildingDTO> result = buildingService.getAllBuildings();
+        PagedResponseDTO<BuildingDTO> result = buildingService.getAllBuildings(0, 10, "id", "desc");
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getName()).isEqualTo("Tòa A");
-        assertThat(result.get(0).getTotalFloors()).isEqualTo(5);
-        assertThat(result.get(0).getDescription()).isEqualTo("Mô tả tòa A");
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getName()).isEqualTo("Tòa A");
+        assertThat(result.getContent().get(0).getTotalFloors()).isEqualTo(5);
+        assertThat(result.getContent().get(0).getDescription()).isEqualTo("Mô tả tòa A");
     }
 
     @Test
     @DisplayName("getAllBuildings - trả về danh sách rỗng khi không có dữ liệu")
     void getAllBuildings_returnsEmptyList() {
-        when(buildingRepository.findAll()).thenReturn(List.of());
+        when(buildingRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
 
-        List<BuildingDTO> result = buildingService.getAllBuildings();
+        PagedResponseDTO<BuildingDTO> result = buildingService.getAllBuildings(0, 10, "id", "desc");
 
-        assertThat(result).isEmpty();
+        assertThat(result.getContent()).isEmpty();
     }
 
     // ── getBuildingById ─────────────────────────────────────────────────────

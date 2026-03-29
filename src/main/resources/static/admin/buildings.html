@@ -88,7 +88,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div id="tablePagination" class="mt-4 flex items-center justify-end gap-2"></div>
+                    <div id="tablePagination" class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"></div>
 
                     <div id="emptyState" class="hidden text-center py-12">
                         <p class="text-text-muted text-sm">Chưa có tòa nhà nào. Nhấn <strong>Thêm tòa nhà</strong> để bắt đầu.</p>
@@ -161,7 +161,9 @@
         const token = localStorage.getItem('dormitory_access_token');
         let deleteTargetId = null;
         let buildingsCache = [];
-        let currentPage = 1;
+        let currentPage = 0;
+        let totalPages = 0;
+        let totalElements = 0;
 
         if (!token) {
             window.location.href = '/login';
@@ -234,42 +236,53 @@
             return str.replace('T', ' ').substring(0, 16);
         }
 
-        function paginate(items, page) {
-            const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
-            const safePage = Math.min(Math.max(page, 1), totalPages);
-            const start = (safePage - 1) * ITEMS_PER_PAGE;
-            return {
-                safePage,
-                totalPages,
-                data: items.slice(start, start + ITEMS_PER_PAGE)
-            };
+        function buildPageButtons(pageNo, totalPageCount) {
+            if (totalPageCount <= 0) {
+                return '';
+            }
+
+            const start = Math.max(0, pageNo - 2);
+            const end = Math.min(totalPageCount - 1, pageNo + 2);
+            let html = '';
+
+            for (let i = start; i <= end; i++) {
+                const active = i === pageNo;
+                html += `<button class="rounded-base border px-3 py-1.5 text-sm ${active ? 'border-primary bg-primary text-white' : 'border-border hover:bg-slate-50'}" data-page="${i}">${i + 1}</button>`;
+            }
+
+            return html;
         }
 
-        function renderPagination(page, totalPages) {
+        function renderPagination() {
             const container = document.getElementById('tablePagination');
-            if (totalPages <= 1) {
+            if (totalElements <= 0) {
                 container.innerHTML = '';
                 return;
             }
 
+            const pageNo = currentPage;
+            const totalPageCount = Math.max(1, totalPages);
+            const startResult = pageNo * ITEMS_PER_PAGE + 1;
+            const endResult = Math.min((pageNo + 1) * ITEMS_PER_PAGE, totalElements);
             container.innerHTML = `
-                <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === 1 ? 'disabled' : ''} data-page="${page - 1}">Trước</button>
-                <span class="text-sm text-text-muted">Trang ${page}/${totalPages}</span>
-                <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === totalPages ? 'disabled' : ''} data-page="${page + 1}">Sau</button>
+                <p class="text-sm text-text-muted">Hiển thị ${startResult}-${endResult} trên tổng số ${totalElements} kết quả</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button class="rounded-base border border-border px-3 py-1.5 text-sm ${pageNo === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${pageNo === 0 ? 'disabled' : ''} data-page="${pageNo - 1}">Trước</button>
+                    ${buildPageButtons(pageNo, totalPageCount)}
+                    <button class="rounded-base border border-border px-3 py-1.5 text-sm ${pageNo + 1 >= totalPageCount ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${pageNo + 1 >= totalPageCount ? 'disabled' : ''} data-page="${pageNo + 1}">Sau</button>
+                </div>
             `;
 
             container.querySelectorAll('button[data-page]').forEach((btn) => {
-                btn.addEventListener('click', () => renderRows(Number(btn.dataset.page)));
+                btn.addEventListener('click', () => loadBuildings(Number(btn.dataset.page)));
             });
         }
 
-        function renderRows(page) {
+        function renderRows() {
             const tbody = document.getElementById('buildingTableBody');
             const empty = document.getElementById('emptyState');
-            const paged = paginate(buildingsCache, page);
-            currentPage = paged.safePage;
 
-            if (!paged.data.length) {
+            if (!buildingsCache.length) {
                 tbody.innerHTML = '';
                 empty.classList.remove('hidden');
                 document.getElementById('tablePagination').innerHTML = '';
@@ -277,7 +290,7 @@
             }
 
             empty.classList.add('hidden');
-            tbody.innerHTML = paged.data.map((b) => `
+            tbody.innerHTML = buildingsCache.map((b) => `
                 <tr class="hover:bg-slate-50 transition-colors">
                     <td class="px-4 py-3 text-text-muted font-mono text-xs">${b.id}</td>
                     <td class="px-4 py-3 font-medium">${escHtml(b.name)}</td>
@@ -294,17 +307,29 @@
                 </tr>
             `).join('');
 
-            renderPagination(currentPage, paged.totalPages);
+            renderPagination();
         }
 
-        async function loadBuildings() {
-            const res = await fetch(API_BASE, { headers: authHeaders() });
+        async function loadBuildings(page = 0) {
+            const params = new URLSearchParams({
+                page: String(page),
+                size: String(ITEMS_PER_PAGE),
+                sortBy: 'id',
+                direction: 'desc'
+            });
+            const res = await fetch(`${API_BASE}?${params.toString()}`, { headers: authHeaders() });
             const data = await res.json();
             if (!res.ok) {
                 throw new Error(data.message || 'Lỗi tải dữ liệu');
             }
-            buildingsCache = Array.isArray(data.result) ? data.result : [];
-            renderRows(1);
+
+            const result = data.result || {};
+            buildingsCache = Array.isArray(result.content) ? result.content : [];
+            currentPage = Number.isInteger(result.pageNo) ? result.pageNo : page;
+            totalPages = Number.isInteger(result.totalPages) ? result.totalPages : 0;
+            totalElements = typeof result.totalElements === 'number' ? result.totalElements : 0;
+            renderRows();
+            document.querySelector('main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function openModal() {
@@ -400,7 +425,7 @@
 
                 showToast(isEdit ? 'Cập nhật tòa nhà thành công!' : 'Thêm tòa nhà thành công!');
                 closeModal();
-                await loadBuildings();
+                await loadBuildings(currentPage);
             } catch (err) {
                 showToast(err.message, 'error');
             } finally {
@@ -425,7 +450,7 @@
 
                 showToast('Xóa tòa nhà thành công!');
                 closeDeleteModal();
-                await loadBuildings();
+                await loadBuildings(currentPage);
             } catch (err) {
                 showToast(err.message, 'error');
             } finally {
