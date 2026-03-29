@@ -2,6 +2,7 @@ package com.dormitory.management.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -39,15 +40,23 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                            "/api/v1/auth/register/student",
+                                "/",
+                                "/favicon.ico",
+                                "/index.html",
+                                "/api/v1/auth/register/student",
                                 "/api/v1/auth/login",
                                 "/login",
                                 "/login.html",
-                            "/home",
-                            "/home.html",
+                                "/register",
+                                "/register.html",
+                                "/home",
+                                "/home.html",
+                                "/admin",
+                                "/admin.html",
                                 "/ui/**",
                                 "/error")
                         .permitAll()
+                            .requestMatchers(HttpMethod.GET, "/api/v1/buildings/**", "/api/v1/rooms/**").permitAll()
                         .requestMatchers("/api/v1/buildings/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/v1/student/**").hasAnyAuthority("ROLE_STUDENT", "ROLE_ADMIN")
                         .anyRequest().authenticated())
