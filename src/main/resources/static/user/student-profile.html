@@ -117,6 +117,53 @@
             </div>
         </form>
     </section>
+
+    <section id="residenceHistorySection" class="bg-bg-card rounded-base shadow-soft border border-border p-8 mt-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+            <div>
+                <h2 class="font-heading text-2xl">Timeline lịch sử cư trú</h2>
+                <p id="historySummary" class="text-sm text-text-muted mt-1">Đang tải lịch sử nội trú...</p>
+            </div>
+            <div class="w-full md:w-auto flex items-center gap-2">
+                <input
+                    id="historyKeyword"
+                    type="text"
+                    placeholder="Tìm theo tòa nhà hoặc phòng"
+                    class="w-full md:w-72 border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                >
+                <button
+                    id="historySearchBtn"
+                    type="button"
+                    class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium"
+                >
+                    Tìm
+                </button>
+            </div>
+        </div>
+
+        <ol id="historyTimeline" class="space-y-4"></ol>
+
+        <div class="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-t border-border pt-4">
+            <p id="historyPagingText" class="text-sm text-text-muted">Hiển thị 0-0 trên tổng số 0 kết quả</p>
+            <div class="flex items-center gap-2">
+                <button
+                    id="historyPrevBtn"
+                    type="button"
+                    class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    Trước
+                </button>
+                <span id="historyPageInfo" class="text-sm text-text-muted min-w-[96px] text-center">Trang 1/1</span>
+                <button
+                    id="historyNextBtn"
+                    type="button"
+                    class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    Sau
+                </button>
+            </div>
+        </div>
+    </section>
 </main>
 
 <div id="passwordModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
@@ -151,6 +198,23 @@
     const profileForm = document.getElementById('profileForm');
     const passwordModal = document.getElementById('passwordModal');
     const passwordForm = document.getElementById('passwordForm');
+    const historySection = document.getElementById('residenceHistorySection');
+    const historyTimeline = document.getElementById('historyTimeline');
+    const historySummary = document.getElementById('historySummary');
+    const historyKeywordInput = document.getElementById('historyKeyword');
+    const historySearchBtn = document.getElementById('historySearchBtn');
+    const historyPagingText = document.getElementById('historyPagingText');
+    const historyPageInfo = document.getElementById('historyPageInfo');
+    const historyPrevBtn = document.getElementById('historyPrevBtn');
+    const historyNextBtn = document.getElementById('historyNextBtn');
+
+    const historyState = {
+        page: 0,
+        size: 5,
+        sortBy: 'startDate',
+        direction: 'desc',
+        keyword: ''
+    };
 
     if (!token) {
         window.location.href = '/login.html';
@@ -167,6 +231,151 @@
         setTimeout(() => { message.classList.add('hidden'); }, 3000);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
+    function formatDate(value) {
+        if (!value) return 'Chưa cập nhật';
+        const dt = new Date(value);
+        if (Number.isNaN(dt.getTime())) return 'Chưa cập nhật';
+        return dt.toLocaleDateString('vi-VN');
+    }
+
+    function getStatusChip(status) {
+        const normalized = (status || '').toUpperCase();
+        if (normalized === 'ACTIVE') {
+            return { label: 'Đang nội trú', classes: 'bg-green-50 text-success border border-green-100' };
+        }
+        if (normalized === 'EXPIRED') {
+            return { label: 'Đã kết thúc', classes: 'bg-slate-100 text-slate-700 border border-slate-200' };
+        }
+        if (normalized === 'CANCELLED') {
+            return { label: 'Đã hủy', classes: 'bg-red-50 text-danger border border-red-100' };
+        }
+        return { label: status || 'Không xác định', classes: 'bg-amber-50 text-amber-700 border border-amber-100' };
+    }
+
+    function renderResidenceHistory(items) {
+        if (!Array.isArray(items) || items.length === 0) {
+            historyTimeline.innerHTML = `
+                <li class="rounded-base border border-dashed border-border bg-slate-50 px-4 py-5 text-sm text-text-muted">
+                    Chưa có dữ liệu lịch sử cư trú phù hợp.
+                </li>
+            `;
+            return;
+        }
+
+        historyTimeline.innerHTML = items.map((item) => {
+            const statusChip = getStatusChip(item.status);
+            const from = formatDate(item.startDate);
+            const to = formatDate(item.endDate);
+            const duration = item.durationMonths ? `${item.durationMonths} tháng` : 'Không xác định';
+            const location = `${item.buildingName || 'Tòa chưa xác định'} - Phòng ${item.roomNumber || '-'} - Giường ${item.bedNumber ?? '-'}`;
+
+            return `
+                <li class="relative pl-8">
+                    <span class="absolute left-0 top-2.5 h-3 w-3 rounded-full bg-primary"></span>
+                    <div class="absolute left-[5px] top-6 bottom-[-20px] w-[2px] bg-border"></div>
+                    <article class="rounded-base border border-border bg-white p-4 shadow-soft">
+                        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                            <div>
+                                <p class="font-semibold text-sm text-text-main">${location}</p>
+                                <p class="text-sm text-text-muted mt-1">Thời gian ở: ${from} - ${to}</p>
+                                <p class="text-xs text-text-muted mt-1">Thời hạn hợp đồng: ${duration}</p>
+                            </div>
+                            <span class="inline-flex w-fit rounded-full px-3 py-1 text-xs font-medium ${statusChip.classes}">${statusChip.label}</span>
+                        </div>
+                    </article>
+                </li>
+            `;
+        }).join('');
+    }
+
+    function renderResidencePaging(meta) {
+        const total = Number(meta.totalElements || 0);
+        const pageNo = Number(meta.pageNo || 0);
+        const pageSize = Number(meta.pageSize || historyState.size);
+        const totalPages = Number(meta.totalPages || 0);
+
+        const start = total === 0 ? 0 : pageNo * pageSize + 1;
+        const end = total === 0 ? 0 : Math.min((pageNo + 1) * pageSize, total);
+
+        historyPagingText.textContent = `Hiển thị ${start}-${end} trên tổng số ${total} kết quả`;
+        historyPageInfo.textContent = `Trang ${totalPages === 0 ? 0 : pageNo + 1}/${totalPages}`;
+
+        historyPrevBtn.disabled = pageNo <= 0;
+        historyNextBtn.disabled = totalPages === 0 || pageNo >= totalPages - 1;
+    }
+
+    async function loadResidenceHistory() {
+        historyTimeline.innerHTML = `
+            <li class="rounded-base border border-dashed border-border bg-slate-50 px-4 py-5 text-sm text-text-muted">
+                Đang tải dữ liệu lịch sử nội trú...
+            </li>
+        `;
+
+        const params = new URLSearchParams({
+            page: String(historyState.page),
+            size: String(historyState.size),
+            sortBy: historyState.sortBy,
+            direction: historyState.direction
+        });
+
+        if (historyState.keyword) {
+            params.set('keyword', historyState.keyword);
+        }
+
+        try {
+            const response = await fetch(`/api/v1/students/me/residence-history?${params.toString()}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Không tải được lịch sử nội trú.');
+            }
+
+            const result = data.result || {};
+            const rows = Array.isArray(result.content) ? result.content : [];
+            historySummary.textContent = rows.length > 0
+                ? 'Danh sách các lần đã ở theo thứ tự mới nhất trước.'
+                : 'Chưa có lịch sử cư trú để hiển thị.';
+            renderResidenceHistory(rows);
+            renderResidencePaging(result);
+        } catch (error) {
+            historySummary.textContent = 'Không tải được dữ liệu lịch sử nội trú.';
+            historyTimeline.innerHTML = `
+                <li class="rounded-base border border-dashed border-red-200 bg-red-50 px-4 py-5 text-sm text-danger">
+                    ${error.message || 'Có lỗi xảy ra khi tải lịch sử nội trú.'}
+                </li>
+            `;
+            historyPagingText.textContent = 'Hiển thị 0-0 trên tổng số 0 kết quả';
+            historyPageInfo.textContent = 'Trang 0/0';
+            historyPrevBtn.disabled = true;
+            historyNextBtn.disabled = true;
+        }
+    }
+
+    historySearchBtn.addEventListener('click', () => {
+        historyState.page = 0;
+        historyState.keyword = (historyKeywordInput.value || '').trim();
+        loadResidenceHistory();
+    });
+
+    historyKeywordInput.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        historySearchBtn.click();
+    });
+
+    historyPrevBtn.addEventListener('click', () => {
+        if (historyState.page <= 0) return;
+        historyState.page -= 1;
+        loadResidenceHistory();
+    });
+
+    historyNextBtn.addEventListener('click', () => {
+        historyState.page += 1;
+        loadResidenceHistory();
+    });
 
     async function loadProfile() {
         try {
@@ -306,7 +515,7 @@
         window.location.href = '/login.html';
     });
 
-    loadProfile();
+    Promise.all([loadProfile(), loadResidenceHistory()]);
 </script>
 </body>
 
