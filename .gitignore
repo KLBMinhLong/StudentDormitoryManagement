@@ -34,3 +34,7 @@ build/
 
 ### developer-specific files ###
 application-dev.properties
+
+### runtime uploads ###
+uploads/**
+!uploads/.gitkeep

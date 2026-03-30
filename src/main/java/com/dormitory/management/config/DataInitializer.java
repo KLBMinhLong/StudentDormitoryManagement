@@ -1,6 +1,8 @@
 package com.dormitory.management.config;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.boot.CommandLineRunner;
@@ -14,6 +16,7 @@ import com.dormitory.management.entity.Role;
 import com.dormitory.management.entity.Bed;
 import com.dormitory.management.entity.Room;
 import com.dormitory.management.entity.RoomType;
+import com.dormitory.management.entity.Student;
 import com.dormitory.management.entity.enums.RoomStatus;
 import com.dormitory.management.repository.AppUserRepository;
 import com.dormitory.management.repository.BedRepository;
@@ -21,6 +24,7 @@ import com.dormitory.management.repository.BuildingRepository;
 import com.dormitory.management.repository.RoleRepository;
 import com.dormitory.management.repository.RoomRepository;
 import com.dormitory.management.repository.RoomTypeRepository;
+import com.dormitory.management.repository.StudentRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,6 +38,7 @@ public class DataInitializer {
     private final RoomRepository roomRepository;
     private final RoomTypeRepository roomTypeRepository;
     private final BedRepository bedRepository;
+    private final StudentRepository studentRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Bean
@@ -70,7 +75,58 @@ public class DataInitializer {
                         .build();
                 appUserRepository.save(studentUser);
             }
+
+            initializeMockStudents(studentRole);
         };
+    }
+
+    private void initializeMockStudents(Role studentRole) {
+        if (studentRepository.count() == 0) {
+            // Cập nhật: Truyền thêm đường dẫn ảnh mẫu cho một số Student
+            List<Student> mockStudents = List.of(
+                    createMockStudent("SV001", "Bùi Bình Nguyên", "2004-05-15", "Nam", "0987654321", "079004000001", "nguyen.bb@hutech.edu.vn", "/images/sv001.png"),
+                    createMockStudent("SV002", "Nguyễn Minh Long", "2004-01-20", "Nam", "0912345678", "079004000002", "hai.nl@hutech.edu.vn", "/images/sv002.png"),
+                    createMockStudent("SV003", "Đinh Thanh Dân", "2003-11-30", "Nữ", "0905111222", "079004000003", "tam.tm@hutech.edu.vn", "/images/sv003.png"),
+                    createMockStudent("SV004", "Phan Nhật Duy", "2004-03-12", "Nam", "0934555666", "079004000004", "nam.lh@hutech.edu.vn", "/images/sv004.png"),
+                    createMockStudent("SV005", "Trương Phi Ân", "2004-07-25", "Nữ", "0977888999", "079004000005", "thao.pt@hutech.edu.vn", "/images/sv005.png"),
+                    createMockStudent("SV006", "Ngô Tuấn Anh", "2004-09-05", "Nam", "0981222333", "079004000006", "bao.hg@hutech.edu.vn", null),
+                    createMockStudent("SV007", "Vũ Phương Anh", "2004-12-10", "Nữ", "0922333444", "079004000007", "anh.vp@hutech.edu.vn", null),
+                    createMockStudent("SV008", "Đặng Quang Huy", "2003-05-18", "Nam", "0966777888", "079004000008", "huy.dq@hutech.edu.vn", null),
+                    createMockStudent("SV009", "Ngô Quỳnh Chi", "2004-08-22", "Nữ", "0944555111", "079004000009", "chi.nq@hutech.edu.vn", null),
+                    createMockStudent("SV010", "Đỗ Minh Đức", "2004-02-14", "Nam", "0955666222", "079004000010", "duc.dm@hutech.edu.vn", null)
+            );
+
+            for (Student student : mockStudents) {
+                Student savedStudent = studentRepository.save(student);
+
+                if (!appUserRepository.existsByUsername(savedStudent.getStudentCode())) {
+                    AppUser newAccount = AppUser.builder()
+                            .username(savedStudent.getStudentCode())
+                            .password(passwordEncoder.encode(savedStudent.getStudentCode()))
+                            .fullName(savedStudent.getFullName())
+                            .email(savedStudent.getEmail())
+                            .enabled(true)
+                            .roles(Set.of(studentRole))
+                            .student(savedStudent)
+                            .build();
+
+                    appUserRepository.save(newAccount);
+                }
+            }
+        }
+    }
+
+    private Student createMockStudent(String code, String name, String dob, String gender, String phone, String cccd, String email, String avatarUrl) {
+        return Student.builder()
+                .studentCode(code)
+                .fullName(name)
+                .dateOfBirth(LocalDate.parse(dob))
+                .gender(gender)
+                .phone(phone)
+                .cccd(cccd)
+                .email(email)
+                .avatarUrl(avatarUrl)
+                .build();
     }
 
     private void initializeRoomData() {

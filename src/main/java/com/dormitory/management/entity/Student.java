@@ -55,6 +55,9 @@ public class Student extends BaseEntity {
     @Column(name = "email", columnDefinition = "nvarchar(120)")
     private String email;
 
+    @Column(name = "avatar_url", length = 255)
+    private String avatarUrl;
+
     @JsonIgnore
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
