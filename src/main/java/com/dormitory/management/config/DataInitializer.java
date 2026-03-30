@@ -255,13 +255,16 @@ public class DataInitializer {
     }
 
     private void initializeBuildingData() {
-        upsertBuilding("Tòa A", "Toa A", 5, "Khu tòa dành cho sinh viên nam");
-        upsertBuilding("Tòa B", "Toa B", 5, "Khu tòa dành cho sinh viên nữ");
-        upsertBuilding("Tòa C", "Toa C", 7, "Khu tòa phòng học tập và sinh hoạt");
-        upsertBuilding("Tòa D", "Toa D", 9, "Khu tòa mở rộng cho sinh viên mới");
+        upsertBuilding("Tòa A", "Toa A", 5, "Khu tòa dành cho sinh viên nam", "Nam");
+        upsertBuilding("Tòa B", "Toa B", 5, "Khu tòa dành cho sinh viên nữ", "Nữ");
+
+        // [Tòa dùng chung]: Phân loại là Nam/Nữ để cả 2 giới đều thấy, nhưng không dùng để ở (Ví dụ: Khu học tập)
+        upsertBuilding("Tòa C", "Toa C", 7, "Khu tòa phòng học tập và sinh hoạt", "Nam/Nữ");
+
+        upsertBuilding("Tòa D", "Toa D", 9, "Khu tòa mở rộng cho sinh viên mới", "Nam/Nữ");
     }
 
-    private void upsertBuilding(String canonicalName, String legacyName, int totalFloors, String description) {
+    private void upsertBuilding(String canonicalName, String legacyName, int totalFloors, String description, String genderAllowed) {
         Building building = buildingRepository.findByNameIgnoreCase(canonicalName)
                 .or(() -> buildingRepository.findByNameIgnoreCase(legacyName))
                 .orElseGet(Building::new);
@@ -269,6 +272,7 @@ public class DataInitializer {
         building.setName(canonicalName);
         building.setTotalFloors(totalFloors);
         building.setDescription(description);
+        building.setGenderAllowed(genderAllowed);
         buildingRepository.save(building);
     }
 

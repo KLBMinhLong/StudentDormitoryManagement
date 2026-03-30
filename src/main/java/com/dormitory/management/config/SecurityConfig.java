@@ -61,7 +61,7 @@ public class SecurityConfig {
                                 "/rooms.html",
                                 "/room-detail.html",
                                 "/student_management.html",
-                                "/student-profile.html",
+                                "/student-profile.html",    
                                 "/ui/**",
                                 "/images/**",
                                 "/error")

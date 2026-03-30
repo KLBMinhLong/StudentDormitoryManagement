@@ -31,6 +31,9 @@ public class Building extends BaseEntity {
     @Column(name = "total_floors", nullable = false)
     private int totalFloors;
 
+    @Column(name = "gender_allowed", nullable = false, columnDefinition = "nvarchar(20)")
+    private String genderAllowed;
+
     @Column(name = "description", columnDefinition = "nvarchar(1000)")
     private String description;
 

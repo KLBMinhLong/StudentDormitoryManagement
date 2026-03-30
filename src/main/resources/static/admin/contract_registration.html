@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký Nội trú - Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="/ui/admin-sidebar.js" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        success: '#16A34A',
+                        danger: '#DC2626',
+                        warning: '#D97706'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+<div id="adminLayout" class="w-full max-w-[1440px] mx-auto p-4 md:p-6 min-h-screen">
+    <div class="admin-grid grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6 min-h-[calc(100vh-3rem)]">
+
+        <div id="adminSidebarMount"></div>
+
+        <main class="space-y-6">
+            <div id="message" class="hidden rounded-base px-4 py-3 text-sm"></div>
+
+            <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                <div>
+                    <h2 class="font-heading text-2xl">Lập hợp đồng mới</h2>
+                    <p class="text-text-muted text-sm mt-1">Đăng ký phòng nội trú cho sinh viên (Multi-step form).</p>
+                </div>
+
+                <div class="mt-8 mb-8">
+                    <div class="flex items-center justify-between relative">
+                        <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-100 -z-10"></div>
+                        <div class="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-primary -z-10 transition-all duration-300" id="progressBar" style="width: 0%"></div>
+
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-medium bg-primary text-white" id="step1Circle">1</div>
+                            <span class="text-xs font-medium">Thông tin SV</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-medium bg-slate-200 text-slate-500" id="step2Circle">2</div>
+                            <span class="text-xs font-medium">Chọn Giường</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-medium bg-slate-200 text-slate-500" id="step3Circle">3</div>
+                            <span class="text-xs font-medium">Hợp đồng</span>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="contractForm">
+                    <div id="step1" class="space-y-4">
+                        <h3 class="font-heading text-lg text-primary">Bước 1: Thông tin Sinh viên</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-muted mb-1">Mã số sinh viên *</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="searchStudentCode" class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="Nhập MSSV (VD: SV001)">
+                                    <button type="button" onclick="findStudent()" class="rounded-base bg-slate-100 border border-border px-4 py-2 text-sm font-medium hover:bg-slate-200">Tìm</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-muted mb-1">Họ và tên</label>
+                                <input type="text" id="studentName" readonly class="w-full border border-border rounded-base px-3 py-2 text-sm bg-slate-50 text-text-muted outline-none">
+                                <input type="hidden" id="studentId">
+                            </div>
+                        </div>
+                        <div class="flex justify-end pt-4 border-t border-border">
+                            <button type="button" onclick="nextStep(2)" class="rounded-base bg-primary text-white px-6 py-2 text-sm font-medium hover:bg-primary-hover">Tiếp tục</button>
+                        </div>
+                    </div>
+
+                    <div id="step2" class="space-y-4 hidden">
+                        <h3 class="font-heading text-lg text-primary">Bước 2: Chọn Phòng & Giường</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-muted mb-1">Tòa nhà *</label>
+                                <select id="buildingSelect" onchange="loadRooms()" class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                                    <option value="">-- Chọn Tòa nhà --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-muted mb-1">Phòng *</label>
+                                <select id="roomSelect" onchange="loadBeds()" disabled class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary bg-slate-50">
+                                    <option value="">-- Chọn Phòng --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-muted mb-1">Giường trống *</label>
+                                <select id="bedSelect" disabled class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary bg-slate-50">
+                                    <option value="">-- Chọn Giường --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex justify-between pt-4 border-t border-border">
+                            <button type="button" onclick="prevStep(1)" class="rounded-base border border-border px-6 py-2 text-sm font-medium hover:bg-slate-50">Quay lại</button>
+                            <button type="button" onclick="nextStep(3)" class="rounded-base bg-primary text-white px-6 py-2 text-sm font-medium hover:bg-primary-hover">Tiếp tục</button>
+                        </div>
+                    </div>
+
+                    <div id="step3" class="space-y-4 hidden">
+                        <h3 class="font-heading text-lg text-primary">Bước 3: Thông tin Hợp đồng</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-muted mb-1">Ngày bắt đầu *</label>
+                                <input type="date" id="startDate" required class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-muted mb-1">Ngày kết thúc *</label>
+                                <input type="date" id="endDate" required class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-text-muted mb-1">Tiền cọc (VNĐ) *</label>
+                                <input type="number" id="depositAmount" required min="0" class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                            </div>
+                        </div>
+                        <div class="flex justify-between pt-4 border-t border-border">
+                            <button type="button" onclick="prevStep(2)" class="rounded-base border border-border px-6 py-2 text-sm font-medium hover:bg-slate-50">Quay lại</button>
+                            <button type="submit" class="rounded-base bg-primary text-white px-6 py-2 text-sm font-medium hover:bg-primary-hover">Lưu hợp đồng</button>
+                        </div>
+                    </div>
+                </form>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('dormitory_access_token');
+    if (!token) window.location.href = '/login.html';
+
+    function initSidebar() {
+        if (!window.AdminSidebar || typeof window.AdminSidebar.mount !== 'function') {
+            setTimeout(initSidebar, 50);
+            return;
+        }
+        window.AdminSidebar.mount({
+            mountId: 'adminSidebarMount',
+            active: 'contracts',
+            caption: 'Đăng ký nội trú'
+        });
+    }
+    initSidebar();
+
+    const message = document.getElementById('message');
+    function showMessage(type, text) {
+        message.className = 'mb-6 rounded-base px-4 py-3 text-sm block';
+        message.classList.add(type === 'error' ? 'bg-red-50' : 'bg-green-50');
+        message.classList.add(type === 'error' ? 'text-danger' : 'text-success');
+        message.classList.add(type === 'error' ? 'border-red-100' : 'border-green-100');
+        message.textContent = text;
+        setTimeout(() => message.classList.add('hidden'), 4000);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function fetchAPI(url, options = {}) {
+        const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+        const response = await fetch(url, { ...options, headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Lỗi hệ thống');
+        return data.result;
+    }
+
+    let currentStep = 1;
+    function updateProgress() {
+        document.getElementById('progressBar').style.width = currentStep === 1 ? '0%' : currentStep === 2 ? '50%' : '100%';
+        [1, 2, 3].forEach(step => {
+            const circle = document.getElementById(`step${step}Circle`);
+            if (step <= currentStep) {
+                circle.classList.replace('bg-slate-200', 'bg-primary');
+                circle.classList.replace('text-slate-500', 'text-white');
+            } else {
+                circle.classList.replace('bg-primary', 'bg-slate-200');
+                circle.classList.replace('text-white', 'text-slate-500');
+            }
+            document.getElementById(`step${step}`).classList.add('hidden');
+        });
+        document.getElementById(`step${currentStep}`).classList.remove('hidden');
+    }
+
+    function nextStep(step) {
+        if (step === 2 && !document.getElementById('studentId').value) {
+            showMessage('error', 'Vui lòng tìm và chọn sinh viên hợp lệ trước khi tiếp tục.');
+            return;
+        }
+        if (step === 3 && !document.getElementById('bedSelect').value) {
+            showMessage('error', 'Vui lòng chọn giường trống.');
+            return;
+        }
+        currentStep = step;
+        updateProgress();
+    }
+
+    function prevStep(step) {
+        currentStep = step;
+        updateProgress();
+    }
+
+    async function findStudent() {
+        const code = document.getElementById('searchStudentCode').value.trim();
+        if (!code) return;
+        try {
+            const students = await fetchAPI(`/api/v1/students?keyword=${encodeURIComponent(code)}`);
+            const student = students.find(s => s.studentCode.toLowerCase() === code.toLowerCase());
+            if (student) {
+                document.getElementById('studentId').value = student.id;
+                document.getElementById('studentName').value = student.fullName;
+                document.getElementById('studentId').dataset.gender = student.gender;
+
+                loadBuildings(student.gender);
+            } else {
+                document.getElementById('studentId').value = '';
+                document.getElementById('studentName').value = '';
+                document.getElementById('studentId').dataset.gender = '';
+                showMessage('error', 'Không tìm thấy sinh viên với mã này.');
+            }
+        } catch (error) {
+            showMessage('error', error.message);
+        }
+    }
+
+    async function loadBuildings(studentGender) {
+        try {
+            const result = await fetchAPI('/api/v1/buildings?page=0&size=500');
+            const buildings = Array.isArray(result.content) ? result.content : (Array.isArray(result) ? result : []);
+
+            const filteredBuildings = buildings.filter(b =>
+            b.genderAllowed === "Nam/Nữ" || b.genderAllowed === studentGender
+        );
+
+            const select = document.getElementById('buildingSelect');
+            select.innerHTML = '<option value="">-- Chọn Tòa nhà --</option>' +
+                buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+        } catch (error) {
+            showMessage('error', 'Lỗi tải danh sách tòa nhà');
+        }
+    }
+
+    async function loadRooms() {
+        const buildingId = document.getElementById('buildingSelect').value;
+        const roomSelect = document.getElementById('roomSelect');
+        const bedSelect = document.getElementById('bedSelect');
+
+        bedSelect.innerHTML = '<option value="">-- Chọn Giường --</option>';
+        bedSelect.disabled = true;
+
+        if (!buildingId) {
+            roomSelect.innerHTML = '<option value="">-- Chọn Phòng --</option>';
+            roomSelect.disabled = true;
+            return;
+        }
+
+        try {
+            const result = await fetchAPI('/api/v1/rooms?page=0&size=500');
+            const rooms = Array.isArray(result.content) ? result.content : (Array.isArray(result) ? result : []);
+
+            const buildingRooms = rooms.filter(r => r.buildingId === parseInt(buildingId) && r.status !== 'FULL');
+
+            roomSelect.disabled = false;
+            roomSelect.classList.remove('bg-slate-50');
+            roomSelect.innerHTML = '<option value="">-- Chọn Phòng --</option>' +
+                buildingRooms.map(r => `<option value="${r.id}">${r.roomNumber}</option>`).join('');
+        } catch (error) {
+            showMessage('error', 'Lỗi tải danh sách phòng');
+        }
+    }
+
+    async function loadBeds() {
+        const roomId = document.getElementById('roomSelect').value;
+        const bedSelect = document.getElementById('bedSelect');
+
+        if (!roomId) {
+            bedSelect.innerHTML = '<option value="">-- Chọn Giường --</option>';
+            bedSelect.disabled = true;
+            return;
+        }
+
+        try {
+            const result = await fetchAPI(`/api/v1/rooms/${roomId}/beds?page=0&size=200&sortBy=bedNumber&direction=asc`);
+
+            const beds = Array.isArray(result.content) ? result.content : (Array.isArray(result) ? result : []);
+
+            const availableBeds = beds.filter(b => !b.isOccupied);
+
+            bedSelect.disabled = false;
+            bedSelect.classList.remove('bg-slate-50');
+            bedSelect.innerHTML = '<option value="">-- Chọn Giường --</option>' +
+                availableBeds.map(b => `<option value="${b.id}">Giường số ${b.bedNumber}</option>`).join('');
+        } catch (error) {
+            showMessage('error', 'Lỗi tải danh sách giường: ' + error.message);
+        }
+    }
+
+    document.getElementById('contractForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            studentId: document.getElementById('studentId').value,
+            roomId: document.getElementById('roomSelect').value,
+            bedId: document.getElementById('bedSelect').value,
+            startDate: document.getElementById('startDate').value,
+            endDate: document.getElementById('endDate').value,
+            depositAmount: document.getElementById('depositAmount').value
+        };
+
+        try {
+            await fetchAPI('/api/v1/contracts', { method: 'POST', body: JSON.stringify(payload) });
+            showMessage('success', 'Tạo hợp đồng thành công. Giường và phòng đã được cập nhật trạng thái tự động.');
+            setTimeout(() => window.location.reload(), 2000);
+        } catch (error) {
+            showMessage('error', error.message);
+        }
+    });
+
+    loadBuildings(studentGender);
+</script>
+</body>
+</html>

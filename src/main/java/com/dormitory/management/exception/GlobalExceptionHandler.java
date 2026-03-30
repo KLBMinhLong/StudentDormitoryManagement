@@ -14,6 +14,14 @@ import com.dormitory.management.dto.common.ApiResponse;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<ApiResponse<Object>> handleAppException(AppException ex) {
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                ex.getErrorCode(),
+                ex.getMessage());
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Object>> handleResourceNotFound(ResourceNotFoundException ex) {
         return buildErrorResponse(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, ex.getMessage());
@@ -48,10 +56,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleUnhandledException(Exception ex) {
+        ex.printStackTrace();
+
         return buildErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 ErrorCode.INTERNAL_SERVER_ERROR,
-                ErrorCode.INTERNAL_SERVER_ERROR.getMessage());
+                ex.getMessage() != null ? ex.getMessage() : ErrorCode.INTERNAL_SERVER_ERROR.getMessage());
     }
 
     private ResponseEntity<ApiResponse<Object>> buildErrorResponse(
