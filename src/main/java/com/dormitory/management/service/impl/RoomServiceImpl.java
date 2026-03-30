@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.dormitory.management.dto.common.PagedResponseDTO;
 import com.dormitory.management.dto.room.BedDTO;
@@ -49,6 +50,7 @@ public class RoomServiceImpl implements RoomService {
     @Override
     public PagedResponseDTO<RoomDTO> getAllRooms(
             String keyword,
+            String genderAllowed,
             Long buildingId,
             RoomStatus status,
             int page,
@@ -58,7 +60,8 @@ public class RoomServiceImpl implements RoomService {
         Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
         String normalizedKeyword = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
-        Page<RoomDTO> result = roomRepository.findByFilters(buildingId, status, normalizedKeyword, pageable).map(this::toRoomDto);
+        String normalizedGenderAllowed = (genderAllowed == null || genderAllowed.isBlank()) ? null : genderAllowed.trim();
+        Page<RoomDTO> result = roomRepository.findByFilters(normalizedGenderAllowed, buildingId, status, normalizedKeyword, pageable).map(this::toRoomDto);
         return PagedResponseDTO.fromPage(result);
     }
 
@@ -87,6 +90,7 @@ public class RoomServiceImpl implements RoomService {
                 .roomNumber(normalizedRoomNumber)
                 .building(building)
                 .roomType(roomType)
+                .genderAllowed(resolveRoomGender(building, normalizedRoomNumber))
                 .status(request.getStatus() == null ? RoomStatus.AVAILABLE : request.getStatus())
                 .build();
 
@@ -112,6 +116,7 @@ public class RoomServiceImpl implements RoomService {
         existing.setRoomNumber(normalizedRoomNumber);
         existing.setBuilding(building);
         existing.setRoomType(roomType);
+        existing.setGenderAllowed(resolveRoomGender(building, normalizedRoomNumber));
         if (request.getStatus() != null) {
             existing.setStatus(request.getStatus());
         }
@@ -357,10 +362,42 @@ public class RoomServiceImpl implements RoomService {
                 .buildingName(room.getBuilding() == null ? null : room.getBuilding().getName())
                 .roomTypeId(room.getRoomType() == null ? null : room.getRoomType().getId())
                 .roomTypeName(room.getRoomType() == null ? null : room.getRoomType().getName())
+                .genderAllowed(room.getGenderAllowed())
                 .totalBeds(totalBeds)
                 .occupiedBeds(occupiedBeds)
                 .beds(null)
                 .build();
+    }
+
+    private String resolveRoomGender(Building building, String roomNumber) {
+        if (building == null || building.getGenderAllowed() == null) {
+            return "Nam/Nữ";
+        }
+
+        String buildingGender = building.getGenderAllowed().trim();
+        if (!"Nam/Nữ".equalsIgnoreCase(buildingGender)) {
+            return buildingGender;
+        }
+
+        int floor = extractFloorFromRoomNumber(roomNumber);
+        if (floor <= 0) {
+            return "Nam/Nữ";
+        }
+
+        return floor % 2 == 0 ? "Nam" : "Nữ";
+    }
+
+    private int extractFloorFromRoomNumber(String roomNumber) {
+        if (!StringUtils.hasText(roomNumber) || roomNumber.length() < 3) {
+            return -1;
+        }
+
+        String floorPart = roomNumber.substring(1, roomNumber.length() - 2);
+        try {
+            return Integer.parseInt(floorPart);
+        } catch (NumberFormatException ex) {
+            return -1;
+        }
     }
 
     private BedDTO toBedDto(Bed bed) {

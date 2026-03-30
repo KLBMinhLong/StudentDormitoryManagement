@@ -12,6 +12,7 @@ public interface RoomService {
 
         PagedResponseDTO<RoomDTO> getAllRooms(
                 String keyword,
+                        String genderAllowed,
             Long buildingId,
             RoomStatus status,
             int page,

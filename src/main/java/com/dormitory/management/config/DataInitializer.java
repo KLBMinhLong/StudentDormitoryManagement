@@ -161,8 +161,17 @@ public class DataInitializer {
         for (int floor = 1; floor <= building.getTotalFloors(); floor++) {
             for (int roomNumber = 1; roomNumber <= 16; roomNumber++) {
                 String code = String.format("%s%d%02d", buildingCode, floor, roomNumber);
+                String roomGender = resolveRoomGenderByPolicy(building, floor);
 
                 if (roomRepository.existsByBuildingIdAndRoomNumberIgnoreCase(building.getId(), code)) {
+                    roomRepository.findByBuildingIdAndRoomNumberIgnoreCase(building.getId(), code)
+                            .ifPresent((existingRoom) -> {
+                                if (roomGender.equalsIgnoreCase(existingRoom.getGenderAllowed())) {
+                                    return;
+                                }
+                                existingRoom.setGenderAllowed(roomGender);
+                                roomRepository.save(existingRoom);
+                            });
                     continue;
                 }
 
@@ -173,10 +182,25 @@ public class DataInitializer {
                         .status(RoomStatus.AVAILABLE)
                         .building(building)
                         .roomType(roomType)
+                        .genderAllowed(roomGender)
                         .build();
                 roomRepository.save(room);
             }
         }
+    }
+
+    private String resolveRoomGenderByPolicy(Building building, int floor) {
+        if (building == null || building.getGenderAllowed() == null) {
+            return "Nam/Nữ";
+        }
+
+        String buildingGender = building.getGenderAllowed().trim();
+        if (!"Nam/Nữ".equalsIgnoreCase(buildingGender)) {
+            return buildingGender;
+        }
+
+        // Tòa hỗn hợp: tầng lẻ cho Nữ, tầng chẵn cho Nam.
+        return floor % 2 == 0 ? "Nam" : "Nữ";
     }
 
     private RoomType resolveRoomTypeByRoomIndex(

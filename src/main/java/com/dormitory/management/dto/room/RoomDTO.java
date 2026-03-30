@@ -19,6 +19,7 @@ public class RoomDTO {
     private String buildingName;
     private Long roomTypeId;
     private String roomTypeName;
+    private String genderAllowed;
     private Integer totalBeds;
     private Integer occupiedBeds;
     private List<BedDTO> beds;

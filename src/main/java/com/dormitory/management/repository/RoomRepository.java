@@ -1,5 +1,7 @@
 package com.dormitory.management.repository;
 
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -13,11 +15,13 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 
 		@Query("""
 						select r from Room r
-						where (:buildingId is null or r.building.id = :buildingId)
+						where (:genderAllowed is null or lower(r.genderAllowed) = lower(:genderAllowed))
+							and (:buildingId is null or r.building.id = :buildingId)
 							and (:status is null or r.status = :status)
 							and (:keyword is null or lower(r.roomNumber) like lower(concat('%', :keyword, '%')))
 						""")
 		Page<Room> findByFilters(
+				@Param("genderAllowed") String genderAllowed,
 				@Param("buildingId") Long buildingId,
 				@Param("status") RoomStatus status,
 				@Param("keyword") String keyword,
@@ -26,4 +30,6 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 		boolean existsByBuildingIdAndRoomNumberIgnoreCase(Long buildingId, String roomNumber);
 
 		boolean existsByBuildingIdAndRoomNumberIgnoreCaseAndIdNot(Long buildingId, String roomNumber, Long id);
+
+		Optional<Room> findByBuildingIdAndRoomNumberIgnoreCase(Long buildingId, String roomNumber);
 }

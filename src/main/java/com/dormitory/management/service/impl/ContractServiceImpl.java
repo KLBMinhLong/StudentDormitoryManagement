@@ -48,9 +48,15 @@ public class ContractServiceImpl implements ContractService {
             throw new AppException(ErrorCode.BAD_REQUEST, "Tòa nhà này chỉ dành cho sinh viên giới tính: " + building.getGenderAllowed());
         }
 
+        String roomGender = room.getGenderAllowed();
+        if (roomGender != null && !roomGender.equalsIgnoreCase("Nam/Nữ") &&
+                !roomGender.equalsIgnoreCase(student.getGender())) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Phòng này chỉ dành cho sinh viên giới tính: " + roomGender);
+        }
+
         if (!roomType.getGenderAllowed().equals("Nam/Nữ") &&
                 !roomType.getGenderAllowed().equalsIgnoreCase(student.getGender())) {
-            throw new RuntimeException("Loại phòng này không phù hợp với giới tính của sinh viên.");
+            throw new AppException(ErrorCode.BAD_REQUEST, "Loại phòng này không phù hợp với giới tính của sinh viên.");
         }
 
         Bed bed = bedRepository.findById(request.getBedId())

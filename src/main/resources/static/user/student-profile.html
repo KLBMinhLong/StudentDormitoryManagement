@@ -88,7 +88,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-8 pt-8 border-t border-border">
-                <p class="col-span-1 md:col-span-2 text-sm font-medium text-text-main mb-2">Thông tin liên hệ & Căn cước</p>
+                <p class="col-span-1 md:col-span-2 text-sm font-medium text-text-main mb-2">Thông tin liên hệ</p>
                 <div>
                     <label class="block text-sm font-medium text-text-muted mb-1">Ngày sinh</label>
                     <input type="date" id="meDateOfBirth" class="w-full border border-border rounded-base px-4 py-2 text-sm focus:outline-none focus:border-primary">
@@ -98,7 +98,6 @@
                     <select id="meGender" class="w-full border border-border rounded-base px-4 py-2 text-sm focus:outline-none focus:border-primary">
                         <option value="Nam">Nam</option>
                         <option value="Nữ">Nữ</option>
-                        <option value="Khác">Khác</option>
                     </select>
                 </div>
                 <div>
@@ -186,7 +185,7 @@
             document.getElementById('meStudentCode').value = st.studentCode;
             document.getElementById('meCccd').value = st.cccd;
             document.getElementById('meDateOfBirth').value = st.dateOfBirth || '';
-            document.getElementById('meGender').value = st.gender || 'Khác';
+            document.getElementById('meGender').value = st.gender || 'Nam';
             document.getElementById('mePhone').value = st.phone || '';
             document.getElementById('meEmail').value = st.email || '';
         } catch (error) {

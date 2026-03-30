@@ -75,6 +75,10 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("CCCD already exists");
         }
 
+        if (StringUtils.hasText(gender) && !isSupportedGender(gender)) {
+            throw new IllegalArgumentException("Gender must be Nam or Nữ");
+        }
+
         Role studentRole = roleRepository.findByRoleName("ROLE_STUDENT")
                 .orElseThrow(() -> new IllegalArgumentException("ROLE_STUDENT is not configured"));
 
@@ -102,6 +106,10 @@ public class AuthServiceImpl implements AuthService {
 
         AppUser saved = appUserRepository.save(newUser);
         return toCurrentUserDto(UserPrincipal.fromEntity(saved));
+    }
+
+    private boolean isSupportedGender(String gender) {
+        return "Nam".equalsIgnoreCase(gender) || "Nữ".equalsIgnoreCase(gender);
     }
 
     @Override

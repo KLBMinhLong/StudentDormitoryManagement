@@ -81,6 +81,8 @@ public class StudentServiceImpl implements StudentService {
             throw new RuntimeException("CCCD already exists");
         }
 
+        validateGender(dto.getGender());
+
         Student student = mapToEntity(dto);
         Student savedStudent = studentRepository.save(student);
 
@@ -113,6 +115,8 @@ public class StudentServiceImpl implements StudentService {
         if (!student.getCccd().equals(dto.getCccd()) && studentRepository.existsByCccdAndIdNot(dto.getCccd(), id)) {
             throw new RuntimeException("CCCD already exists");
         }
+
+        validateGender(dto.getGender());
 
         student.setStudentCode(dto.getStudentCode());
         student.setFullName(dto.getFullName());
@@ -164,6 +168,8 @@ public class StudentServiceImpl implements StudentService {
     @Transactional
     public StudentDTO updateCurrentStudentProfile(String username, StudentDTO dto) {
         Student student = resolveStudentByUsername(username);
+
+        validateGender(dto.getGender());
 
         student.setDateOfBirth(dto.getDateOfBirth());
         student.setGender(dto.getGender());
@@ -278,5 +284,15 @@ public class StudentServiceImpl implements StudentService {
         student.setCccd(dto.getCccd());
         student.setEmail(dto.getEmail());
         return student;
+    }
+
+    private void validateGender(String gender) {
+        if (!StringUtils.hasText(gender)) {
+            return;
+        }
+
+        if (!"Nam".equalsIgnoreCase(gender) && !"Nữ".equalsIgnoreCase(gender)) {
+            throw new RuntimeException("Giới tính chỉ được chọn Nam hoặc Nữ");
+        }
     }
 }
