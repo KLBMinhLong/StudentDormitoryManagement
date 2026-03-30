@@ -181,7 +181,6 @@
         container.querySelectorAll('button[data-page]').forEach((btn) => {
             btn.addEventListener('click', () => {
                 onChange(Number(btn.dataset.page));
-                document.querySelector('main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
     }

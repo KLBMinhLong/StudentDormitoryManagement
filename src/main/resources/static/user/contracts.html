@@ -416,7 +416,6 @@
             btn.addEventListener('click', () => {
                 state.page = Number(btn.dataset.page);
                 loadContracts();
-                document.querySelector('main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
     }

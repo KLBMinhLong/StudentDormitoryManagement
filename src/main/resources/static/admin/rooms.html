@@ -407,7 +407,6 @@
             totalPages = Number.isInteger(result.totalPages) ? result.totalPages : 0;
             totalElements = typeof result.totalElements === 'number' ? result.totalElements : 0;
             renderRoomCards();
-            document.querySelector('main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function openRoomModal(room = null) {

@@ -6,6 +6,7 @@ import java.security.Principal;
 import com.dormitory.management.dto.common.PagedResponseDTO;
 import com.dormitory.management.dto.student.ChangePasswordRequestDTO;
 import com.dormitory.management.dto.student.StudentListItemDTO;
+import com.dormitory.management.dto.student.StudentResidenceHistoryItemDTO;
 import com.dormitory.management.dto.student.StudentDTO;
 import com.dormitory.management.service.student.StudentService;
 import org.springframework.http.HttpStatus;
@@ -54,6 +55,20 @@ public class StudentManagementController {
     }
 
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/{id}/residence-history")
+    public ResponseEntity<ApiResponse<PagedResponseDTO<StudentResidenceHistoryItemDTO>>> getStudentResidenceHistory(
+            @PathVariable Long id,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "startDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+        PagedResponseDTO<StudentResidenceHistoryItemDTO> result = studentService.getStudentResidenceHistory(
+                id, keyword, page, size, sortBy, direction);
+        return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), "Lấy lịch sử nội trú thành công", result));
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PostMapping
     public ResponseEntity<ApiResponse<StudentDTO>> createStudent(@RequestBody StudentDTO request) {
         StudentDTO result = studentService.createStudent(request);
@@ -89,6 +104,20 @@ public class StudentManagementController {
         String username = principal.getName();
         StudentDTO result = studentService.getCurrentStudentProfile(username);
         return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), "Success", result));
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_STUDENT')")
+    @GetMapping("/me/residence-history")
+    public ResponseEntity<ApiResponse<PagedResponseDTO<StudentResidenceHistoryItemDTO>>> getMyResidenceHistory(
+            Principal principal,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "startDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+        PagedResponseDTO<StudentResidenceHistoryItemDTO> result = studentService.getCurrentStudentResidenceHistory(
+                principal.getName(), keyword, page, size, sortBy, direction);
+        return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), "Lấy lịch sử nội trú thành công", result));
     }
 
     @PreAuthorize("hasAuthority('ROLE_STUDENT')")

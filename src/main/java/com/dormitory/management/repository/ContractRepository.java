@@ -58,6 +58,27 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
 
         @Query("""
             SELECT c FROM Contract c
+            JOIN c.room r
+            JOIN r.building b
+            WHERE c.student.id = :studentId
+              AND (
+                c.activatedAt IS NOT NULL
+                OR c.status = com.dormitory.management.entity.enums.ContractStatus.ACTIVE
+                OR c.status = com.dormitory.management.entity.enums.ContractStatus.EXPIRED
+              )
+              AND (
+                :keyword IS NULL OR :keyword = ''
+                OR LOWER(r.roomNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                OR LOWER(b.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+              )
+            """)
+        Page<Contract> searchResidenceHistoryByStudentId(
+            @Param("studentId") Long studentId,
+            @Param("keyword") String keyword,
+            Pageable pageable);
+
+        @Query("""
+            SELECT c FROM Contract c
             JOIN c.student s
             JOIN c.room r
             WHERE (:status IS NULL OR c.status = :status)

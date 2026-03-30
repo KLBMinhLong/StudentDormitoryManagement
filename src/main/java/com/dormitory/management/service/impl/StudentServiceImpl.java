@@ -22,11 +22,14 @@ import org.springframework.web.multipart.MultipartFile;
 import com.dormitory.management.dto.common.PagedResponseDTO;
 import com.dormitory.management.dto.student.ChangePasswordRequestDTO;
 import com.dormitory.management.dto.student.StudentListItemDTO;
+import com.dormitory.management.dto.student.StudentResidenceHistoryItemDTO;
 import com.dormitory.management.dto.student.StudentDTO;
+import com.dormitory.management.entity.Contract;
 import com.dormitory.management.entity.AppUser;
 import com.dormitory.management.entity.Role;
 import com.dormitory.management.entity.Student;
 import com.dormitory.management.repository.AppUserRepository;
+import com.dormitory.management.repository.ContractRepository;
 import com.dormitory.management.repository.RoleRepository;
 import com.dormitory.management.repository.StudentRepository;
 import com.dormitory.management.service.student.StudentService;
@@ -39,6 +42,7 @@ public class StudentServiceImpl implements StudentService {
 
     private final StudentRepository studentRepository;
     private final AppUserRepository appUserRepository;
+    private final ContractRepository contractRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -200,6 +204,32 @@ public class StudentServiceImpl implements StudentService {
         return saveAvatarFile(student, file);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PagedResponseDTO<StudentResidenceHistoryItemDTO> getStudentResidenceHistory(
+            Long studentId,
+            String keyword,
+            int page,
+            int size,
+            String sortBy,
+            String direction) {
+        studentRepository.findById(studentId).orElseThrow(() -> new RuntimeException("Student not found"));
+        return getResidenceHistoryByStudentId(studentId, keyword, page, size, sortBy, direction);
+    }
+
+    @Override
+    @Transactional
+    public PagedResponseDTO<StudentResidenceHistoryItemDTO> getCurrentStudentResidenceHistory(
+            String username,
+            String keyword,
+            int page,
+            int size,
+            String sortBy,
+            String direction) {
+        Student student = resolveStudentByUsername(username);
+        return getResidenceHistoryByStudentId(student.getId(), keyword, page, size, sortBy, direction);
+    }
+
     private Student resolveStudentByUsername(String username) {
         AppUser appUser = appUserRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -214,6 +244,58 @@ public class StudentServiceImpl implements StudentService {
         appUser.setStudent(linked);
         appUserRepository.save(appUser);
         return linked;
+    }
+
+    private PagedResponseDTO<StudentResidenceHistoryItemDTO> getResidenceHistoryByStudentId(
+            Long studentId,
+            String keyword,
+            int page,
+            int size,
+            String sortBy,
+            String direction) {
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 10 : Math.min(size, 100);
+        String normalizedKeyword = StringUtils.hasText(keyword) ? keyword.trim() : null;
+        String resolvedSortBy = resolveResidenceSortField(sortBy);
+
+        Sort sort = "asc".equalsIgnoreCase(direction)
+                ? Sort.by(resolvedSortBy).ascending()
+                : Sort.by(resolvedSortBy).descending();
+
+        Pageable pageable = PageRequest.of(safePage, safeSize, sort);
+        Page<StudentResidenceHistoryItemDTO> mappedPage = contractRepository
+                .searchResidenceHistoryByStudentId(studentId, normalizedKeyword, pageable)
+                .map(this::mapResidenceHistoryItem);
+
+        return PagedResponseDTO.fromPage(mappedPage);
+    }
+
+    private String resolveResidenceSortField(String sortBy) {
+        if (!StringUtils.hasText(sortBy)) {
+            return "startDate";
+        }
+
+        return switch (sortBy) {
+            case "id", "startDate", "endDate", "activatedAt", "createdAt" -> sortBy;
+            default -> "startDate";
+        };
+    }
+
+    private StudentResidenceHistoryItemDTO mapResidenceHistoryItem(Contract contract) {
+        return StudentResidenceHistoryItemDTO.builder()
+                .contractId(contract.getId())
+                .roomId(contract.getRoom().getId())
+                .buildingName(contract.getRoom().getBuilding().getName())
+                .roomNumber(contract.getRoom().getRoomNumber())
+                .bedId(contract.getBed().getId())
+                .bedNumber(contract.getBed().getBedNumber())
+                .startDate(contract.getStartDate())
+                .endDate(contract.getEndDate())
+                .durationMonths(contract.getDurationMonths())
+                .status(contract.getStatus() == null ? null : contract.getStatus().name())
+                .activatedAt(contract.getActivatedAt())
+                .createdAt(contract.getCreatedAt())
+                .build();
     }
 
     private String saveAvatarFile(Student student, MultipartFile file) throws IOException {
