@@ -62,6 +62,11 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
             JOIN c.room r
             WHERE (:status IS NULL OR c.status = :status)
               AND (
+                :hasStayed IS NULL
+                OR (:hasStayed = true AND (c.activatedAt IS NOT NULL OR c.status = com.dormitory.management.entity.enums.ContractStatus.ACTIVE OR c.status = com.dormitory.management.entity.enums.ContractStatus.EXPIRED))
+                OR (:hasStayed = false AND c.activatedAt IS NULL AND c.status <> com.dormitory.management.entity.enums.ContractStatus.ACTIVE AND c.status <> com.dormitory.management.entity.enums.ContractStatus.EXPIRED)
+              )
+              AND (
                 :keyword IS NULL OR :keyword = ''
                 OR LOWER(s.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
                 OR LOWER(s.studentCode) LIKE LOWER(CONCAT('%', :keyword, '%'))
@@ -71,6 +76,7 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
             """)
         Page<Contract> searchContractsForAdmin(
             @Param("status") ContractStatus status,
+            @Param("hasStayed") Boolean hasStayed,
             @Param("keyword") String keyword,
             Pageable pageable);
 }

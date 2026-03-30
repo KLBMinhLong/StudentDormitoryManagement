@@ -40,6 +40,7 @@ public interface ContractService {
         PagedResponseDTO<ContractResponseDTO> getContractsForAdmin(
             String status,
             String keyword,
+            String occupancyType,
             int page,
             int size,
             String sortBy,

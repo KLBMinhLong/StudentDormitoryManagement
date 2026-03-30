@@ -153,9 +153,10 @@ public class ContractController {
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String direction,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String occupancyType) {
         PagedResponseDTO<ContractResponseDTO> result = contractService.getContractsForAdmin(
-                status, keyword, page, size, sortBy, direction);
+                status, keyword, occupancyType, page, size, sortBy, direction);
         return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), "Lấy danh sách hợp đồng thành công", result));
     }
 

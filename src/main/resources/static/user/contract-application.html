@@ -88,8 +88,8 @@
                     <input id="fullName" type="text" readonly class="w-full rounded-base border border-border px-3 py-2.5 bg-slate-50 text-text-muted">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1.5">Ngày vào ở *</label>
-                    <input id="startDate" type="date" required class="w-full rounded-base border border-border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary">
+                    <label class="block text-sm font-medium mb-1.5">Ngày bắt đầu hợp đồng</label>
+                    <input type="text" readonly value="Tự động tính từ thời điểm ban quản lý duyệt" class="w-full rounded-base border border-border px-3 py-2.5 bg-slate-50 text-text-muted">
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1.5">Thời hạn hợp đồng *</label>
@@ -216,12 +216,6 @@
         return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + ' đ';
     }
 
-    function toDateInputValue(date) {
-        const d = new Date(date);
-        const tzOffset = d.getTimezoneOffset() * 60000;
-        return new Date(d.getTime() - tzOffset).toISOString().split('T')[0];
-    }
-
     function updatePricePreview() {
         if (!currentContract) {
             return;
@@ -308,7 +302,6 @@
         document.getElementById('roomInfo').textContent = pending.roomNumber || '-';
         document.getElementById('bedInfo').textContent = `Giường ${pending.bedNumber || '-'}`;
 
-        document.getElementById('startDate').value = pending.startDate ? toDateInputValue(pending.startDate) : toDateInputValue(new Date());
         document.getElementById('durationMonths').value = String(pending.durationMonths || 6);
 
         updatePricePreview();
@@ -326,7 +319,6 @@
         submitBtn.disabled = true;
         try {
             const payload = {
-                startDate: document.getElementById('startDate').value,
                 durationMonths: Number(document.getElementById('durationMonths').value),
                 depositAmount: Number(document.getElementById('depositAmount').value),
                 emergencyContactName: document.getElementById('emergencyContactName').value.trim(),

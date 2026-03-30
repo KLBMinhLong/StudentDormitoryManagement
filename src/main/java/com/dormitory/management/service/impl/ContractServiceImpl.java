@@ -77,27 +77,25 @@ public class ContractServiceImpl implements ContractService {
         ensureStudentHasNoOpenContract(student.getId());
         ensureBedCanBeReserved(bed, LocalDateTime.now());
 
-        LocalDate startDate = request.getStartDate();
-        LocalDate endDate = request.getEndDate();
-        if (startDate == null || endDate == null || endDate.isBefore(startDate)) {
-            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày bắt đầu/kết thúc hợp lệ là bắt buộc");
-        }
-
-        int durationMonths = Math.max(1, (endDate.getYear() - startDate.getYear()) * 12 + endDate.getMonthValue() - startDate.getMonthValue() + 1);
+        int durationMonths = resolveDurationMonths(request.getDurationMonths());
+        LocalDate startDate = LocalDate.now();
+        LocalDate endDate = startDate.plusMonths(durationMonths).minusDays(1);
         BigDecimal monthlyPrice = normalizeMoney(room.getRoomType().getBasePrice());
+        BigDecimal depositAmount = monthlyPrice;
         BigDecimal totalAmount = monthlyPrice.multiply(BigDecimal.valueOf(durationMonths));
 
         Contract contract = Contract.builder()
                 .startDate(startDate)
                 .endDate(endDate)
                 .durationMonths(durationMonths)
-                .depositAmount(normalizeMoney(request.getDepositAmount()))
+                .depositAmount(depositAmount)
                 .monthlyRoomPrice(monthlyPrice)
                 .totalRoomAmount(totalAmount)
                 .status(ContractStatus.ACTIVE)
                 .holdExpiresAt(LocalDateTime.now())
                 .submitted(true)
                 .submittedAt(LocalDateTime.now())
+                .activatedAt(LocalDateTime.now())
                 .student(student)
                 .room(room)
                 .bed(bed)
@@ -181,13 +179,15 @@ public class ContractServiceImpl implements ContractService {
 
         validateSubmitPayload(request);
 
+        int durationMonths = resolveDurationMonths(request.getDurationMonths());
+        LocalDate provisionalStartDate = LocalDate.now();
         BigDecimal monthlyPrice = normalizeMoney(contract.getRoom().getRoomType().getBasePrice());
-        BigDecimal totalAmount = monthlyPrice.multiply(BigDecimal.valueOf(request.getDurationMonths()));
+        BigDecimal totalAmount = monthlyPrice.multiply(BigDecimal.valueOf(durationMonths));
 
-        contract.setStartDate(request.getStartDate());
-        contract.setDurationMonths(request.getDurationMonths());
-        contract.setEndDate(request.getStartDate().plusMonths(request.getDurationMonths()).minusDays(1));
-        contract.setDepositAmount(normalizeMoney(request.getDepositAmount()));
+        contract.setStartDate(provisionalStartDate);
+        contract.setDurationMonths(durationMonths);
+        contract.setEndDate(provisionalStartDate.plusMonths(durationMonths).minusDays(1));
+        contract.setDepositAmount(monthlyPrice);
         contract.setMonthlyRoomPrice(monthlyPrice);
         contract.setTotalRoomAmount(totalAmount);
         contract.setEmergencyContactName(request.getEmergencyContactName().trim());
@@ -248,8 +248,24 @@ public class ContractServiceImpl implements ContractService {
             throw new AppException(ErrorCode.BAD_REQUEST, "Giường không còn giữ cho hợp đồng này");
         }
 
+        LocalDateTime approvedAt = LocalDateTime.now();
+        int durationMonths = resolveDurationMonths(contract.getDurationMonths());
+        LocalDate approvedStartDate = approvedAt.toLocalDate();
+        BigDecimal monthlyPrice = normalizeMoney(contract.getMonthlyRoomPrice() == null
+                ? contract.getRoom().getRoomType().getBasePrice()
+                : contract.getMonthlyRoomPrice());
+
         contract.setStatus(ContractStatus.ACTIVE);
-        contract.setHoldExpiresAt(LocalDateTime.now());
+        contract.setStartDate(approvedStartDate);
+        contract.setDurationMonths(durationMonths);
+        contract.setEndDate(approvedStartDate.plusMonths(durationMonths).minusDays(1));
+        contract.setDepositAmount(monthlyPrice);
+        contract.setMonthlyRoomPrice(monthlyPrice);
+        contract.setTotalRoomAmount(monthlyPrice.multiply(BigDecimal.valueOf(durationMonths)));
+        contract.setHoldExpiresAt(approvedAt);
+        if (contract.getActivatedAt() == null) {
+            contract.setActivatedAt(approvedAt);
+        }
         Contract saved = contractRepository.save(contract);
 
         bed.setOccupied(true);
@@ -356,14 +372,16 @@ public class ContractServiceImpl implements ContractService {
     public PagedResponseDTO<ContractResponseDTO> getContractsForAdmin(
             String status,
             String keyword,
+            String occupancyType,
             int page,
             int size,
             String sortBy,
             String direction) {
         ContractStatus parsedStatus = parseStatus(status);
+        Boolean hasStayed = parseHasStayed(occupancyType);
         Pageable pageable = buildContractPageable(page, size, sortBy, direction);
         Page<ContractResponseDTO> dtoPage = contractRepository
-            .searchContractsForAdmin(parsedStatus, normalizeKeyword(keyword), pageable)
+            .searchContractsForAdmin(parsedStatus, hasStayed, normalizeKeyword(keyword), pageable)
             .map(this::toResponse);
         return PagedResponseDTO.fromPage(dtoPage);
     }
@@ -582,17 +600,14 @@ public class ContractServiceImpl implements ContractService {
     }
 
     private void validateSubmitPayload(ContractSubmitRequestDTO request) {
-        if (request.getDurationMonths() == null || (request.getDurationMonths() != 6 && request.getDurationMonths() != 12)) {
+        resolveDurationMonths(request.getDurationMonths());
+    }
+
+    private int resolveDurationMonths(Integer durationMonths) {
+        if (durationMonths == null || (durationMonths != 6 && durationMonths != 12)) {
             throw new AppException(ErrorCode.BAD_REQUEST, "Thời hạn hợp đồng chỉ hỗ trợ 6 hoặc 12 tháng");
         }
-
-        if (request.getStartDate() == null || request.getStartDate().isBefore(LocalDate.now())) {
-            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày vào ở phải từ hôm nay trở đi");
-        }
-
-        if (normalizeMoney(request.getDepositAmount()).compareTo(BigDecimal.ZERO) <= 0) {
-            throw new AppException(ErrorCode.BAD_REQUEST, "Tiền cọc phải lớn hơn 0");
-        }
+        return durationMonths;
     }
 
     private void ensureStudentHasNoOpenContract(Long studentId) {
@@ -702,6 +717,31 @@ public class ContractServiceImpl implements ContractService {
             return null;
         }
         return keyword.trim();
+    }
+
+    private Boolean parseHasStayed(String occupancyType) {
+        if (occupancyType == null || occupancyType.isBlank()) {
+            return null;
+        }
+
+        String normalized = occupancyType.trim().toUpperCase();
+        if ("STAYED".equals(normalized)) {
+            return Boolean.TRUE;
+        }
+        if ("NOT_STAYED".equals(normalized)) {
+            return Boolean.FALSE;
+        }
+
+        throw new AppException(ErrorCode.BAD_REQUEST, "Bộ lọc thực tế ở không hợp lệ");
+    }
+
+    private boolean hasEverActivated(Contract contract) {
+        if (contract.getActivatedAt() != null) {
+            return true;
+        }
+
+        ContractStatus status = contract.getStatus();
+        return status == ContractStatus.ACTIVE || status == ContractStatus.EXPIRED;
     }
 
     private Pageable buildChangeRequestPageable(int page, int size, String sortBy, String direction) {
@@ -848,6 +888,8 @@ public class ContractServiceImpl implements ContractService {
                 .submitted(contract.isSubmitted())
                 .holdExpiresAt(contract.getHoldExpiresAt())
                 .submittedAt(contract.getSubmittedAt())
+                .activatedAt(contract.getActivatedAt())
+                .everActivated(hasEverActivated(contract))
                 .emergencyContactName(contract.getEmergencyContactName())
                 .emergencyContactPhone(contract.getEmergencyContactPhone())
                 .guardianName(contract.getGuardianName())

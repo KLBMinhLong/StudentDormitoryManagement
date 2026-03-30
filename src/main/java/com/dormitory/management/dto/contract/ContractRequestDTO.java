@@ -1,8 +1,5 @@
 package com.dormitory.management.dto.contract;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,12 +21,6 @@ public class ContractRequestDTO {
     @NotNull(message = "Bed ID is required")
     private Long bedId;
 
-    @NotNull(message = "Start date is required")
-    private LocalDate startDate;
-
-    @NotNull(message = "End date is required")
-    private LocalDate endDate;
-
-    @NotNull(message = "Deposit amount is required")
-    private BigDecimal depositAmount;
+    @NotNull(message = "Duration months is required")
+    private Integer durationMonths;
 }

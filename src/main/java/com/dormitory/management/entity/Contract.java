@@ -61,6 +61,9 @@ public class Contract extends BaseEntity {
     @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
 
+    @Column(name = "activated_at")
+    private LocalDateTime activatedAt;
+
     @Column(name = "emergency_contact_name", columnDefinition = "nvarchar(120)")
     private String emergencyContactName;
 

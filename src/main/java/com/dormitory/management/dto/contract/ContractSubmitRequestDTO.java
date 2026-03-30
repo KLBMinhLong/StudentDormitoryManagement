@@ -5,7 +5,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,9 +15,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ContractSubmitRequestDTO {
-
-    @NotNull(message = "Start date is required")
-    private LocalDate startDate;
 
     @NotNull(message = "Duration months is required")
     @Min(value = 6, message = "Duration must be 6 or 12 months")

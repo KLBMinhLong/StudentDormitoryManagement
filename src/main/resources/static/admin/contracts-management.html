@@ -60,7 +60,7 @@
                     </div>
                 </div>
 
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
                     <div class="md:col-span-2">
                         <label class="text-sm text-text-muted block mb-1">Từ khóa</label>
                         <input id="keywordInput" type="text" placeholder="Tìm theo tên, mã sinh viên, phòng..." class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
@@ -73,6 +73,14 @@
                             <option value="ACTIVE">Đang hiệu lực</option>
                             <option value="EXPIRED">Hết hạn</option>
                             <option value="CANCELLED">Đã hủy</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-sm text-text-muted block mb-1">Thực tế ở</label>
+                        <select id="occupancySelect" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="">Tất cả</option>
+                            <option value="STAYED">Đã từng ở thực tế</option>
+                            <option value="NOT_STAYED">Chưa từng ở thực tế</option>
                         </select>
                     </div>
                     <div>
@@ -195,6 +203,7 @@
         size: 10,
         keyword: '',
         status: '',
+        occupancyType: '',
         sortBy: 'createdAt',
         direction: 'desc'
     };
@@ -204,6 +213,7 @@
     const pagination = document.getElementById('pagination');
     const keywordInput = document.getElementById('keywordInput');
     const statusSelect = document.getElementById('statusSelect');
+    const occupancySelect = document.getElementById('occupancySelect');
     const sortSelect = document.getElementById('sortSelect');
     const requestBody = document.getElementById('requestBody');
     const requestPagination = document.getElementById('requestPagination');
@@ -276,6 +286,12 @@
 
     function requestTypeLabel(changeType) {
         return String(changeType || '').toUpperCase() === 'EXTEND' ? 'Gia hạn' : 'Hủy';
+    }
+
+    function occupancyBadge(item) {
+        return item.everActivated
+            ? '<span class="px-2 py-1 rounded-full text-xs bg-green-100 text-success">Đã ở thực tế</span>'
+            : '<span class="px-2 py-1 rounded-full text-xs bg-slate-200 text-text-muted">Chưa ở thực tế</span>';
     }
 
     function openActionModal(config) {
@@ -444,6 +460,7 @@
 
         if (state.keyword) params.set('keyword', state.keyword);
         if (state.status) params.set('status', state.status);
+        if (state.occupancyType) params.set('occupancyType', state.occupancyType);
 
         try {
             const result = await fetchAPI(`/api/v1/contracts/admin/management?${params.toString()}`);
@@ -464,7 +481,12 @@
                     </td>
                     <td class="px-4 py-3">Phòng ${item.roomNumber || '-'} - Giường ${item.bedNumber || '-'}</td>
                     <td class="px-4 py-3">${formatDate(item.startDate)} - ${formatDate(item.endDate)}</td>
-                    <td class="px-4 py-3">${statusBadge(item.status)}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex flex-col items-start gap-1">
+                            ${statusBadge(item.status)}
+                            ${occupancyBadge(item)}
+                        </div>
+                    </td>
                     <td class="px-4 py-3">${formatDateTime(item.holdExpiresAt)}</td>
                     <td class="px-4 py-3 text-right"><div class="inline-flex gap-2">${actionButtons(item)}</div></td>
                 </tr>
@@ -598,6 +620,8 @@
                 <div><p class="text-text-muted">Tiền cọc</p><p class="font-medium">${formatCurrency(detail.depositAmount)}</p></div>
                 <div><p class="text-text-muted">Tổng tiền</p><p class="font-medium">${formatCurrency(detail.totalRoomAmount)}</p></div>
                 <div><p class="text-text-muted">Nộp hồ sơ</p><p class="font-medium">${detail.submitted ? 'Đã nộp' : 'Chưa nộp'}</p></div>
+                <div><p class="text-text-muted">Thực tế ở</p><p class="font-medium">${detail.everActivated ? 'Đã từng ở thực tế' : 'Chưa từng ở thực tế'}</p></div>
+                <div><p class="text-text-muted">Kích hoạt hợp đồng</p><p class="font-medium">${formatDateTime(detail.activatedAt)}</p></div>
                 <div><p class="text-text-muted">Thời điểm tạo</p><p class="font-medium">${formatDateTime(detail.createdAt)}</p></div>
                 <div class="md:col-span-2"><p class="text-text-muted">Ghi chú</p><p class="font-medium">${detail.studentNote || '-'}</p></div>
             `;
@@ -722,6 +746,12 @@
 
     statusSelect.addEventListener('change', () => {
         state.status = statusSelect.value;
+        state.page = 0;
+        loadContracts();
+    });
+
+    occupancySelect.addEventListener('change', () => {
+        state.occupancyType = occupancySelect.value;
         state.page = 0;
         loadContracts();
     });

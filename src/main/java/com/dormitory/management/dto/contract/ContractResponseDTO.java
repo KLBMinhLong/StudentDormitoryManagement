@@ -32,6 +32,8 @@ public class ContractResponseDTO {
     private boolean submitted;
     private LocalDateTime holdExpiresAt;
     private LocalDateTime submittedAt;
+    private LocalDateTime activatedAt;
+    private boolean everActivated;
     private String emergencyContactName;
     private String emergencyContactPhone;
     private String guardianName;

@@ -108,7 +108,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-text-muted mb-1">Phòng *</label>
-                                <select id="roomSelect" onchange="loadBeds()" disabled class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary bg-slate-50">
+                                <select id="roomSelect" onchange="onRoomChange()" disabled class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary bg-slate-50">
                                     <option value="">-- Chọn Phòng --</option>
                                 </select>
                             </div>
@@ -129,16 +129,27 @@
                         <h3 class="font-heading text-lg text-primary">Bước 3: Thông tin Hợp đồng</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-text-muted mb-1">Ngày bắt đầu *</label>
-                                <input type="date" id="startDate" required class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                                <label class="block text-sm font-medium text-text-muted mb-1">Thời hạn hợp đồng *</label>
+                                <select id="durationMonths" required class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                                    <option value="6">6 tháng</option>
+                                    <option value="12">12 tháng</option>
+                                </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-text-muted mb-1">Ngày kết thúc *</label>
-                                <input type="date" id="endDate" required class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                                <label class="block text-sm font-medium text-text-muted mb-1">Ngày bắt đầu hợp đồng</label>
+                                <input type="text" id="startDateHint" readonly value="Tự động tính tại thời điểm duyệt/lưu" class="w-full border border-border rounded-base px-3 py-2 text-sm bg-slate-50 text-text-muted outline-none">
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-text-muted mb-1">Tiền cọc (VNĐ) *</label>
-                                <input type="number" id="depositAmount" required min="0" class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                                <input type="number" id="depositAmount" required min="0" readonly class="w-full border border-border rounded-base px-3 py-2 text-sm bg-slate-50 text-text-muted outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-muted mb-1">Tiền phòng 1 tháng</label>
+                                <input type="text" id="monthlyPricePreview" readonly value="0 đ" class="w-full border border-border rounded-base px-3 py-2 text-sm bg-slate-50 text-text-main outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-muted mb-1">Tổng tiền phòng dự kiến</label>
+                                <input type="text" id="totalPricePreview" readonly value="0 đ" class="w-full border border-border rounded-base px-3 py-2 text-sm bg-slate-50 text-text-main outline-none">
                             </div>
                         </div>
                         <div class="flex justify-between pt-4 border-t border-border">
@@ -225,6 +236,10 @@
     const actionModalCancel = document.getElementById('actionModalCancel');
     const actionModalConfirm = document.getElementById('actionModalConfirm');
     let resolveActionModal = null;
+    let selectedStudentGender = '';
+    let allowedBuildingIds = [];
+    const roomTypePriceMap = new Map();
+    const roomMap = new Map();
 
     function showMessage(type, text) {
         message.className = 'mb-6 rounded-base px-4 py-3 text-sm block';
@@ -238,6 +253,19 @@
 
     function formatCurrency(value) {
         return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + ' đ';
+    }
+
+    function updateContractTermPreview() {
+        const roomId = document.getElementById('roomSelect').value;
+        const durationMonths = Number(document.getElementById('durationMonths').value || 6);
+        const room = roomMap.get(String(roomId));
+        const monthlyPrice = room ? Number(roomTypePriceMap.get(String(room.roomTypeId)) || 0) : 0;
+        const depositAmount = monthlyPrice;
+        const totalPrice = monthlyPrice * durationMonths;
+
+        document.getElementById('depositAmount').value = Math.max(0, Math.round(depositAmount));
+        document.getElementById('monthlyPricePreview').value = formatCurrency(monthlyPrice);
+        document.getElementById('totalPricePreview').value = formatCurrency(totalPrice);
     }
 
     function formatDateTime(value) {
@@ -345,23 +373,57 @@
         const code = document.getElementById('searchStudentCode').value.trim();
         if (!code) return;
         try {
-            const students = await fetchAPI(`/api/v1/students?keyword=${encodeURIComponent(code)}`);
+            const studentsPage = await fetchAPI(`/api/v1/students?keyword=${encodeURIComponent(code)}&page=0&size=20&sortBy=id&direction=desc`);
+            const students = Array.isArray(studentsPage?.content) ? studentsPage.content : [];
             const student = students.find(s => s.studentCode.toLowerCase() === code.toLowerCase());
             if (student) {
                 document.getElementById('studentId').value = student.id;
                 document.getElementById('studentName').value = student.fullName;
                 document.getElementById('studentId').dataset.gender = student.gender;
+                selectedStudentGender = student.gender || '';
 
-                loadBuildings(student.gender);
+                await loadBuildings(selectedStudentGender);
+                await loadRooms();
             } else {
                 document.getElementById('studentId').value = '';
                 document.getElementById('studentName').value = '';
                 document.getElementById('studentId').dataset.gender = '';
+                selectedStudentGender = '';
+                allowedBuildingIds = [];
                 showMessage('error', 'Không tìm thấy sinh viên với mã này.');
             }
         } catch (error) {
             showMessage('error', error.message);
         }
+    }
+
+    function normalizeGenderValue(value) {
+        if (!value) return '';
+        return String(value).trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+    }
+
+    function isGenderCompatible(buildingGender, studentGender) {
+        const bg = normalizeGenderValue(buildingGender);
+        const sg = normalizeGenderValue(studentGender);
+
+        if (!bg || bg === 'nam/nu' || bg === 'all' || bg === 'male/female') {
+            return true;
+        }
+        if (!sg) {
+            return true;
+        }
+
+        const maleValues = new Set(['nam', 'male']);
+        const femaleValues = new Set(['nu', 'female']);
+
+        if (maleValues.has(bg) && maleValues.has(sg)) {
+            return true;
+        }
+        if (femaleValues.has(bg) && femaleValues.has(sg)) {
+            return true;
+        }
+
+        return false;
     }
 
     async function loadBuildings(studentGender) {
@@ -370,14 +432,33 @@
             const buildings = Array.isArray(result.content) ? result.content : (Array.isArray(result) ? result : []);
 
             const filteredBuildings = buildings.filter(b =>
-            b.genderAllowed === "Nam/Nữ" || b.genderAllowed === studentGender
-        );
+                isGenderCompatible(b.genderAllowed, studentGender)
+            );
+
+            allowedBuildingIds = filteredBuildings.map((b) => b.id);
 
             const select = document.getElementById('buildingSelect');
-            select.innerHTML = '<option value="">-- Chọn Tòa nhà --</option>' +
-                buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+            select.innerHTML = '<option value="">-- Tất cả tòa nhà --</option>' +
+                filteredBuildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+
+            if (filteredBuildings.length === 0) {
+                showMessage('error', 'Không có tòa nhà phù hợp với giới tính của sinh viên này.');
+            }
         } catch (error) {
             showMessage('error', 'Lỗi tải danh sách tòa nhà');
+        }
+    }
+
+    async function loadRoomTypes() {
+        try {
+            const result = await fetchAPI('/api/v1/room-types?page=0&size=500&sortBy=id&direction=asc');
+            const roomTypes = Array.isArray(result.content) ? result.content : (Array.isArray(result) ? result : []);
+            roomTypePriceMap.clear();
+            roomTypes.forEach((type) => {
+                roomTypePriceMap.set(String(type.id), Number(type.basePrice || 0));
+            });
+        } catch (error) {
+            showMessage('error', 'Lỗi tải loại phòng để tính giá hợp đồng.');
         }
     }
 
@@ -389,25 +470,45 @@
         bedSelect.innerHTML = '<option value="">-- Chọn Giường --</option>';
         bedSelect.disabled = true;
 
-        if (!buildingId) {
-            roomSelect.innerHTML = '<option value="">-- Chọn Phòng --</option>';
-            roomSelect.disabled = true;
-            return;
-        }
-
         try {
             const result = await fetchAPI('/api/v1/rooms?page=0&size=500');
             const rooms = Array.isArray(result.content) ? result.content : (Array.isArray(result) ? result : []);
 
-            const buildingRooms = rooms.filter(r => r.buildingId === parseInt(buildingId) && r.status !== 'FULL');
+            let buildingRooms = rooms.filter(r => r.status !== 'FULL');
+
+            if (allowedBuildingIds.length > 0) {
+                buildingRooms = buildingRooms.filter((r) => allowedBuildingIds.includes(r.buildingId));
+            }
+
+            if (buildingId) {
+                buildingRooms = buildingRooms.filter(r => r.buildingId === parseInt(buildingId));
+            }
+
+            roomMap.clear();
+            buildingRooms.forEach((room) => {
+                roomMap.set(String(room.id), room);
+            });
 
             roomSelect.disabled = false;
             roomSelect.classList.remove('bg-slate-50');
             roomSelect.innerHTML = '<option value="">-- Chọn Phòng --</option>' +
                 buildingRooms.map(r => `<option value="${r.id}">${r.roomNumber}</option>`).join('');
+
+            if (buildingRooms.length === 0) {
+                roomSelect.innerHTML = '<option value="">-- Không còn phòng trống phù hợp --</option>';
+                roomSelect.disabled = true;
+                roomSelect.classList.add('bg-slate-50');
+            }
+
+            updateContractTermPreview();
         } catch (error) {
             showMessage('error', 'Lỗi tải danh sách phòng');
         }
+    }
+
+    async function onRoomChange() {
+        await loadBeds();
+        updateContractTermPreview();
     }
 
     async function loadBeds() {
@@ -442,9 +543,7 @@
             studentId: document.getElementById('studentId').value,
             roomId: document.getElementById('roomSelect').value,
             bedId: document.getElementById('bedSelect').value,
-            startDate: document.getElementById('startDate').value,
-            endDate: document.getElementById('endDate').value,
-            depositAmount: document.getElementById('depositAmount').value
+            durationMonths: Number(document.getElementById('durationMonths').value)
         };
 
         try {
@@ -565,7 +664,11 @@
         }
     });
 
-    loadBuildings('');
+    document.getElementById('durationMonths').addEventListener('change', updateContractTermPreview);
+
+    Promise.all([loadRoomTypes(), loadBuildings('')]).finally(() => {
+        updateContractTermPreview();
+    });
     loadPendingContracts();
 </script>
 </body>
