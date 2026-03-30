@@ -11,6 +11,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -61,11 +62,23 @@ public class BedServiceImpl implements BedService {
     }
 
     private BedDTO toBedDto(Bed bed) {
+        LocalDateTime now = LocalDateTime.now();
+        boolean reserved = bed.getStudent() == null
+                && bed.getReservedUntil() != null
+                && bed.getReservedUntil().isAfter(now);
+        boolean occupied = bed.getStudent() != null || (bed.isOccupied() && !reserved);
+
+        String occupancyStatus = reserved
+            ? "RESERVED"
+            : (occupied ? "OCCUPIED" : "AVAILABLE");
+
         return BedDTO.builder()
                 .id(bed.getId())
                 .bedNumber(bed.getBedNumber())
-                .isOccupied(bed.isOccupied())
+                .isOccupied(occupied)
                 .studentName(bed.getStudent() != null ? bed.getStudent().getFullName() : null) // Assume Student has getFullName()
+            .occupancyStatus(occupancyStatus)
+            .reservedUntil(bed.getReservedUntil())
                 .build();
     }
 }

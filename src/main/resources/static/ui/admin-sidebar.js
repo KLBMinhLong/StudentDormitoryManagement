@@ -98,6 +98,7 @@
             renderMenuItem('rooms', active) +
             renderMenuItem('beds', active) +
             renderMenuItem('students', active) +
+            renderMenuItem('contracts', active) +
             renderMenuItem('userHome', active) +
             '  </nav>' +
             '  <button id="adminSidebarLogout" type="button" class="sidebar-logout mt-4 w-full rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-2 text-sm font-medium inline-flex items-center justify-center gap-2">' +

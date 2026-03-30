@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nộp hồ sơ nội trú - KTX</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+<header class="border-b border-border bg-bg-card">
+    <div class="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between gap-3">
+        <div>
+            <p class="text-xs text-text-muted">Hồ sơ nội trú</p>
+            <h1 class="font-heading text-xl">Bước 2 - Hoàn tất thông tin hợp đồng</h1>
+        </div>
+        <a href="/home.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Về trang chủ</a>
+    </div>
+</header>
+
+<main class="max-w-[1200px] mx-auto px-4 py-6 space-y-6">
+    <section class="rounded-base bg-amber-50 border border-amber-200 p-4">
+        <p class="text-sm text-warning font-medium">Giữ chỗ giường còn lại:</p>
+        <p id="countdown" class="text-2xl font-heading mt-1">--:--:--</p>
+        <p class="text-xs text-text-muted mt-2">Nếu hết thời gian mà chưa nộp hồ sơ, giường sẽ tự động được mở lại cho sinh viên khác.</p>
+    </section>
+
+    <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+        <h2 class="font-heading text-lg">Thông tin giữ chỗ</h2>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+                <p class="text-text-muted">Phòng</p>
+                <p id="roomInfo" class="font-medium mt-1">-</p>
+            </div>
+            <div>
+                <p class="text-text-muted">Giường</p>
+                <p id="bedInfo" class="font-medium mt-1">-</p>
+            </div>
+            <div>
+                <p class="text-text-muted">Trạng thái hồ sơ</p>
+                <p class="font-medium mt-1 text-warning">Chờ sinh viên nộp hồ sơ</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+        <h2 class="font-heading text-lg">Thông tin hồ sơ hợp đồng</h2>
+        <p class="text-sm text-text-muted mt-1">Vui lòng điền đầy đủ. Sau khi nộp, ban quản lý sẽ giữ chỗ thêm 48 giờ để duyệt hồ sơ trực tiếp.</p>
+
+        <form id="contractForm" class="mt-5 space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1.5">Mã sinh viên</label>
+                    <input id="studentCode" type="text" readonly class="w-full rounded-base border border-border px-3 py-2.5 bg-slate-50 text-text-muted">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5">Họ và tên</label>
+                    <input id="fullName" type="text" readonly class="w-full rounded-base border border-border px-3 py-2.5 bg-slate-50 text-text-muted">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5">Ngày vào ở *</label>
+                    <input id="startDate" type="date" required class="w-full rounded-base border border-border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5">Thời hạn hợp đồng *</label>
+                    <select id="durationMonths" required class="w-full rounded-base border border-border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option value="6">6 tháng</option>
+                        <option value="12">12 tháng</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5">Tên người liên hệ khẩn cấp *</label>
+                    <input id="emergencyContactName" type="text" required class="w-full rounded-base border border-border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Nguyễn Văn A">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5">SĐT liên hệ khẩn cấp *</label>
+                    <input id="emergencyContactPhone" type="text" required class="w-full rounded-base border border-border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="09xxxxxxxx">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5">Tên phụ huynh/người bảo hộ *</label>
+                    <input id="guardianName" type="text" required class="w-full rounded-base border border-border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Trần Thị B">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5">SĐT phụ huynh/người bảo hộ *</label>
+                    <input id="guardianPhone" type="text" required class="w-full rounded-base border border-border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="09xxxxxxxx">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1.5">Ghi chú thêm</label>
+                <textarea id="studentNote" rows="3" class="w-full rounded-base border border-border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Thông tin bổ sung nếu có"></textarea>
+            </div>
+
+            <div class="rounded-base border border-border bg-slate-50 p-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                <div>
+                    <p class="text-text-muted">Tiền phòng 1 tháng</p>
+                    <p id="monthlyPrice" class="font-heading text-lg mt-1">0 đ</p>
+                </div>
+                <div>
+                    <p class="text-text-muted">Tổng tiền phòng dự kiến</p>
+                    <p id="totalPrice" class="font-heading text-lg mt-1">0 đ</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5">Tiền cọc *</label>
+                    <input id="depositAmount" type="number" min="1" required readonly class="w-full rounded-base border border-border bg-slate-50 px-3 py-2.5 text-text-muted">
+                </div>
+            </div>
+
+            <div class="rounded-base border border-border bg-slate-50 p-4 text-sm">
+                <p class="text-text-muted">Tổng cần đóng khi ký hợp đồng</p>
+                <p id="signingTotal" class="font-heading text-xl mt-1">0 đ</p>
+                <p class="text-xs text-text-muted mt-1">Tiền cọc mặc định = 1 tháng tiền phòng và được cộng vào tổng tiền nhà khi ký hợp đồng.</p>
+            </div>
+
+            <div class="rounded-base border border-warning bg-amber-50 px-4 py-3 text-sm">
+                <p class="font-medium text-warning">Lưu ý quan trọng:</p>
+                <ul class="mt-2 text-text-main space-y-1">
+                    <li>- Tiền phòng ở trên chưa bao gồm điện, nước và các dịch vụ phát sinh trong quá trình ở.</li>
+                    <li>- Sau khi nộp hồ sơ online, bạn phải đến ban quản lý trong vòng 48 giờ để đối chiếu giấy tờ và hoàn tất ký hợp đồng.</li>
+                    <li>- Nếu không được duyệt trong thời hạn, hợp đồng sẽ bị hủy và giường sẽ mở lại để đăng ký.</li>
+                </ul>
+            </div>
+
+            <div id="message" class="hidden rounded-base px-4 py-3 text-sm"></div>
+
+            <div class="flex items-center justify-end">
+                <button id="submitBtn" type="submit" class="rounded-base bg-primary text-white px-4 py-2.5 text-sm font-medium hover:bg-primary-hover">Submit bước 2 - Nộp hồ sơ hợp đồng</button>
+            </div>
+        </form>
+    </section>
+
+    <div class="fixed bottom-4 right-4 z-40">
+        <button id="submitStickyBtn" type="button" class="rounded-base bg-primary text-white px-4 py-2.5 text-sm font-medium shadow-soft hover:bg-primary-hover">Submit bước 2</button>
+    </div>
+</main>
+
+<div id="toastCenter" class="hidden fixed inset-0 z-[60] bg-slate-900/30 flex items-center justify-center p-4">
+    <div id="toastCard" class="w-full max-w-md rounded-base border shadow-soft bg-bg-card p-4">
+        <div class="flex items-start justify-between gap-3">
+            <p id="toastText" class="text-sm"></p>
+            <button id="toastCloseBtn" type="button" class="rounded-base border border-border px-2 py-1 text-xs hover:bg-slate-50">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('dormitory_access_token');
+    const countdownEl = document.getElementById('countdown');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitStickyBtn = document.getElementById('submitStickyBtn');
+    const toastCenter = document.getElementById('toastCenter');
+    const toastCard = document.getElementById('toastCard');
+    const toastText = document.getElementById('toastText');
+    const toastCloseBtn = document.getElementById('toastCloseBtn');
+
+    let currentContract = null;
+    let countdownTimer = null;
+    let toastTimer = null;
+
+    if (!token) {
+        window.location.href = '/login.html';
+    }
+
+    function showMessage(type, text) {
+        if (toastTimer) {
+            clearTimeout(toastTimer);
+        }
+
+        toastCard.className = 'w-full max-w-md rounded-base border shadow-soft bg-bg-card p-4';
+        if (type === 'error') {
+            toastCard.classList.add('border-red-200', 'bg-red-50');
+            toastText.className = 'text-sm text-red-700';
+        } else {
+            toastCard.classList.add('border-green-200', 'bg-green-50');
+            toastText.className = 'text-sm text-success';
+        }
+
+        toastText.textContent = text;
+        toastCenter.classList.remove('hidden');
+        toastTimer = setTimeout(() => {
+            toastCenter.classList.add('hidden');
+        }, 3000);
+    }
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + ' đ';
+    }
+
+    function toDateInputValue(date) {
+        const d = new Date(date);
+        const tzOffset = d.getTimezoneOffset() * 60000;
+        return new Date(d.getTime() - tzOffset).toISOString().split('T')[0];
+    }
+
+    function updatePricePreview() {
+        if (!currentContract) {
+            return;
+        }
+        const monthly = Number(currentContract.monthlyRoomPrice || 0);
+        const months = Number(document.getElementById('durationMonths').value || 6);
+        const total = monthly * months;
+        const deposit = monthly;
+        const signingTotal = total + deposit;
+
+        document.getElementById('monthlyPrice').textContent = formatCurrency(monthly);
+        document.getElementById('totalPrice').textContent = formatCurrency(total);
+        document.getElementById('depositAmount').value = Math.max(1, Math.round(deposit));
+        document.getElementById('signingTotal').textContent = formatCurrency(signingTotal);
+    }
+
+    function setCountdown(holdExpiresAt) {
+        if (countdownTimer) {
+            clearInterval(countdownTimer);
+        }
+
+        const endTime = new Date(holdExpiresAt).getTime();
+        const tick = () => {
+            const now = Date.now();
+            const diff = endTime - now;
+            if (diff <= 0) {
+                countdownEl.textContent = '00:00:00';
+                showMessage('error', 'Giữ chỗ đã hết hạn. Vui lòng quay lại chọn giường khác.');
+                submitBtn.disabled = true;
+                submitStickyBtn.disabled = true;
+                clearInterval(countdownTimer);
+                return;
+            }
+
+            const hours = String(Math.floor(diff / 3600000)).padStart(2, '0');
+            const minutes = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+            const seconds = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+            countdownEl.textContent = `${hours}:${minutes}:${seconds}`;
+        };
+
+        tick();
+        countdownTimer = setInterval(tick, 1000);
+    }
+
+    async function fetchJson(url, options = {}) {
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+                ...(options.headers || {})
+            }
+        });
+        let payload = null;
+        try {
+            payload = await response.json();
+        } catch {
+            payload = null;
+        }
+        if (!response.ok) {
+            throw new Error(payload?.message || 'Có lỗi xảy ra');
+        }
+        return payload?.result;
+    }
+
+    async function loadData() {
+        const pending = await fetchJson('/api/v1/contracts/me/pending');
+        if (!pending || !pending.id) {
+            throw new Error('Bạn chưa có yêu cầu giữ chỗ nào đang chờ xử lý.');
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryContractId = Number(urlParams.get('contractId') || 0);
+        if (queryContractId && pending.id !== queryContractId) {
+            throw new Error('Yêu cầu giữ chỗ không hợp lệ hoặc đã hết hiệu lực.');
+        }
+
+        currentContract = pending;
+
+        const student = await fetchJson('/api/v1/students/me');
+        document.getElementById('studentCode').value = student.studentCode || '';
+        document.getElementById('fullName').value = student.fullName || '';
+
+        document.getElementById('roomInfo').textContent = pending.roomNumber || '-';
+        document.getElementById('bedInfo').textContent = `Giường ${pending.bedNumber || '-'}`;
+
+        document.getElementById('startDate').value = pending.startDate ? toDateInputValue(pending.startDate) : toDateInputValue(new Date());
+        document.getElementById('durationMonths').value = String(pending.durationMonths || 6);
+
+        updatePricePreview();
+        setCountdown(pending.holdExpiresAt);
+    }
+
+    document.getElementById('durationMonths').addEventListener('change', updatePricePreview);
+
+    document.getElementById('contractForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!currentContract) {
+            return;
+        }
+
+        submitBtn.disabled = true;
+        try {
+            const payload = {
+                startDate: document.getElementById('startDate').value,
+                durationMonths: Number(document.getElementById('durationMonths').value),
+                depositAmount: Number(document.getElementById('depositAmount').value),
+                emergencyContactName: document.getElementById('emergencyContactName').value.trim(),
+                emergencyContactPhone: document.getElementById('emergencyContactPhone').value.trim(),
+                guardianName: document.getElementById('guardianName').value.trim(),
+                guardianPhone: document.getElementById('guardianPhone').value.trim(),
+                studentNote: document.getElementById('studentNote').value.trim() || null
+            };
+
+            const submitted = await fetchJson(`/api/v1/contracts/${currentContract.id}/submit`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+
+            window.location.href = `/user/contract-guidance.html?contractId=${submitted.id}`;
+        } catch (error) {
+            showMessage('error', error.message || 'Không thể nộp hồ sơ hợp đồng.');
+            submitBtn.disabled = false;
+            submitStickyBtn.disabled = false;
+        }
+    });
+
+    submitStickyBtn.addEventListener('click', () => {
+        document.getElementById('contractForm').requestSubmit();
+    });
+
+    toastCloseBtn.addEventListener('click', () => {
+        toastCenter.classList.add('hidden');
+        if (toastTimer) {
+            clearTimeout(toastTimer);
+            toastTimer = null;
+        }
+    });
+
+    loadData().catch((error) => {
+        showMessage('error', error.message || 'Không tải được dữ liệu hồ sơ hợp đồng.');
+        submitBtn.disabled = true;
+        submitStickyBtn.disabled = true;
+    });
+</script>
+</body>
+</html>

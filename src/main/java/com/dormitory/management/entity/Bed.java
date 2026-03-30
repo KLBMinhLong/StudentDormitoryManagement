@@ -2,6 +2,7 @@ package com.dormitory.management.entity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -34,6 +35,12 @@ public class Bed extends BaseEntity {
 
     @Column(name = "is_occupied", nullable = false)
     private boolean isOccupied;
+
+    @Column(name = "reserved_until")
+    private LocalDateTime reservedUntil;
+
+    @Column(name = "reserved_contract_id")
+    private Long reservedContractId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)

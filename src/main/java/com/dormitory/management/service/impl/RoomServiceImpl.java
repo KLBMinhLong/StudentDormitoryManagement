@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Set;
 
@@ -193,6 +194,8 @@ public class RoomServiceImpl implements RoomService {
         bed.setOccupied(Boolean.TRUE.equals(request.getOccupied()));
         if (!bed.isOccupied()) {
             bed.setStudent(null);
+            bed.setReservedUntil(null);
+            bed.setReservedContractId(null);
         }
 
         Bed updated = bedRepository.save(bed);
@@ -276,6 +279,8 @@ public class RoomServiceImpl implements RoomService {
             Bed newBed = Bed.builder()
                     .bedNumber(item.getBedNumber())
                     .isOccupied(false)
+                    .reservedUntil(null)
+                    .reservedContractId(null)
                     .room(room)
                     .student(null)
                     .build();
@@ -295,6 +300,8 @@ public class RoomServiceImpl implements RoomService {
                 Bed bed = Bed.builder()
                         .bedNumber(bedNumber)
                         .isOccupied(false)
+                    .reservedUntil(null)
+                    .reservedContractId(null)
                         .room(room)
                         .student(null)
                         .build();
@@ -320,7 +327,8 @@ public class RoomServiceImpl implements RoomService {
 
     private void updateRoomStatusByOccupancy(Room room) {
         List<Bed> beds = bedRepository.findByRoomIdOrderByBedNumberAsc(room.getId());
-        long occupied = beds.stream().filter(Bed::isOccupied).count();
+        LocalDateTime now = LocalDateTime.now();
+        long occupied = beds.stream().filter((bed) -> isOccupiedOrReserved(bed, now)).count();
 
         RoomStatus computedStatus = beds.isEmpty()
                 ? RoomStatus.AVAILABLE
@@ -352,7 +360,8 @@ public class RoomServiceImpl implements RoomService {
     private RoomDTO toRoomDto(Room room) {
         List<Bed> beds = bedRepository.findByRoomIdOrderByBedNumberAsc(room.getId());
         int totalBeds = beds.size();
-        int occupiedBeds = (int) beds.stream().filter(Bed::isOccupied).count();
+        LocalDateTime now = LocalDateTime.now();
+        int occupiedBeds = (int) beds.stream().filter((bed) -> isOccupiedOrReserved(bed, now)).count();
 
         return RoomDTO.builder()
                 .id(room.getId())
@@ -401,11 +410,31 @@ public class RoomServiceImpl implements RoomService {
     }
 
     private BedDTO toBedDto(Bed bed) {
+        LocalDateTime now = LocalDateTime.now();
+        boolean reserved = isReserved(bed, now);
+        boolean occupied = bed.getStudent() != null || (bed.isOccupied() && !reserved);
+
+        String occupancyStatus = reserved
+            ? "RESERVED"
+            : (occupied ? "OCCUPIED" : "AVAILABLE");
+
         return BedDTO.builder()
                 .id(bed.getId())
                 .bedNumber(bed.getBedNumber())
-                .isOccupied(bed.isOccupied())
+                .isOccupied(occupied)
                 .studentName(bed.getStudent() != null ? bed.getStudent().getFullName() : null)
+            .occupancyStatus(occupancyStatus)
+            .reservedUntil(bed.getReservedUntil())
                 .build();
+    }
+
+    private boolean isReserved(Bed bed, LocalDateTime now) {
+        return bed.getStudent() == null
+                && bed.getReservedUntil() != null
+                && bed.getReservedUntil().isAfter(now);
+    }
+
+    private boolean isOccupiedOrReserved(Bed bed, LocalDateTime now) {
+        return bed.getStudent() != null || bed.isOccupied() || isReserved(bed, now);
     }
 }

@@ -148,6 +148,36 @@
                     </div>
                 </form>
             </section>
+
+            <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h2 class="font-heading text-2xl">Danh sách hợp đồng chờ duyệt</h2>
+                        <p class="text-text-muted text-sm mt-1">Admin duyệt hoặc từ chối sau khi sinh viên nộp hồ sơ trực tiếp.</p>
+                    </div>
+                    <button id="refreshPendingBtn" type="button" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Làm mới</button>
+                </div>
+
+                <div class="overflow-x-auto border border-border rounded-base">
+                    <table class="w-full min-w-[980px] text-sm">
+                        <thead class="bg-slate-50">
+                        <tr>
+                            <th class="text-left px-4 py-3 text-text-muted">Sinh viên</th>
+                            <th class="text-left px-4 py-3 text-text-muted">Phòng/Giường</th>
+                            <th class="text-left px-4 py-3 text-text-muted">Thời hạn</th>
+                            <th class="text-left px-4 py-3 text-text-muted">Tiền phòng</th>
+                            <th class="text-left px-4 py-3 text-text-muted">Trạng thái hồ sơ</th>
+                            <th class="text-right px-4 py-3 text-text-muted">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody id="pendingContractBody">
+                        <tr>
+                            <td colspan="6" class="px-4 py-6 text-center text-text-muted">Đang tải dữ liệu hợp đồng chờ duyệt...</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </main>
     </div>
 </div>
@@ -178,6 +208,17 @@
         message.textContent = text;
         setTimeout(() => message.classList.add('hidden'), 4000);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + ' đ';
+    }
+
+    function formatDateTime(value) {
+        if (!value) return '-';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return '-';
+        return d.toLocaleString('vi-VN');
     }
 
     async function fetchAPI(url, options = {}) {
@@ -332,13 +373,81 @@
         try {
             await fetchAPI('/api/v1/contracts', { method: 'POST', body: JSON.stringify(payload) });
             showMessage('success', 'Tạo hợp đồng thành công. Giường và phòng đã được cập nhật trạng thái tự động.');
+            await loadPendingContracts();
             setTimeout(() => window.location.reload(), 2000);
         } catch (error) {
             showMessage('error', error.message);
         }
     });
 
-    loadBuildings(studentGender);
+    async function loadPendingContracts() {
+        const body = document.getElementById('pendingContractBody');
+        body.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-text-muted">Đang tải dữ liệu hợp đồng chờ duyệt...</td></tr>';
+
+        try {
+            const pending = await fetchAPI('/api/v1/contracts/pending');
+            if (!Array.isArray(pending) || pending.length === 0) {
+                body.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-text-muted">Hiện chưa có hợp đồng nào chờ duyệt.</td></tr>';
+                return;
+            }
+
+            body.innerHTML = pending.map(item => {
+                const submittedText = item.submitted ? 'Đã nộp online' : 'Chưa nộp online';
+                const submittedClass = item.submitted ? 'bg-green-100 text-success' : 'bg-amber-100 text-warning';
+                return `
+                    <tr class="border-t border-border">
+                        <td class="px-4 py-3">
+                            <p class="font-medium">${item.studentName || '-'}</p>
+                            <p class="text-xs text-text-muted">ID: ${item.studentId || '-'}</p>
+                        </td>
+                        <td class="px-4 py-3">Phòng ${item.roomNumber || '-'} - Giường ${item.bedNumber || '-'}</td>
+                        <td class="px-4 py-3">${formatDateTime(item.holdExpiresAt)}</td>
+                        <td class="px-4 py-3">${formatCurrency(item.totalRoomAmount)}</td>
+                        <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${submittedClass}">${submittedText}</span></td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="inline-flex gap-2">
+                                <button type="button" data-action="approve" data-id="${item.id}" class="rounded-base bg-primary text-white px-3 py-1.5 text-xs font-medium hover:bg-primary-hover">Duyệt</button>
+                                <button type="button" data-action="reject" data-id="${item.id}" class="rounded-base border border-danger text-danger px-3 py-1.5 text-xs font-medium hover:bg-red-50">Từ chối</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (error) {
+            body.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-danger">${error.message || 'Không tải được hợp đồng chờ duyệt.'}</td></tr>`;
+        }
+    }
+
+    document.getElementById('pendingContractBody').addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) {
+            return;
+        }
+
+        const contractId = button.dataset.id;
+        const action = button.dataset.action;
+
+        try {
+            if (action === 'approve') {
+                await fetchAPI(`/api/v1/contracts/${contractId}/approve`, { method: 'PUT' });
+                showMessage('success', 'Duyệt hợp đồng thành công. Sinh viên đã nhận phòng.');
+            } else {
+                const reason = prompt('Nhập lý do từ chối hợp đồng (không bắt buộc):', 'Thiếu giấy tờ đối chiếu');
+                const query = reason ? `?reason=${encodeURIComponent(reason)}` : '';
+                await fetchAPI(`/api/v1/contracts/${contractId}/reject${query}`, { method: 'PUT' });
+                showMessage('success', 'Đã từ chối hợp đồng và trả giường về trạng thái trống.');
+            }
+
+            await loadPendingContracts();
+        } catch (error) {
+            showMessage('error', error.message || 'Không thể xử lý hợp đồng đã chọn.');
+        }
+    });
+
+    document.getElementById('refreshPendingBtn').addEventListener('click', loadPendingContracts);
+
+    loadBuildings('');
+    loadPendingContracts();
 </script>
 </body>
 </html>

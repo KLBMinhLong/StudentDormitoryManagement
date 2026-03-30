@@ -2,6 +2,7 @@ package com.dormitory.management.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -52,6 +53,20 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({ IllegalArgumentException.class })
     public ResponseEntity<ApiResponse<Object>> handleBadRequest(RuntimeException ex) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        String rootMessage = ex.getMostSpecificCause() != null
+                ? ex.getMostSpecificCause().getMessage()
+                : ex.getMessage();
+
+        String message = "Dữ liệu gửi lên không hợp lệ hoặc không phù hợp với ràng buộc hệ thống.";
+        if (rootMessage != null && rootMessage.contains("contract") && rootMessage.contains("status")) {
+            message = "Trạng thái hợp đồng chưa đồng bộ với cơ sở dữ liệu. Vui lòng thử lại hoặc liên hệ quản trị hệ thống.";
+        }
+
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, message);
     }
 
     @ExceptionHandler(Exception.class)

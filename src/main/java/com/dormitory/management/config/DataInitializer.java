@@ -9,6 +9,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.dormitory.management.entity.AppUser;
 import com.dormitory.management.entity.Building;
@@ -40,10 +41,12 @@ public class DataInitializer {
     private final BedRepository bedRepository;
     private final StudentRepository studentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     @Bean
     public CommandLineRunner initializeAuthData() {
         return args -> {
+            ensureContractStatusConstraint();
             initializeBuildingData();
             initializeRoomTypeData();
             initializeRoomData();
@@ -78,6 +81,30 @@ public class DataInitializer {
 
             initializeMockStudents(studentRole);
         };
+    }
+
+    private void ensureContractStatusConstraint() {
+        String sql = """
+                DECLARE @constraintName NVARCHAR(128);
+                SELECT TOP 1 @constraintName = cc.name
+                FROM sys.check_constraints cc
+                INNER JOIN sys.tables t ON cc.parent_object_id = t.object_id
+                INNER JOIN sys.columns c ON c.object_id = t.object_id AND c.column_id = cc.parent_column_id
+                WHERE t.name = 'contract' AND c.name = 'status';
+
+                IF @constraintName IS NOT NULL
+                    EXEC('ALTER TABLE dbo.[contract] DROP CONSTRAINT [' + @constraintName + ']');
+
+                ALTER TABLE dbo.[contract] WITH CHECK
+                ADD CONSTRAINT CK_contract_status
+                CHECK ([status] IN ('PENDING', 'ACTIVE', 'EXPIRED', 'CANCELLED'));
+                """;
+
+        try {
+            jdbcTemplate.execute(sql);
+        } catch (Exception ex) {
+            System.err.println("[WARN] Không thể cập nhật CHECK constraint cho contract.status: " + ex.getMessage());
+        }
     }
 
     private void initializeMockStudents(Role studentRole) {
@@ -218,9 +245,9 @@ public class DataInitializer {
     }
 
     private void initializeRoomTypeData() {
-        upsertRoomType("Phòng 4 người", 4, new BigDecimal("1200000"), "Nam/Nữ");
-        upsertRoomType("Phòng 8 người", 8, new BigDecimal("850000"), "Nam/Nữ");
-        upsertRoomType("Phòng VIP", 2, new BigDecimal("2500000"), "Nam/Nữ");
+        upsertRoomType("Phòng 8 người", 8, new BigDecimal("300000"), "Nam/Nữ");
+        upsertRoomType("Phòng 4 người", 4, new BigDecimal("600000"), "Nam/Nữ");
+        upsertRoomType("Phòng VIP", 2, new BigDecimal("1200000"), "Nam/Nữ");
     }
 
     private void initializeBedData() {
@@ -238,6 +265,8 @@ public class DataInitializer {
                 Bed newBed = Bed.builder()
                         .bedNumber(bedNumber)
                         .isOccupied(false)
+                    .reservedUntil(null)
+                    .reservedContractId(null)
                         .room(room)
                         .student(null)
                         .build();
