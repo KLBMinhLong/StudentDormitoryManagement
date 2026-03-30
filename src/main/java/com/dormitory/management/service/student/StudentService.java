@@ -1,15 +1,15 @@
 package com.dormitory.management.service.student;
+import com.dormitory.management.dto.common.PagedResponseDTO;
 import com.dormitory.management.dto.student.ChangePasswordRequestDTO;
+import com.dormitory.management.dto.student.StudentListItemDTO;
 import com.dormitory.management.dto.student.StudentDTO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
 
 public interface StudentService {
     // Do admin qản lý
-    List<StudentDTO> getAllStudents();
-    List<StudentDTO> searchStudents(String keyword);
+    PagedResponseDTO<StudentListItemDTO> searchStudents(String keyword, int page, int size, String sortBy, String direction);
     StudentDTO getStudentById(Long id);
     StudentDTO createStudent(StudentDTO dto);
     StudentDTO updateStudent(Long id, StudentDTO dto);

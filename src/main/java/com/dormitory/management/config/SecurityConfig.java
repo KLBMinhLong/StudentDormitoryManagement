@@ -70,7 +70,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/buildings/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/v1/rooms/**", "/api/v1/room-types/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/api/v1/student/**").hasAnyAuthority("ROLE_STUDENT", "ROLE_ADMIN")
+                        .requestMatchers("/api/v1/students/**").hasAnyAuthority("ROLE_STUDENT", "ROLE_ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(restAuthenticationEntryPoint)

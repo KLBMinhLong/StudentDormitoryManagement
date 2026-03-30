@@ -258,8 +258,8 @@ public class DataInitializer {
         upsertBuilding("Tòa A", "Toa A", 5, "Khu tòa dành cho sinh viên nam", "Nam");
         upsertBuilding("Tòa B", "Toa B", 5, "Khu tòa dành cho sinh viên nữ", "Nữ");
 
-        // [Tòa dùng chung]: Phân loại là Nam/Nữ để cả 2 giới đều thấy, nhưng không dùng để ở (Ví dụ: Khu học tập)
-        upsertBuilding("Tòa C", "Toa C", 7, "Khu tòa phòng học tập và sinh hoạt", "Nam/Nữ");
+        // [Tòa dùng chung]: Phân loại là Nam/Nữ
+        upsertBuilding("Tòa C", "Toa C", 7, "Khu tòa Mix nam nữ", "Nam/Nữ");
 
         upsertBuilding("Tòa D", "Toa D", 9, "Khu tòa mở rộng cho sinh viên mới", "Nam/Nữ");
     }

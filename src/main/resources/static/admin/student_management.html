@@ -73,16 +73,17 @@
                             <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">Avatar</th>
                             <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">Mã SV</th>
                             <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">Họ và tên</th>
-                            <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">Ngày sinh</th>
                             <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">Giới tính</th>
                             <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">SĐT</th>
-                            <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">CCCD</th>
+                            <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">Email</th>
+                            <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">Tài khoản</th>
                             <th class="text-left text-sm text-text-muted px-4 py-3 font-medium text-right">Hành động</th>
                         </tr>
                         </thead>
                         <tbody id="studentBody"></tbody>
                     </table>
                 </div>
+                <div id="studentPagination" class="mt-4 flex items-center justify-end gap-2"></div>
             </section>
         </main>
     </div>
@@ -144,6 +145,16 @@
     </div>
 </div>
 
+<div id="studentDetailModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+    <div class="bg-bg-card rounded-base w-full max-w-xl p-6 shadow-soft mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <h3 class="font-heading text-xl">Chi tiết sinh viên</h3>
+            <button type="button" onclick="closeDetailModal()" class="rounded-base border border-border px-3 py-1.5 text-sm hover:bg-slate-50">Đóng</button>
+        </div>
+        <div id="studentDetailContent" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"></div>
+    </div>
+</div>
+
 <script>
     function initSidebar() {
         if (!window.AdminSidebar || typeof window.AdminSidebar.mount !== 'function') {
@@ -158,23 +169,32 @@
     }
     initSidebar();
 
+    const token = localStorage.getItem('dormitory_access_token');
+    const studentBody = document.getElementById('studentBody');
+    const searchInput = document.getElementById('searchInput');
+    const message = document.getElementById('message');
+    const studentPagination = document.getElementById('studentPagination');
+    const studentModal = document.getElementById('studentModal');
+    const studentDetailModal = document.getElementById('studentDetailModal');
+    const studentDetailContent = document.getElementById('studentDetailContent');
+    const studentForm = document.getElementById('studentForm');
+    const avatarSection = document.getElementById('avatarSection');
+
     let debounceTimer;
+    let currentPage = 0;
+    let currentKeyword = '';
+    const pageSize = 10;
 
     function debounceSearch() {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
+            currentPage = 0;
+            currentKeyword = searchInput.value.trim();
             loadStudents();
         }, 300);
     }
 
-    const token = localStorage.getItem('dormitory_access_token');
-    const studentBody = document.getElementById('studentBody');
-    const searchInput = document.getElementById('searchInput');
     searchInput.addEventListener('input', debounceSearch);
-    const message = document.getElementById('message');
-    const studentModal = document.getElementById('studentModal');
-    const studentForm = document.getElementById('studentForm');
-    const avatarSection = document.getElementById('avatarSection');
 
     if (!token) {
         window.location.href = '/login.html';
@@ -220,43 +240,137 @@
         setTimeout(() => { message.classList.add('hidden'); }, 3000);
     }
 
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     async function fetchAPI(url, options = {}) {
         const headers = {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
         };
+        if (options.body instanceof FormData) {
+            delete headers['Content-Type'];
+        }
+
         const response = await fetch(url, { ...options, headers });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Lỗi hệ thống');
-        return data.result;
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : null;
+
+        if (!response.ok) {
+            throw new Error(data?.message || 'Lỗi hệ thống');
+        }
+
+        return data?.result ?? null;
+    }
+
+    function renderStudentPagination(pageData) {
+        if (!pageData || pageData.totalPages <= 1) {
+            studentPagination.innerHTML = '';
+            return;
+        }
+
+        const pageNo = pageData.pageNo;
+        const totalPages = pageData.totalPages;
+        const totalElements = pageData.totalElements;
+        const start = totalElements === 0 ? 0 : pageNo * pageData.pageSize + 1;
+        const end = Math.min((pageNo + 1) * pageData.pageSize, totalElements);
+
+        let pageButtons = '';
+        const begin = Math.max(0, pageNo - 2);
+        const finish = Math.min(totalPages - 1, pageNo + 2);
+
+        for (let i = begin; i <= finish; i++) {
+            const activeClass = i === pageNo
+                ? 'border-primary bg-primary text-white'
+                : 'border-border hover:bg-slate-50';
+            pageButtons += `<button class="rounded-base border px-3 py-1.5 text-sm ${activeClass}" data-page="${i}">${i + 1}</button>`;
+        }
+
+        studentPagination.innerHTML = `
+            <p class="text-sm text-text-muted">Hiển thị ${start}-${end} trên tổng số ${totalElements} kết quả</p>
+            <div class="flex flex-wrap items-center gap-2">
+                <button class="rounded-base border border-border px-3 py-1.5 text-sm ${pageNo === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${pageNo === 0 ? 'disabled' : ''} data-page="${pageNo - 1}">Trước</button>
+                ${pageButtons}
+                <button class="rounded-base border border-border px-3 py-1.5 text-sm ${pageNo >= totalPages - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${pageNo >= totalPages - 1 ? 'disabled' : ''} data-page="${pageNo + 1}">Sau</button>
+            </div>
+        `;
+
+        studentPagination.querySelectorAll('button[data-page]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                currentPage = Number(btn.dataset.page);
+                loadStudents();
+            });
+        });
     }
 
     async function loadStudents() {
         try {
-            const keyword = searchInput.value.trim();
-            const url = keyword ? `/api/v1/students?keyword=${encodeURIComponent(keyword)}` : '/api/v1/students';
-            const students = await fetchAPI(url);
+            currentKeyword = searchInput.value.trim();
+            const keywordQuery = currentKeyword ? `&keyword=${encodeURIComponent(currentKeyword)}` : '';
+            const url = `/api/v1/students?page=${currentPage}&size=${pageSize}&sortBy=id&direction=desc${keywordQuery}`;
+            const pageData = await fetchAPI(url);
+            const students = Array.isArray(pageData?.content) ? pageData.content : [];
 
-            studentBody.innerHTML = students.map(st => `
+            if (!students.length) {
+                studentBody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-text-muted">Không có dữ liệu sinh viên.</td></tr>';
+                renderStudentPagination(pageData);
+                return;
+            }
+
+            studentBody.innerHTML = students.map((st) => {
+                const accountText = st.hasAccount ? escHtml(st.username || 'Đã liên kết') : 'Chưa liên kết';
+                return `
                 <tr class="border-b border-border hover:bg-slate-50">
                     <td class="px-4 py-3">
                         <img src="${st.avatarUrl || '/ui/avatar-default.png'}" onerror="this.src='/ui/avatar-default.png'" class="w-10 h-10 rounded-full object-cover border border-border">
                     </td>
-                    <td class="px-4 py-3 text-sm">${st.studentCode}</td>
-                    <td class="px-4 py-3 text-sm font-medium">${st.fullName}</td>
-                    <td class="px-4 py-3 text-sm">${st.dateOfBirth || '-'}</td>
-                    <td class="px-4 py-3 text-sm">${st.gender || '-'}</td>
-                    <td class="px-4 py-3 text-sm">${st.phone || '-'}</td>
-                    <td class="px-4 py-3 text-sm">${st.cccd}</td>
+                    <td class="px-4 py-3 text-sm">${escHtml(st.studentCode || '-')}</td>
+                    <td class="px-4 py-3 text-sm font-medium">${escHtml(st.fullName || '-')}</td>
+                    <td class="px-4 py-3 text-sm">${escHtml(st.gender || '-')}</td>
+                    <td class="px-4 py-3 text-sm">${escHtml(st.phone || '-')}</td>
+                    <td class="px-4 py-3 text-sm">${escHtml(st.email || '-')}</td>
+                    <td class="px-4 py-3 text-sm">${accountText}</td>
                     <td class="px-4 py-3 text-sm text-right">
-                        <button onclick='editStudent(${JSON.stringify(st).replace(/'/g, "&#39;")})' class="text-secondary hover:underline mr-2">Sửa</button>
+                        <button onclick="viewStudent(${st.id})" class="text-primary hover:underline mr-2">Xem</button>
+                        <button onclick="editStudent(${st.id})" class="text-secondary hover:underline mr-2">Sửa</button>
                         <button onclick="deleteStudent(${st.id})" class="text-danger hover:underline">Xóa</button>
                     </td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
+
+            renderStudentPagination(pageData);
         } catch (error) {
             showMessage('error', error.message);
         }
+    }
+
+    async function viewStudent(id) {
+        try {
+            const st = await fetchAPI(`/api/v1/students/${id}`);
+            studentDetailContent.innerHTML = `
+                <div><p class="text-text-muted">Mã sinh viên</p><p class="font-medium mt-1">${escHtml(st.studentCode || '-')}</p></div>
+                <div><p class="text-text-muted">Họ và tên</p><p class="font-medium mt-1">${escHtml(st.fullName || '-')}</p></div>
+                <div><p class="text-text-muted">Ngày sinh</p><p class="font-medium mt-1">${escHtml(st.dateOfBirth || '-')}</p></div>
+                <div><p class="text-text-muted">Giới tính</p><p class="font-medium mt-1">${escHtml(st.gender || '-')}</p></div>
+                <div><p class="text-text-muted">Số điện thoại</p><p class="font-medium mt-1">${escHtml(st.phone || '-')}</p></div>
+                <div><p class="text-text-muted">Email</p><p class="font-medium mt-1">${escHtml(st.email || '-')}</p></div>
+                <div class="md:col-span-2"><p class="text-text-muted">CCCD</p><p class="font-medium mt-1">${escHtml(st.cccd || '-')}</p></div>
+            `;
+            studentDetailModal.classList.remove('hidden');
+        } catch (error) {
+            showMessage('error', error.message);
+        }
+    }
+
+    function closeDetailModal() {
+        studentDetailModal.classList.add('hidden');
     }
 
     function openModal() {
@@ -272,7 +386,15 @@
         studentModal.classList.add('hidden');
     }
 
-    function editStudent(student) {
+    async function editStudent(studentId) {
+        let student;
+        try {
+            student = await fetchAPI(`/api/v1/students/${studentId}`);
+        } catch (error) {
+            showMessage('error', error.message);
+            return;
+        }
+
         document.getElementById('studentId').value = student.id;
         document.getElementById('studentCode').value = student.studentCode;
         document.getElementById('studentCode').disabled = true;
@@ -322,6 +444,9 @@
         try {
             await fetchAPI(`/api/v1/students/${id}`, { method: 'DELETE' });
             showMessage('success', 'Xóa thành công');
+            if (currentPage > 0) {
+                currentPage = 0;
+            }
             loadStudents();
         } catch (error) {
             showMessage('error', error.message);
@@ -365,6 +490,12 @@
             showMessage('error', error.message);
         }
     }
+
+    studentDetailModal.addEventListener('click', (event) => {
+        if (event.target === studentDetailModal) {
+            closeDetailModal();
+        }
+    });
 
     if (token) {
         checkAuthorizationAndLoad();

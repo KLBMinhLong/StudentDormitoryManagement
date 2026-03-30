@@ -2,11 +2,13 @@ package com.dormitory.management.controller;
 
 import java.io.IOException;
 import java.security.Principal;
-import java.util.List;
 
+import com.dormitory.management.dto.common.PagedResponseDTO;
 import com.dormitory.management.dto.student.ChangePasswordRequestDTO;
+import com.dormitory.management.dto.student.StudentListItemDTO;
 import com.dormitory.management.dto.student.StudentDTO;
 import com.dormitory.management.service.student.StudentService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -34,8 +36,13 @@ public class StudentManagementController {
 
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<StudentDTO>>> getAllStudents(@RequestParam(required = false) String keyword) {
-        List<StudentDTO> result = studentService.searchStudents(keyword);
+    public ResponseEntity<ApiResponse<PagedResponseDTO<StudentListItemDTO>>> getAllStudents(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+        PagedResponseDTO<StudentListItemDTO> result = studentService.searchStudents(keyword, page, size, sortBy, direction);
         return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), "Success", result));
     }
 
@@ -50,7 +57,8 @@ public class StudentManagementController {
     @PostMapping
     public ResponseEntity<ApiResponse<StudentDTO>> createStudent(@RequestBody StudentDTO request) {
         StudentDTO result = studentService.createStudent(request);
-        return ResponseEntity.ok(ApiResponse.success(ErrorCode.CREATED.getCode(), "Created successfully", result));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(ErrorCode.CREATED.getCode(), "Created successfully", result));
     }
 
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
@@ -64,7 +72,8 @@ public class StudentManagementController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteStudent(@PathVariable Long id) {
         studentService.deleteStudent(id);
-        return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), "Deleted successfully", null));
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                .body(ApiResponse.success(ErrorCode.NO_CONTENT.getCode(), "Deleted successfully", null));
     }
 
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")

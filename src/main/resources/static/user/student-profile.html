@@ -176,7 +176,7 @@
             const data = await response.json();
 
             if (!response.ok) {
-                window.location.href = '/home.html';
+                showMessage('error', data.message || 'Không tải được hồ sơ sinh viên.');
                 return;
             }
 
@@ -190,7 +190,7 @@
             document.getElementById('mePhone').value = st.phone || '';
             document.getElementById('meEmail').value = st.email || '';
         } catch (error) {
-            window.location.href = '/home.html';
+            showMessage('error', 'Không thể kết nối hệ thống để tải hồ sơ.');
         }
     }
 
