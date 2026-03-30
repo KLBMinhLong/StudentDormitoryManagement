@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Sinh Viên - Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+
+    <script src="/ui/admin-sidebar.js" defer></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        success: '#16A34A',
+                        danger: '#DC2626'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+<div id="adminLayout" class="w-full max-w-[1440px] mx-auto p-4 md:p-6 min-h-screen">
+    <div class="admin-grid grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6 min-h-[calc(100vh-3rem)]">
+
+        <div id="adminSidebarMount"></div>
+
+        <main class="space-y-6">
+            <div id="message" class="hidden rounded-base px-4 py-3 text-sm"></div>
+
+            <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 class="font-heading text-2xl">Quản lý Sinh Viên</h2>
+                        <p class="text-text-muted text-sm mt-1">Danh sách sinh viên và các tác vụ quản trị tài khoản.</p>
+                    </div>
+                    <button onclick="openModal()" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium transition-colors">
+                        + Thêm sinh viên
+                    </button>
+                </div>
+
+                <div class="mt-6 flex gap-2">
+                    <input type="text" id="searchInput" placeholder="Tìm theo mã SV, họ tên..." class="border border-border rounded-base px-4 py-2 text-sm w-full md:w-[350px] focus:outline-none focus:border-primary">
+                    <button onclick="loadStudents()" class="rounded-base bg-slate-100 hover:bg-slate-200 text-text-main border border-border px-4 py-2 text-sm font-medium">Tìm</button>
+                </div>
+
+                <div class="mt-6 overflow-x-auto border border-border rounded-base">
+                    <table class="w-full min-w-[900px]">
+                        <thead class="bg-slate-50 border-b border-border">
+                        <tr>
+                            <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">Avatar</th>
+                            <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">Mã SV</th>
+                            <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">Họ và tên</th>
+                            <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">Giới tính</th>
+                            <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">SĐT</th>
+                            <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">Email</th>
+                            <th class="text-left text-sm text-text-muted px-4 py-3 font-medium">Tài khoản</th>
+                            <th class="text-left text-sm text-text-muted px-4 py-3 font-medium text-right">Hành động</th>
+                        </tr>
+                        </thead>
+                        <tbody id="studentBody"></tbody>
+                    </table>
+                </div>
+                <div id="studentPagination" class="mt-4 flex items-center justify-end gap-2"></div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<div id="studentModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+    <div class="bg-bg-card rounded-base w-full max-w-lg p-6 shadow-soft mx-4 max-h-[90vh] overflow-y-auto">
+        <h3 id="modalTitle" class="font-heading text-xl mb-4">Thêm sinh viên mới</h3>
+        <form id="studentForm">
+            <input type="hidden" id="studentId">
+
+            <div id="avatarSection" class="hidden mb-6 flex flex-col items-center gap-3">
+                <img id="previewAvatar" src="/ui/avatar-default.png" onerror="this.src='/ui/avatar-default.png'" alt="Avatar" class="w-24 h-24 rounded-full border border-border object-cover">
+                <div class="flex items-center gap-2">
+                    <input type="file" id="avatarInput" accept="image/*" class="text-sm">
+                    <button type="button" onclick="uploadAvatar()" class="rounded-base bg-slate-100 hover:bg-slate-200 text-text-main border border-border px-3 py-1 text-xs font-medium">Tải ảnh lên</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="col-span-1 md:col-span-2">
+                    <label class="block text-sm font-medium text-text-muted mb-1">Họ và tên *</label>
+                    <input type="text" id="fullName" required class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">Mã SV *</label>
+                    <input type="text" id="studentCode" required class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">CCCD *</label>
+                    <input type="text" id="cccd" required class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">Ngày sinh</label>
+                    <input type="date" id="dateOfBirth" class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">Giới tính</label>
+                    <select id="gender" class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">Số điện thoại</label>
+                    <input type="text" id="phone" class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">Email</label>
+                    <input type="email" id="email" class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-2">
+                <button type="button" onclick="closeModal()" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Hủy</button>
+                <button type="submit" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium">Lưu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="studentDetailModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+    <div class="bg-bg-card rounded-base w-full max-w-xl p-6 shadow-soft mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <h3 class="font-heading text-xl">Chi tiết sinh viên</h3>
+            <button type="button" onclick="closeDetailModal()" class="rounded-base border border-border px-3 py-1.5 text-sm hover:bg-slate-50">Đóng</button>
+        </div>
+        <div id="studentDetailContent" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"></div>
+    </div>
+</div>
+
+<script>
+    function initSidebar() {
+        if (!window.AdminSidebar || typeof window.AdminSidebar.mount !== 'function') {
+            setTimeout(initSidebar, 50);
+            return;
+        }
+        window.AdminSidebar.mount({
+            mountId: 'adminSidebarMount',
+            active: 'students',
+            caption: 'Quản trị sinh viên'
+        });
+    }
+    initSidebar();
+
+    const token = localStorage.getItem('dormitory_access_token');
+    const studentBody = document.getElementById('studentBody');
+    const searchInput = document.getElementById('searchInput');
+    const message = document.getElementById('message');
+    const studentPagination = document.getElementById('studentPagination');
+    const studentModal = document.getElementById('studentModal');
+    const studentDetailModal = document.getElementById('studentDetailModal');
+    const studentDetailContent = document.getElementById('studentDetailContent');
+    const studentForm = document.getElementById('studentForm');
+    const avatarSection = document.getElementById('avatarSection');
+
+    let debounceTimer;
+    let currentPage = 0;
+    let currentKeyword = '';
+    const pageSize = 10;
+
+    function debounceSearch() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            currentPage = 0;
+            currentKeyword = searchInput.value.trim();
+            loadStudents();
+        }, 300);
+    }
+
+    searchInput.addEventListener('input', debounceSearch);
+
+    if (!token) {
+        window.location.href = '/login.html';
+    }
+
+    async function checkAuthorizationAndLoad() {
+        try {
+            const response = await fetch('/api/v1/auth/me', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Phiên đăng nhập không hợp lệ');
+            }
+
+            const user = data.result;
+            const roles = Array.isArray(user.roles) ? user.roles : [];
+            const isAdmin = roles.includes('ROLE_ADMIN');
+
+            if (!isAdmin) {
+                window.location.href = '/home.html';
+                return;
+            }
+
+            loadStudents();
+        } catch (error) {
+            localStorage.removeItem('dormitory_access_token');
+            window.location.href = '/login.html';
+        }
+    }
+
+    function showMessage(type, text) {
+        message.className = 'mb-4 rounded-base px-4 py-3 text-sm block';
+        if (type === 'error') {
+            message.classList.add('bg-red-50', 'text-danger', 'border', 'border-red-100');
+        } else {
+            message.classList.add('bg-green-50', 'text-success', 'border', 'border-green-100');
+        }
+        message.textContent = text;
+        setTimeout(() => { message.classList.add('hidden'); }, 3000);
+    }
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    async function fetchAPI(url, options = {}) {
+        const headers = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+        if (options.body instanceof FormData) {
+            delete headers['Content-Type'];
+        }
+
+        const response = await fetch(url, { ...options, headers });
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : null;
+
+        if (!response.ok) {
+            throw new Error(data?.message || 'Lỗi hệ thống');
+        }
+
+        return data?.result ?? null;
+    }
+
+    function renderStudentPagination(pageData) {
+        if (!pageData || pageData.totalPages <= 1) {
+            studentPagination.innerHTML = '';
+            return;
+        }
+
+        const pageNo = pageData.pageNo;
+        const totalPages = pageData.totalPages;
+        const totalElements = pageData.totalElements;
+        const start = totalElements === 0 ? 0 : pageNo * pageData.pageSize + 1;
+        const end = Math.min((pageNo + 1) * pageData.pageSize, totalElements);
+
+        let pageButtons = '';
+        const begin = Math.max(0, pageNo - 2);
+        const finish = Math.min(totalPages - 1, pageNo + 2);
+
+        for (let i = begin; i <= finish; i++) {
+            const activeClass = i === pageNo
+                ? 'border-primary bg-primary text-white'
+                : 'border-border hover:bg-slate-50';
+            pageButtons += `<button class="rounded-base border px-3 py-1.5 text-sm ${activeClass}" data-page="${i}">${i + 1}</button>`;
+        }
+
+        studentPagination.innerHTML = `
+            <p class="text-sm text-text-muted">Hiển thị ${start}-${end} trên tổng số ${totalElements} kết quả</p>
+            <div class="flex flex-wrap items-center gap-2">
+                <button class="rounded-base border border-border px-3 py-1.5 text-sm ${pageNo === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${pageNo === 0 ? 'disabled' : ''} data-page="${pageNo - 1}">Trước</button>
+                ${pageButtons}
+                <button class="rounded-base border border-border px-3 py-1.5 text-sm ${pageNo >= totalPages - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${pageNo >= totalPages - 1 ? 'disabled' : ''} data-page="${pageNo + 1}">Sau</button>
+            </div>
+        `;
+
+        studentPagination.querySelectorAll('button[data-page]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                currentPage = Number(btn.dataset.page);
+                loadStudents();
+            });
+        });
+    }
+
+    async function loadStudents() {
+        try {
+            currentKeyword = searchInput.value.trim();
+            const keywordQuery = currentKeyword ? `&keyword=${encodeURIComponent(currentKeyword)}` : '';
+            const url = `/api/v1/students?page=${currentPage}&size=${pageSize}&sortBy=id&direction=desc${keywordQuery}`;
+            const pageData = await fetchAPI(url);
+            const students = Array.isArray(pageData?.content) ? pageData.content : [];
+
+            if (!students.length) {
+                studentBody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-text-muted">Không có dữ liệu sinh viên.</td></tr>';
+                renderStudentPagination(pageData);
+                return;
+            }
+
+            studentBody.innerHTML = students.map((st) => {
+                const accountText = st.hasAccount ? escHtml(st.username || 'Đã liên kết') : 'Chưa liên kết';
+                return `
+                <tr class="border-b border-border hover:bg-slate-50">
+                    <td class="px-4 py-3">
+                        <img src="${st.avatarUrl || '/ui/avatar-default.png'}" onerror="this.src='/ui/avatar-default.png'" class="w-10 h-10 rounded-full object-cover border border-border">
+                    </td>
+                    <td class="px-4 py-3 text-sm">${escHtml(st.studentCode || '-')}</td>
+                    <td class="px-4 py-3 text-sm font-medium">${escHtml(st.fullName || '-')}</td>
+                    <td class="px-4 py-3 text-sm">${escHtml(st.gender || '-')}</td>
+                    <td class="px-4 py-3 text-sm">${escHtml(st.phone || '-')}</td>
+                    <td class="px-4 py-3 text-sm">${escHtml(st.email || '-')}</td>
+                    <td class="px-4 py-3 text-sm">${accountText}</td>
+                    <td class="px-4 py-3 text-sm text-right">
+                        <button onclick="viewStudent(${st.id})" class="text-primary hover:underline mr-2">Xem</button>
+                        <button onclick="editStudent(${st.id})" class="text-secondary hover:underline mr-2">Sửa</button>
+                        <button onclick="deleteStudent(${st.id})" class="text-danger hover:underline">Xóa</button>
+                    </td>
+                </tr>
+            `;
+            }).join('');
+
+            renderStudentPagination(pageData);
+        } catch (error) {
+            showMessage('error', error.message);
+        }
+    }
+
+    async function viewStudent(id) {
+        try {
+            const st = await fetchAPI(`/api/v1/students/${id}`);
+            studentDetailContent.innerHTML = `
+                <div><p class="text-text-muted">Mã sinh viên</p><p class="font-medium mt-1">${escHtml(st.studentCode || '-')}</p></div>
+                <div><p class="text-text-muted">Họ và tên</p><p class="font-medium mt-1">${escHtml(st.fullName || '-')}</p></div>
+                <div><p class="text-text-muted">Ngày sinh</p><p class="font-medium mt-1">${escHtml(st.dateOfBirth || '-')}</p></div>
+                <div><p class="text-text-muted">Giới tính</p><p class="font-medium mt-1">${escHtml(st.gender || '-')}</p></div>
+                <div><p class="text-text-muted">Số điện thoại</p><p class="font-medium mt-1">${escHtml(st.phone || '-')}</p></div>
+                <div><p class="text-text-muted">Email</p><p class="font-medium mt-1">${escHtml(st.email || '-')}</p></div>
+                <div class="md:col-span-2"><p class="text-text-muted">CCCD</p><p class="font-medium mt-1">${escHtml(st.cccd || '-')}</p></div>
+            `;
+            studentDetailModal.classList.remove('hidden');
+        } catch (error) {
+            showMessage('error', error.message);
+        }
+    }
+
+    function closeDetailModal() {
+        studentDetailModal.classList.add('hidden');
+    }
+
+    function openModal() {
+        studentForm.reset();
+        document.getElementById('studentId').value = '';
+        document.getElementById('modalTitle').textContent = 'Thêm sinh viên mới';
+        avatarSection.classList.add('hidden');
+        document.getElementById('studentCode').disabled = false;
+        studentModal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+        studentModal.classList.add('hidden');
+    }
+
+    async function editStudent(studentId) {
+        let student;
+        try {
+            student = await fetchAPI(`/api/v1/students/${studentId}`);
+        } catch (error) {
+            showMessage('error', error.message);
+            return;
+        }
+
+        document.getElementById('studentId').value = student.id;
+        document.getElementById('studentCode').value = student.studentCode;
+        document.getElementById('studentCode').disabled = true;
+        document.getElementById('fullName').value = student.fullName;
+        document.getElementById('dateOfBirth').value = student.dateOfBirth || '';
+        document.getElementById('gender').value = student.gender || 'Nam';
+        document.getElementById('phone').value = student.phone || '';
+        document.getElementById('cccd').value = student.cccd;
+        document.getElementById('email').value = student.email || '';
+
+        document.getElementById('previewAvatar').src = student.avatarUrl || '/ui/avatar-default.png';
+        avatarSection.classList.remove('hidden');
+        document.getElementById('modalTitle').textContent = 'Cập nhật sinh viên';
+        studentModal.classList.remove('hidden');
+    }
+
+    studentForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('studentId').value;
+        const payload = {
+            studentCode: document.getElementById('studentCode').value,
+            fullName: document.getElementById('fullName').value,
+            dateOfBirth: document.getElementById('dateOfBirth').value || null,
+            gender: document.getElementById('gender').value,
+            phone: document.getElementById('phone').value,
+            cccd: document.getElementById('cccd').value,
+            email: document.getElementById('email').value
+        };
+
+        try {
+            if (id) {
+                await fetchAPI(`/api/v1/students/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                showMessage('success', 'Cập nhật thành công');
+            } else {
+                await fetchAPI(`/api/v1/students`, { method: 'POST', body: JSON.stringify(payload) });
+                showMessage('success', 'Thêm mới thành công');
+            }
+            closeModal();
+            loadStudents();
+        } catch (error) {
+            showMessage('error', error.message);
+        }
+    });
+
+    async function deleteStudent(id) {
+        if (!confirm('Bạn có chắc chắn muốn xóa sinh viên này? Tài khoản đăng nhập của sinh viên cũng sẽ bị xóa.')) return;
+        try {
+            await fetchAPI(`/api/v1/students/${id}`, { method: 'DELETE' });
+            showMessage('success', 'Xóa thành công');
+            if (currentPage > 0) {
+                currentPage = 0;
+            }
+            loadStudents();
+        } catch (error) {
+            showMessage('error', error.message);
+        }
+    }
+
+    async function uploadAvatar() {
+        const id = document.getElementById('studentId').value;
+        const fileInput = document.getElementById('avatarInput');
+
+        if (!id) {
+            showMessage('error', 'Vui lòng lưu thông tin sinh viên trước khi tải ảnh lên.');
+            return;
+        }
+
+        if (fileInput.files.length === 0) {
+            showMessage('error', 'Vui lòng chọn một file ảnh.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        try {
+            const response = await fetch(`/api/v1/students/${id}/avatar`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Lỗi tải ảnh');
+
+            document.getElementById('previewAvatar').src = data.result;
+            showMessage('success', 'Tải ảnh lên thành công');
+            loadStudents();
+            fileInput.value = '';
+        } catch (error) {
+            showMessage('error', error.message);
+        }
+    }
+
+    studentDetailModal.addEventListener('click', (event) => {
+        if (event.target === studentDetailModal) {
+            closeDetailModal();
+        }
+    });
+
+    if (token) {
+        checkAuthorizationAndLoad();
+    }
+</script>
+</body>
+
+</html>

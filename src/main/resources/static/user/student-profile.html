@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông tin cá nhân - Ký Túc Xá</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        success: '#16A34A',
+                        danger: '#DC2626'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+<header class="border-b border-border bg-bg-card">
+    <div class="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between gap-4">
+        <div>
+            <p class="text-xs text-text-muted">Khu vực sinh viên</p>
+            <h1 class="font-heading text-xl">Quản lý thông tin cá nhân</h1>
+        </div>
+        <nav class="flex items-center gap-2">
+            <a href="/home.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Trở về Trang chủ</a>
+            <a href="/user/contracts.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Hợp đồng của tôi</a>
+            <button id="logoutBtn" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium transition-colors">Đăng xuất</button>
+        </nav>
+    </div>
+</header>
+
+<main class="max-w-[800px] mx-auto px-4 py-8">
+    <div id="message" class="hidden mb-6 rounded-base px-4 py-3 text-sm"></div>
+
+    <section class="bg-bg-card rounded-base shadow-soft border border-border p-8">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="font-heading text-2xl">Hồ sơ sinh viên</h2>
+            <button onclick="openPasswordModal()" class="rounded-base bg-slate-100 hover:bg-slate-200 text-text-main border border-border px-4 py-2 text-sm font-medium transition-colors">Đổi mật khẩu</button>
+        </div>
+
+        <form id="profileForm">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="col-span-1 flex flex-col items-center gap-4">
+                    <img id="profileAvatar" src="/ui/avatar-default.png" onerror="this.src='/ui/avatar-default.png'" alt="Avatar" class="w-40 h-40 rounded-full border-2 border-border object-cover bg-slate-100">
+                    <div class="flex flex-col items-center gap-2 w-full mt-2">
+                        <input type="file" id="myAvatarInput" accept="image/*" class="text-xs w-full max-w-[200px] border border-border p-1 rounded-base">
+                        <button type="button" onclick="uploadMyAvatar()" class="rounded-base bg-slate-100 hover:bg-slate-200 text-text-main border border-border px-3 py-1.5 text-xs font-medium w-full max-w-[200px]">Tải ảnh mới lên</button>
+                    </div>
+                </div>
+
+                <div class="col-span-1 md:col-span-2 grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-text-muted mb-1">Họ và tên</label>
+                        <input type="text" id="meFullName" readonly class="w-full border border-border rounded-base px-4 py-2 text-sm bg-slate-50 outline-none text-text-muted">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-text-muted mb-1">Mã sinh viên</label>
+                        <input type="text" id="meStudentCode" readonly class="w-full border border-border rounded-base px-4 py-2 text-sm bg-slate-50 outline-none text-text-muted">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-text-muted mb-1">CCCD</label>
+                        <input type="text" id="meCccd" readonly class="w-full border border-border rounded-base px-4 py-2 text-sm bg-slate-50 outline-none text-text-muted">
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-8 pt-8 border-t border-border">
+                <p class="col-span-1 md:col-span-2 text-sm font-medium text-text-main mb-2">Thông tin liên hệ</p>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">Ngày sinh</label>
+                    <input type="date" id="meDateOfBirth" class="w-full border border-border rounded-base px-4 py-2 text-sm focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">Giới tính</label>
+                    <select id="meGender" class="w-full border border-border rounded-base px-4 py-2 text-sm focus:outline-none focus:border-primary">
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">Số điện thoại</label>
+                    <input type="text" id="mePhone" class="w-full border border-border rounded-base px-4 py-2 text-sm focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">Email cá nhân</label>
+                    <input type="email" id="meEmail" class="w-full border border-border rounded-base px-4 py-2 text-sm focus:outline-none focus:border-primary">
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end gap-3 pt-6 border-t border-border">
+                <button type="button" onclick="window.location.href='/home.html'" class="rounded-base border border-border px-6 py-2 text-sm font-medium hover:bg-slate-50">Hủy</button>
+                <button type="submit" class="rounded-base bg-primary hover:bg-primary-hover text-white px-6 py-2 text-sm font-medium">Lưu thay đổi</button>
+            </div>
+        </form>
+    </section>
+</main>
+
+<div id="passwordModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+    <div class="bg-bg-card rounded-base w-full max-w-md p-6 shadow-soft mx-4">
+        <h3 class="font-heading text-xl mb-4">Đổi mật khẩu</h3>
+        <form id="passwordForm">
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">Mật khẩu cũ *</label>
+                    <input type="password" id="oldPassword" required class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">Mật khẩu mới *</label>
+                    <input type="password" id="newPassword" required class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">Xác nhận mật khẩu mới *</label>
+                    <input type="password" id="confirmPassword" required class="w-full border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-2">
+                <button type="button" onclick="closePasswordModal()" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Hủy</button>
+                <button type="submit" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium">Xác nhận</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('dormitory_access_token');
+    const message = document.getElementById('message');
+    const profileForm = document.getElementById('profileForm');
+    const passwordModal = document.getElementById('passwordModal');
+    const passwordForm = document.getElementById('passwordForm');
+
+    if (!token) {
+        window.location.href = '/login.html';
+    }
+
+    function showMessage(type, text) {
+        message.className = 'mb-6 rounded-base px-4 py-3 text-sm block';
+        if (type === 'error') {
+            message.classList.add('bg-red-50', 'text-danger', 'border', 'border-red-100');
+        } else {
+            message.classList.add('bg-green-50', 'text-success', 'border', 'border-green-100');
+        }
+        message.textContent = text;
+        setTimeout(() => { message.classList.add('hidden'); }, 3000);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function loadProfile() {
+        try {
+            const response = await fetch('/api/v1/students/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                showMessage('error', data.message || 'Không tải được hồ sơ sinh viên.');
+                return;
+            }
+
+            const st = data.result;
+            document.getElementById('profileAvatar').src = st.avatarUrl || '/ui/avatar-default.png';
+            document.getElementById('meFullName').value = st.fullName;
+            document.getElementById('meStudentCode').value = st.studentCode;
+            document.getElementById('meCccd').value = st.cccd;
+            document.getElementById('meDateOfBirth').value = st.dateOfBirth || '';
+            document.getElementById('meGender').value = st.gender || 'Nam';
+            document.getElementById('mePhone').value = st.phone || '';
+            document.getElementById('meEmail').value = st.email || '';
+        } catch (error) {
+            showMessage('error', 'Không thể kết nối hệ thống để tải hồ sơ.');
+        }
+    }
+
+    profileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            dateOfBirth: document.getElementById('meDateOfBirth').value || null,
+            gender: document.getElementById('meGender').value,
+            phone: document.getElementById('mePhone').value,
+            email: document.getElementById('meEmail').value
+        };
+
+        try {
+            const response = await fetch('/api/v1/students/me', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || 'Cập nhật thất bại');
+            }
+
+            showMessage('success', 'Cập nhật thông tin thành công');
+        } catch (error) {
+            showMessage('error', error.message);
+        }
+    });
+
+    async function uploadMyAvatar() {
+        const fileInput = document.getElementById('myAvatarInput');
+
+        if (fileInput.files.length === 0) {
+            showMessage('error', 'Vui lòng chọn một file ảnh.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        try {
+            const response = await fetch('/api/v1/students/me/avatar', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Lỗi tải ảnh');
+
+            document.getElementById('profileAvatar').src = data.result;
+            showMessage('success', 'Đổi ảnh đại diện thành công');
+            fileInput.value = '';
+        } catch (error) {
+            showMessage('error', error.message);
+        }
+    }
+
+    function openPasswordModal() {
+        passwordForm.reset();
+        passwordModal.classList.remove('hidden');
+    }
+
+    function closePasswordModal() {
+        passwordModal.classList.add('hidden');
+    }
+
+    passwordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const oldPassword = document.getElementById('oldPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        if (newPassword !== confirmPassword) {
+            alert('Mật khẩu xác nhận không khớp!');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/v1/students/me/password', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ oldPassword, newPassword })
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || 'Đổi mật khẩu thất bại');
+            }
+
+            showMessage('success', 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.');
+            closePasswordModal();
+            setTimeout(() => {
+                localStorage.removeItem('dormitory_access_token');
+                window.location.href = '/login.html';
+            }, 2000);
+        } catch (error) {
+            alert(error.message);
+        }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('dormitory_access_token');
+        window.location.href = '/login.html';
+    });
+
+    loadProfile();
+</script>
+</body>
+
+</html>

@@ -1,5 +1,7 @@
 package com.dormitory.management.dto.auth;
 
+import java.time.LocalDate;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -26,7 +28,23 @@ public class RegisterStudentRequestDTO {
     @Size(max = 150, message = "Full name must not exceed 150 characters")
     private String fullName;
 
+    @NotBlank(message = "Student code is required")
+    @Size(max = 50, message = "Student code must not exceed 50 characters")
+    private String studentCode;
+
+    @NotBlank(message = "CCCD is required")
+    @Size(max = 20, message = "CCCD must not exceed 20 characters")
+    private String cccd;
+
     @Email(message = "Email is invalid")
     @Size(max = 120, message = "Email must not exceed 120 characters")
     private String email;
+
+    @Size(max = 20, message = "Phone must not exceed 20 characters")
+    private String phone;
+
+    @Size(max = 20, message = "Gender must not exceed 20 characters")
+    private String gender;
+
+    private LocalDate dateOfBirth;
 }

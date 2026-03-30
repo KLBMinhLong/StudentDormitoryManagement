@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hướng dẫn hoàn tất hợp đồng - KTX</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+<main class="max-w-3xl mx-auto px-4 py-8">
+    <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+        <h1 class="font-heading text-2xl">Nộp hồ sơ online thành công</h1>
+        <p class="text-text-muted mt-2">Yêu cầu hợp đồng của bạn đã được gửi đến ban quản lý và đang chờ duyệt.</p>
+
+        <div class="mt-6 rounded-base border border-warning bg-amber-50 p-4">
+            <p class="text-sm text-warning font-medium">Thời gian xử lý trực tiếp: trong vòng 48 giờ kể từ lúc nộp hồ sơ.</p>
+            <p class="text-sm text-text-main mt-2">Mã yêu cầu: <span id="contractCode" class="font-semibold">-</span></p>
+        </div>
+
+        <div class="mt-6 space-y-3 text-sm">
+            <h2 class="font-heading text-lg">Bạn cần mang theo khi đến ban quản lý</h2>
+            <p>- CCCD photo</p>
+            <p>- Thẻ sinh viên</p>
+            <p>- Số tiền phù hợp theo thông báo tiền phòng và tiền cọc</p>
+        </div>
+
+        <div class="mt-6 space-y-2 text-sm">
+            <h2 class="font-heading text-lg">Địa chỉ ban quản lý ký túc xá</h2>
+            <p>Văn phòng Ban quản lý KTX - Khu nhà điều hành, tầng 1</p>
+            <p>Giờ làm việc: 08:00 - 17:00 (Thứ 2 đến Thứ 7)</p>
+        </div>
+
+        <div class="mt-6 rounded-base border border-border bg-slate-50 p-4 text-sm text-text-muted">
+            Nếu quá 48 giờ mà hồ sơ không được duyệt ACTIVE, hệ thống sẽ tự động hủy yêu cầu và trả giường về trạng thái có thể đăng ký.
+        </div>
+
+        <div class="mt-6 flex flex-wrap gap-3">
+            <a href="/home.html" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Về trang chủ</a>
+            <a href="/user/student-profile.html" class="rounded-base bg-primary text-white px-4 py-2 text-sm font-medium hover:bg-primary-hover">Xem hồ sơ của tôi</a>
+        </div>
+    </section>
+</main>
+
+<script>
+    const contractId = new URLSearchParams(window.location.search).get('contractId');
+    document.getElementById('contractCode').textContent = contractId ? `HD-${contractId}` : 'Chưa xác định';
+</script>
+</body>
+</html>

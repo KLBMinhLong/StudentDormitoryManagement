@@ -50,9 +50,11 @@ public class SecurityConfig {
                                 "/register",
                                 "/register.html",
                                 "/home",
+                                "/my-contracts",
                                 "/user/**",
                                 "/home.html",
                                 "/admin",
+                                "/admin/contracts",
                                 "/admin/**",
                                 "/admin.html",
                                 "/buildings",
@@ -60,13 +62,17 @@ public class SecurityConfig {
                                 "/rooms",
                                 "/rooms.html",
                                 "/room-detail.html",
+                                "/student_management.html",
+                                "/student-profile.html",    
                                 "/ui/**",
+                                "/images/**",
                                 "/error")
                         .permitAll()
                             .requestMatchers(HttpMethod.GET, "/api/v1/buildings/**", "/api/v1/rooms/**", "/api/v1/room-types/**").permitAll()
                         .requestMatchers("/api/v1/buildings/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/v1/admin/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/v1/rooms/**", "/api/v1/room-types/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/api/v1/student/**").hasAnyAuthority("ROLE_STUDENT", "ROLE_ADMIN")
+                        .requestMatchers("/api/v1/students/**").hasAnyAuthority("ROLE_STUDENT", "ROLE_ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(restAuthenticationEntryPoint)

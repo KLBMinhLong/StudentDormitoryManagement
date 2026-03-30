@@ -38,13 +38,14 @@ public class RoomController {
     @GetMapping
     public ResponseEntity<ApiResponse<PagedResponseDTO<RoomDTO>>> getAllRooms(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String genderAllowed,
             @RequestParam(required = false) Long buildingId,
             @RequestParam(required = false) RoomStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "desc") String direction) {
-        PagedResponseDTO<RoomDTO> result = roomService.getAllRooms(keyword, buildingId, status, page, size, sortBy, direction);
+        PagedResponseDTO<RoomDTO> result = roomService.getAllRooms(keyword, genderAllowed, buildingId, status, page, size, sortBy, direction);
         return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), "Get all rooms successfully", result));
     }
 

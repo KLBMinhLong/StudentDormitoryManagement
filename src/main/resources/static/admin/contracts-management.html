@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý hợp đồng - Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="/ui/admin-sidebar.js" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        success: '#16A34A',
+                        danger: '#DC2626',
+                        warning: '#D97706'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+<div id="adminLayout" class="w-full max-w-[1440px] mx-auto p-4 md:p-6 min-h-screen">
+    <div class="admin-grid grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6 min-h-[calc(100vh-3rem)]">
+        <div id="adminSidebarMount"></div>
+
+        <main class="space-y-6">
+            <div id="message" class="hidden rounded-base px-4 py-3 text-sm"></div>
+
+            <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                <div class="flex items-start justify-between gap-3 flex-wrap">
+                    <div>
+                        <h2 class="font-heading text-2xl">Quản lý hợp đồng nội trú</h2>
+                        <p class="text-text-muted text-sm mt-1">Theo dõi hợp đồng chờ duyệt, đang hiệu lực, đã hết hạn và đã hủy; hỗ trợ hủy sớm cho hợp đồng còn hiệu lực.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="/admin/contract_registration.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Lập hợp đồng mới</a>
+                        <button id="refreshBtn" type="button" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Làm mới</button>
+                    </div>
+                </div>
+
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+                    <div class="md:col-span-2">
+                        <label class="text-sm text-text-muted block mb-1">Từ khóa</label>
+                        <input id="keywordInput" type="text" placeholder="Tìm theo tên, mã sinh viên, phòng..." class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="text-sm text-text-muted block mb-1">Trạng thái</label>
+                        <select id="statusSelect" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="PENDING">Chờ duyệt</option>
+                            <option value="ACTIVE">Đang hiệu lực</option>
+                            <option value="EXPIRED">Hết hạn</option>
+                            <option value="CANCELLED">Đã hủy</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-sm text-text-muted block mb-1">Thực tế ở</label>
+                        <select id="occupancySelect" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="">Tất cả</option>
+                            <option value="STAYED">Đã từng ở thực tế</option>
+                            <option value="NOT_STAYED">Chưa từng ở thực tế</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-sm text-text-muted block mb-1">Sắp xếp</label>
+                        <select id="sortSelect" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="createdAt,desc">Mới nhất trước</option>
+                            <option value="createdAt,asc">Cũ nhất trước</option>
+                            <option value="startDate,desc">Ngày bắt đầu giảm dần</option>
+                            <option value="startDate,asc">Ngày bắt đầu tăng dần</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                <div class="overflow-x-auto rounded-base border border-border">
+                    <table class="w-full min-w-[1200px] text-sm">
+                        <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-text-muted">Mã HĐ</th>
+                            <th class="px-4 py-3 text-left text-text-muted">Sinh viên</th>
+                            <th class="px-4 py-3 text-left text-text-muted">Phòng/Giường</th>
+                            <th class="px-4 py-3 text-left text-text-muted">Thời gian ở</th>
+                            <th class="px-4 py-3 text-left text-text-muted">Trạng thái</th>
+                            <th class="px-4 py-3 text-left text-text-muted">Hạn xử lý</th>
+                            <th class="px-4 py-3 text-right text-text-muted">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody id="contractBody">
+                        <tr>
+                            <td colspan="7" class="px-4 py-6 text-center text-text-muted">Đang tải dữ liệu...</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="pagination" class="mt-4 flex items-center justify-between gap-2 flex-wrap"></div>
+            </section>
+
+            <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                <h3 class="font-heading text-xl">Yêu cầu gia hạn/hủy hợp đồng từ sinh viên</h3>
+                <p class="text-text-muted text-sm mt-1">Admin duyệt sau khi sinh viên hoàn tất đối soát tiền tại ban quản lý.</p>
+
+                <div class="mt-4 overflow-x-auto rounded-base border border-border">
+                    <table class="w-full min-w-[1100px] text-sm">
+                        <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-text-muted">Mã yêu cầu</th>
+                            <th class="px-4 py-3 text-left text-text-muted">Sinh viên</th>
+                            <th class="px-4 py-3 text-left text-text-muted">Hợp đồng</th>
+                            <th class="px-4 py-3 text-left text-text-muted">Loại</th>
+                            <th class="px-4 py-3 text-left text-text-muted">Nội dung</th>
+                            <th class="px-4 py-3 text-left text-text-muted">Trạng thái</th>
+                            <th class="px-4 py-3 text-right text-text-muted">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody id="requestBody">
+                        <tr>
+                            <td colspan="7" class="px-4 py-6 text-center text-text-muted">Đang tải danh sách yêu cầu...</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="requestPagination" class="mt-4 flex items-center justify-between gap-2 flex-wrap"></div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<div id="detailModal" class="hidden fixed inset-0 z-40 bg-slate-900/35 backdrop-blur-sm p-4 md:p-8">
+    <div class="max-w-3xl mx-auto bg-bg-card border border-border rounded-base shadow-soft overflow-hidden">
+        <div class="px-5 py-4 border-b border-border flex items-center justify-between gap-3">
+            <h4 class="font-heading text-lg">Chi tiết hợp đồng</h4>
+            <button id="closeModalBtn" type="button" class="rounded-base border border-border px-3 py-1.5 text-sm hover:bg-slate-50">Đóng</button>
+        </div>
+        <div id="detailContent" class="px-5 py-4 text-sm grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+    </div>
+</div>
+
+<div id="actionModal" class="hidden fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-sm p-4">
+    <div class="max-w-lg mx-auto mt-[12vh] bg-bg-card border border-border rounded-base shadow-soft overflow-hidden">
+        <div class="px-5 py-4 border-b border-border">
+            <h4 id="actionModalTitle" class="font-heading text-lg">Xác nhận thao tác</h4>
+            <p id="actionModalMessage" class="text-sm text-text-muted mt-1"></p>
+        </div>
+        <div class="px-5 py-4 space-y-2">
+            <label id="actionModalLabel" for="actionModalInput" class="hidden text-sm text-text-muted"></label>
+            <textarea id="actionModalInput" rows="3" class="hidden w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder=""></textarea>
+        </div>
+        <div class="px-5 py-4 border-t border-border flex items-center justify-end gap-2">
+            <button id="actionModalCancel" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Hủy</button>
+            <button id="actionModalConfirm" type="button" class="rounded-base bg-primary text-white px-4 py-2 text-sm font-medium hover:bg-primary-hover">Xác nhận</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('dormitory_access_token');
+    if (!token) {
+        window.location.href = '/login.html';
+    }
+
+    function initSidebar() {
+        if (!window.AdminSidebar || typeof window.AdminSidebar.mount !== 'function') {
+            setTimeout(initSidebar, 50);
+            return;
+        }
+        window.AdminSidebar.mount({
+            mountId: 'adminSidebarMount',
+            active: 'contracts',
+            caption: 'Quản lý hợp đồng'
+        });
+    }
+
+    initSidebar();
+
+    const state = {
+        page: 0,
+        size: 10,
+        keyword: '',
+        status: '',
+        occupancyType: '',
+        sortBy: 'createdAt',
+        direction: 'desc'
+    };
+
+    const message = document.getElementById('message');
+    const body = document.getElementById('contractBody');
+    const pagination = document.getElementById('pagination');
+    const keywordInput = document.getElementById('keywordInput');
+    const statusSelect = document.getElementById('statusSelect');
+    const occupancySelect = document.getElementById('occupancySelect');
+    const sortSelect = document.getElementById('sortSelect');
+    const requestBody = document.getElementById('requestBody');
+    const requestPagination = document.getElementById('requestPagination');
+    const detailModal = document.getElementById('detailModal');
+    const detailContent = document.getElementById('detailContent');
+    const actionModal = document.getElementById('actionModal');
+    const actionModalTitle = document.getElementById('actionModalTitle');
+    const actionModalMessage = document.getElementById('actionModalMessage');
+    const actionModalLabel = document.getElementById('actionModalLabel');
+    const actionModalInput = document.getElementById('actionModalInput');
+    const actionModalCancel = document.getElementById('actionModalCancel');
+    const actionModalConfirm = document.getElementById('actionModalConfirm');
+    let resolveActionModal = null;
+
+    const requestState = {
+        page: 0,
+        size: 10,
+        status: 'PENDING',
+        changeType: '',
+        keyword: '',
+        sortBy: 'createdAt',
+        direction: 'desc'
+    };
+
+    function showMessage(type, text) {
+        message.className = 'rounded-base px-4 py-3 text-sm block border';
+        if (type === 'error') {
+            message.classList.add('bg-red-50', 'text-danger', 'border-red-100');
+        } else {
+            message.classList.add('bg-green-50', 'text-success', 'border-green-100');
+        }
+        message.textContent = text;
+        setTimeout(() => message.classList.add('hidden'), 3500);
+    }
+
+    function formatDate(value) {
+        if (!value) return '-';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return '-';
+        return d.toLocaleDateString('vi-VN');
+    }
+
+    function formatDateTime(value) {
+        if (!value) return '-';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return '-';
+        return d.toLocaleString('vi-VN');
+    }
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + ' đ';
+    }
+
+    function statusBadge(status) {
+        const normalized = String(status || '').toUpperCase();
+        if (normalized === 'PENDING') return '<span class="px-2 py-1 rounded-full text-xs bg-amber-100 text-warning">Chờ duyệt</span>';
+        if (normalized === 'ACTIVE') return '<span class="px-2 py-1 rounded-full text-xs bg-green-100 text-success">Hiệu lực</span>';
+        if (normalized === 'EXPIRED') return '<span class="px-2 py-1 rounded-full text-xs bg-slate-200 text-text-muted">Hết hạn</span>';
+        if (normalized === 'CANCELLED') return '<span class="px-2 py-1 rounded-full text-xs bg-red-100 text-danger">Đã hủy</span>';
+        return '<span class="px-2 py-1 rounded-full text-xs bg-slate-100 text-text-muted">Không xác định</span>';
+    }
+
+    function requestStatusBadge(status) {
+        const normalized = String(status || '').toUpperCase();
+        if (normalized === 'PENDING') return '<span class="px-2 py-1 rounded-full text-xs bg-amber-100 text-warning">Chờ duyệt</span>';
+        if (normalized === 'APPROVED') return '<span class="px-2 py-1 rounded-full text-xs bg-green-100 text-success">Đã duyệt</span>';
+        if (normalized === 'REJECTED') return '<span class="px-2 py-1 rounded-full text-xs bg-red-100 text-danger">Từ chối</span>';
+        return '<span class="px-2 py-1 rounded-full text-xs bg-slate-100 text-text-muted">Không xác định</span>';
+    }
+
+    function requestTypeLabel(changeType) {
+        return String(changeType || '').toUpperCase() === 'EXTEND' ? 'Gia hạn' : 'Hủy';
+    }
+
+    function occupancyBadge(item) {
+        return item.everActivated
+            ? '<span class="px-2 py-1 rounded-full text-xs bg-green-100 text-success">Đã ở thực tế</span>'
+            : '<span class="px-2 py-1 rounded-full text-xs bg-slate-200 text-text-muted">Chưa ở thực tế</span>';
+    }
+
+    function openActionModal(config) {
+        const settings = {
+            title: 'Xác nhận thao tác',
+            message: 'Bạn có chắc chắn muốn tiếp tục?',
+            inputLabel: 'Ghi chú (không bắt buộc)',
+            inputPlaceholder: '',
+            defaultValue: '',
+            confirmText: 'Xác nhận',
+            confirmClass: 'bg-primary text-white hover:bg-primary-hover',
+            showInput: false,
+            ...config
+        };
+
+        actionModalTitle.textContent = settings.title;
+        actionModalMessage.textContent = settings.message;
+        actionModalConfirm.textContent = settings.confirmText;
+        actionModalConfirm.className = `rounded-base px-4 py-2 text-sm font-medium ${settings.confirmClass}`;
+
+        if (settings.showInput) {
+            actionModalLabel.textContent = settings.inputLabel;
+            actionModalLabel.classList.remove('hidden');
+            actionModalInput.classList.remove('hidden');
+            actionModalInput.placeholder = settings.inputPlaceholder;
+            actionModalInput.value = settings.defaultValue;
+        } else {
+            actionModalLabel.classList.add('hidden');
+            actionModalInput.classList.add('hidden');
+            actionModalInput.value = '';
+        }
+
+        actionModal.classList.remove('hidden');
+        if (settings.showInput) {
+            setTimeout(() => actionModalInput.focus(), 0);
+        } else {
+            setTimeout(() => actionModalConfirm.focus(), 0);
+        }
+
+        return new Promise((resolve) => {
+            resolveActionModal = resolve;
+        });
+    }
+
+    function closeActionModal(payload) {
+        actionModal.classList.add('hidden');
+        if (resolveActionModal) {
+            const resolver = resolveActionModal;
+            resolveActionModal = null;
+            resolver(payload);
+        }
+    }
+
+    async function fetchAPI(url, options = {}) {
+        const headers = {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+        const response = await fetch(url, { ...options, headers });
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload.message || 'Lỗi hệ thống');
+        }
+        return payload.result;
+    }
+
+    function renderPagination(meta) {
+        const total = Number(meta.totalElements || 0);
+        const totalPages = Number(meta.totalPages || 0);
+        const pageNo = Number(meta.pageNo || 0);
+
+        if (totalPages <= 1) {
+            pagination.innerHTML = `<p class="text-sm text-text-muted">Hiển thị ${total} kết quả</p>`;
+            return;
+        }
+
+        const from = total === 0 ? 0 : pageNo * state.size + 1;
+        const to = Math.min((pageNo + 1) * state.size, total);
+
+        let pageButtons = '';
+        const start = Math.max(0, pageNo - 2);
+        const end = Math.min(totalPages - 1, pageNo + 2);
+        for (let i = start; i <= end; i += 1) {
+            pageButtons += `<button data-page="${i}" class="rounded-base border px-3 py-1.5 text-sm ${i === pageNo ? 'border-primary bg-primary text-white' : 'border-border hover:bg-slate-50'}">${i + 1}</button>`;
+        }
+
+        pagination.innerHTML = `
+            <p class="text-sm text-text-muted">Hiển thị ${from}-${to} trên tổng số ${total} kết quả</p>
+            <div class="flex items-center gap-2">
+                <button data-page="${Math.max(0, pageNo - 1)}" class="rounded-base border border-border px-3 py-1.5 text-sm ${pageNo === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${pageNo === 0 ? 'disabled' : ''}>Trước</button>
+                ${pageButtons}
+                <button data-page="${Math.min(totalPages - 1, pageNo + 1)}" class="rounded-base border border-border px-3 py-1.5 text-sm ${pageNo >= totalPages - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${pageNo >= totalPages - 1 ? 'disabled' : ''}>Sau</button>
+            </div>
+        `;
+
+        pagination.querySelectorAll('button[data-page]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                state.page = Number(btn.dataset.page);
+                loadContracts();
+                document.querySelector('main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+    }
+
+    function actionButtons(item) {
+        const status = String(item.status || '').toUpperCase();
+        let actions = `<button data-id="${item.id}" data-action="detail" class="rounded-base border border-border px-3 py-1.5 text-xs font-medium hover:bg-slate-50">Chi tiết</button>`;
+
+        if (status === 'PENDING') {
+            actions += `<button data-id="${item.id}" data-action="approve" class="rounded-base bg-primary text-white px-3 py-1.5 text-xs font-medium hover:bg-primary-hover">Duyệt</button>`;
+            actions += `<button data-id="${item.id}" data-action="reject" class="rounded-base border border-danger text-danger px-3 py-1.5 text-xs font-medium hover:bg-red-50">Từ chối</button>`;
+        }
+
+        if (status === 'ACTIVE') {
+            actions += `<button data-id="${item.id}" data-action="cancel" class="rounded-base border border-warning text-warning px-3 py-1.5 text-xs font-medium hover:bg-amber-50">Hủy sớm</button>`;
+        }
+
+        return actions;
+    }
+
+    function renderRequestPagination(meta) {
+        const total = Number(meta.totalElements || 0);
+        const totalPages = Number(meta.totalPages || 0);
+        const pageNo = Number(meta.pageNo || 0);
+
+        if (totalPages <= 1) {
+            requestPagination.innerHTML = `<p class="text-sm text-text-muted">Hiển thị ${total} yêu cầu</p>`;
+            return;
+        }
+
+        const from = total === 0 ? 0 : pageNo * requestState.size + 1;
+        const to = Math.min((pageNo + 1) * requestState.size, total);
+        let pageButtons = '';
+        const start = Math.max(0, pageNo - 2);
+        const end = Math.min(totalPages - 1, pageNo + 2);
+        for (let i = start; i <= end; i += 1) {
+            pageButtons += `<button data-page="${i}" class="rounded-base border px-3 py-1.5 text-sm ${i === pageNo ? 'border-primary bg-primary text-white' : 'border-border hover:bg-slate-50'}">${i + 1}</button>`;
+        }
+
+        requestPagination.innerHTML = `
+            <p class="text-sm text-text-muted">Hiển thị ${from}-${to} trên tổng số ${total} yêu cầu</p>
+            <div class="flex items-center gap-2">
+                <button data-page="${Math.max(0, pageNo - 1)}" class="rounded-base border border-border px-3 py-1.5 text-sm ${pageNo === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${pageNo === 0 ? 'disabled' : ''}>Trước</button>
+                ${pageButtons}
+                <button data-page="${Math.min(totalPages - 1, pageNo + 1)}" class="rounded-base border border-border px-3 py-1.5 text-sm ${pageNo >= totalPages - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${pageNo >= totalPages - 1 ? 'disabled' : ''}>Sau</button>
+            </div>
+        `;
+
+        requestPagination.querySelectorAll('button[data-page]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                requestState.page = Number(btn.dataset.page);
+                loadChangeRequests();
+            });
+        });
+    }
+
+    async function loadContracts() {
+        body.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-text-muted">Đang tải dữ liệu...</td></tr>';
+
+        const params = new URLSearchParams({
+            page: String(state.page),
+            size: String(state.size),
+            sortBy: state.sortBy,
+            direction: state.direction
+        });
+
+        if (state.keyword) params.set('keyword', state.keyword);
+        if (state.status) params.set('status', state.status);
+        if (state.occupancyType) params.set('occupancyType', state.occupancyType);
+
+        try {
+            const result = await fetchAPI(`/api/v1/contracts/admin/management?${params.toString()}`);
+            const rows = Array.isArray(result.content) ? result.content : [];
+
+            if (rows.length === 0) {
+                body.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-text-muted">Không có hợp đồng phù hợp.</td></tr>';
+                renderPagination(result);
+                return;
+            }
+
+            body.innerHTML = rows.map((item) => `
+                <tr class="border-t border-border">
+                    <td class="px-4 py-3">#${item.id}</td>
+                    <td class="px-4 py-3">
+                        <p class="font-medium">${item.studentName || '-'}</p>
+                        <p class="text-xs text-text-muted">${item.studentCode || '-'}</p>
+                    </td>
+                    <td class="px-4 py-3">Phòng ${item.roomNumber || '-'} - Giường ${item.bedNumber || '-'}</td>
+                    <td class="px-4 py-3">${formatDate(item.startDate)} - ${formatDate(item.endDate)}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex flex-col items-start gap-1">
+                            ${statusBadge(item.status)}
+                            ${occupancyBadge(item)}
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">${formatDateTime(item.holdExpiresAt)}</td>
+                    <td class="px-4 py-3 text-right"><div class="inline-flex gap-2">${actionButtons(item)}</div></td>
+                </tr>
+            `).join('');
+
+            renderPagination(result);
+        } catch (error) {
+            body.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-danger">${error.message || 'Không thể tải danh sách hợp đồng.'}</td></tr>`;
+        }
+    }
+
+    function requestActionButtons(item) {
+        const status = String(item.status || '').toUpperCase();
+        let actions = '';
+
+        if (status === 'PENDING') {
+            actions += `<button data-request-id="${item.id}" data-request-action="approve" class="rounded-base bg-primary text-white px-3 py-1.5 text-xs font-medium hover:bg-primary-hover">Duyệt</button>`;
+            actions += `<button data-request-id="${item.id}" data-request-action="reject" class="rounded-base border border-danger text-danger px-3 py-1.5 text-xs font-medium hover:bg-red-50">Từ chối</button>`;
+        } else {
+            actions += '<span class="text-xs text-text-muted">Đã xử lý</span>';
+        }
+
+        return actions;
+    }
+
+    async function loadChangeRequests() {
+        requestBody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-text-muted">Đang tải danh sách yêu cầu...</td></tr>';
+
+        const params = new URLSearchParams({
+            page: String(requestState.page),
+            size: String(requestState.size),
+            sortBy: requestState.sortBy,
+            direction: requestState.direction
+        });
+
+        if (requestState.status) params.set('status', requestState.status);
+        if (requestState.changeType) params.set('changeType', requestState.changeType);
+        if (requestState.keyword) params.set('keyword', requestState.keyword);
+
+        try {
+            const result = await fetchAPI(`/api/v1/contracts/admin/change-requests?${params.toString()}`);
+            const rows = Array.isArray(result.content) ? result.content : [];
+
+            if (rows.length === 0) {
+                requestBody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-text-muted">Không có yêu cầu thay đổi nào.</td></tr>';
+                renderRequestPagination(result);
+                return;
+            }
+
+            requestBody.innerHTML = rows.map((item) => `
+                <tr class="border-t border-border">
+                    <td class="px-4 py-3">#${item.id}</td>
+                    <td class="px-4 py-3">
+                        <p class="font-medium">${item.studentName || '-'}</p>
+                        <p class="text-xs text-text-muted">${item.studentCode || '-'}</p>
+                    </td>
+                    <td class="px-4 py-3">#${item.contractId} - Phòng ${item.roomNumber || '-'} / Giường ${item.bedNumber || '-'}</td>
+                    <td class="px-4 py-3">${requestTypeLabel(item.changeType)}</td>
+                    <td class="px-4 py-3">
+                        <p>${item.reason || '-'}</p>
+                        ${item.changeType === 'EXTEND' ? `<p class="text-xs text-text-muted mt-1">Đề nghị đến: ${formatDate(item.requestedEndDate)}</p>` : ''}
+                    </td>
+                    <td class="px-4 py-3">${requestStatusBadge(item.status)}</td>
+                    <td class="px-4 py-3 text-right"><div class="inline-flex gap-2">${requestActionButtons(item)}</div></td>
+                </tr>
+            `).join('');
+
+            renderRequestPagination(result);
+        } catch (error) {
+            requestBody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-danger">${error.message || 'Không thể tải danh sách yêu cầu.'}</td></tr>`;
+        }
+    }
+
+    async function handleRequestAction(requestId, action) {
+        try {
+            if (action === 'approve') {
+                const dialog = await openActionModal({
+                    title: 'Duyệt yêu cầu thay đổi',
+                    message: 'Xác nhận duyệt yêu cầu thay đổi hợp đồng này?',
+                    inputLabel: 'Ghi chú duyệt (không bắt buộc)',
+                    inputPlaceholder: 'Ví dụ: Đã đối soát tiền tại ban quản lý.',
+                    defaultValue: 'Đã đối soát tiền tại ban quản lý.',
+                    confirmText: 'Duyệt',
+                    confirmClass: 'bg-primary text-white hover:bg-primary-hover',
+                    showInput: true
+                });
+                if (!dialog.confirmed) {
+                    return;
+                }
+                const adminNote = dialog.note;
+                const query = adminNote ? `?adminNote=${encodeURIComponent(adminNote)}` : '';
+                await fetchAPI(`/api/v1/contracts/change-requests/${requestId}/approve${query}`, { method: 'PUT' });
+                showMessage('success', 'Đã duyệt yêu cầu thay đổi hợp đồng.');
+            } else {
+                const dialog = await openActionModal({
+                    title: 'Từ chối yêu cầu thay đổi',
+                    message: 'Xác nhận từ chối yêu cầu thay đổi hợp đồng này?',
+                    inputLabel: 'Lý do từ chối (không bắt buộc)',
+                    inputPlaceholder: 'Ví dụ: Hồ sơ/đối soát chưa đầy đủ.',
+                    defaultValue: 'Hồ sơ/đối soát chưa đầy đủ.',
+                    confirmText: 'Từ chối',
+                    confirmClass: 'bg-danger text-white hover:bg-red-700',
+                    showInput: true
+                });
+                if (!dialog.confirmed) {
+                    return;
+                }
+                const adminNote = dialog.note;
+                const query = adminNote ? `?adminNote=${encodeURIComponent(adminNote)}` : '';
+                await fetchAPI(`/api/v1/contracts/change-requests/${requestId}/reject${query}`, { method: 'PUT' });
+                showMessage('success', 'Đã từ chối yêu cầu thay đổi hợp đồng.');
+            }
+
+            await loadContracts();
+            await loadChangeRequests();
+        } catch (error) {
+            showMessage('error', error.message || 'Không thể xử lý yêu cầu thay đổi hợp đồng.');
+        }
+    }
+
+    async function openDetail(contractId) {
+        try {
+            const detail = await fetchAPI(`/api/v1/contracts/admin/${contractId}`);
+            detailContent.innerHTML = `
+                <div><p class="text-text-muted">Mã hợp đồng</p><p class="font-medium">#${detail.id}</p></div>
+                <div><p class="text-text-muted">Trạng thái</p><p>${statusBadge(detail.status)}</p></div>
+                <div><p class="text-text-muted">Sinh viên</p><p class="font-medium">${detail.studentName || '-'} (${detail.studentCode || '-'})</p></div>
+                <div><p class="text-text-muted">Phòng/Giường</p><p class="font-medium">Phòng ${detail.roomNumber || '-'} - Giường ${detail.bedNumber || '-'}</p></div>
+                <div><p class="text-text-muted">Thời gian ở</p><p class="font-medium">${formatDate(detail.startDate)} - ${formatDate(detail.endDate)}</p></div>
+                <div><p class="text-text-muted">Tiền phòng/tháng</p><p class="font-medium">${formatCurrency(detail.monthlyRoomPrice)}</p></div>
+                <div><p class="text-text-muted">Tiền cọc</p><p class="font-medium">${formatCurrency(detail.depositAmount)}</p></div>
+                <div><p class="text-text-muted">Tổng tiền</p><p class="font-medium">${formatCurrency(detail.totalRoomAmount)}</p></div>
+                <div><p class="text-text-muted">Nộp hồ sơ</p><p class="font-medium">${detail.submitted ? 'Đã nộp' : 'Chưa nộp'}</p></div>
+                <div><p class="text-text-muted">Thực tế ở</p><p class="font-medium">${detail.everActivated ? 'Đã từng ở thực tế' : 'Chưa từng ở thực tế'}</p></div>
+                <div><p class="text-text-muted">Kích hoạt hợp đồng</p><p class="font-medium">${formatDateTime(detail.activatedAt)}</p></div>
+                <div><p class="text-text-muted">Thời điểm tạo</p><p class="font-medium">${formatDateTime(detail.createdAt)}</p></div>
+                <div class="md:col-span-2"><p class="text-text-muted">Ghi chú</p><p class="font-medium">${detail.studentNote || '-'}</p></div>
+            `;
+            detailModal.classList.remove('hidden');
+        } catch (error) {
+            showMessage('error', error.message || 'Không tải được chi tiết hợp đồng.');
+        }
+    }
+
+    async function handleAction(contractId, action) {
+        try {
+            if (action === 'approve') {
+                const dialog = await openActionModal({
+                    title: 'Duyệt hợp đồng',
+                    message: 'Xác nhận duyệt hợp đồng này?',
+                    confirmText: 'Duyệt',
+                    confirmClass: 'bg-primary text-white hover:bg-primary-hover'
+                });
+                if (!dialog.confirmed) {
+                    return;
+                }
+                await fetchAPI(`/api/v1/contracts/${contractId}/approve`, { method: 'PUT' });
+                showMessage('success', 'Duyệt hợp đồng thành công.');
+            } else if (action === 'reject') {
+                const dialog = await openActionModal({
+                    title: 'Từ chối hợp đồng',
+                    message: 'Xác nhận từ chối hợp đồng này?',
+                    inputLabel: 'Lý do từ chối (không bắt buộc)',
+                    inputPlaceholder: 'Ví dụ: Hồ sơ chưa đủ điều kiện.',
+                    defaultValue: 'Hồ sơ chưa đủ điều kiện',
+                    confirmText: 'Từ chối',
+                    confirmClass: 'bg-danger text-white hover:bg-red-700',
+                    showInput: true
+                });
+                if (!dialog.confirmed) {
+                    return;
+                }
+                const reason = dialog.note;
+                const query = reason ? `?reason=${encodeURIComponent(reason)}` : '';
+                await fetchAPI(`/api/v1/contracts/${contractId}/reject${query}`, { method: 'PUT' });
+                showMessage('success', 'Đã từ chối hợp đồng.');
+            } else if (action === 'cancel') {
+                const dialog = await openActionModal({
+                    title: 'Hủy sớm hợp đồng',
+                    message: 'Xác nhận hủy sớm hợp đồng này?',
+                    inputLabel: 'Lý do hủy sớm (không bắt buộc)',
+                    inputPlaceholder: 'Ví dụ: Sinh viên trả phòng sớm.',
+                    defaultValue: 'Sinh viên trả phòng sớm',
+                    confirmText: 'Xác nhận hủy',
+                    confirmClass: 'bg-warning text-white hover:bg-amber-700',
+                    showInput: true
+                });
+                if (!dialog.confirmed) {
+                    return;
+                }
+                const reason = dialog.note;
+                const query = reason ? `?reason=${encodeURIComponent(reason)}` : '';
+                await fetchAPI(`/api/v1/contracts/${contractId}/cancel-early${query}`, { method: 'PUT' });
+                showMessage('success', 'Đã hủy sớm hợp đồng thành công.');
+            } else if (action === 'detail') {
+                await openDetail(contractId);
+                return;
+            }
+
+            await loadContracts();
+        } catch (error) {
+            showMessage('error', error.message || 'Không thể xử lý thao tác hợp đồng.');
+        }
+    }
+
+    body.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        const contractId = Number(button.dataset.id);
+        const action = button.dataset.action;
+        await handleAction(contractId, action);
+    });
+
+    requestBody.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-request-action]');
+        if (!button) return;
+        const requestId = Number(button.dataset.requestId);
+        const action = button.dataset.requestAction;
+        await handleRequestAction(requestId, action);
+    });
+
+    document.getElementById('closeModalBtn').addEventListener('click', () => {
+        detailModal.classList.add('hidden');
+    });
+
+    detailModal.addEventListener('click', (event) => {
+        if (event.target === detailModal) {
+            detailModal.classList.add('hidden');
+        }
+    });
+
+    actionModalCancel.addEventListener('click', () => {
+        closeActionModal({ confirmed: false, note: '' });
+    });
+
+    actionModalConfirm.addEventListener('click', () => {
+        closeActionModal({ confirmed: true, note: actionModalInput.value.trim() });
+    });
+
+    actionModal.addEventListener('click', (event) => {
+        if (event.target === actionModal) {
+            closeActionModal({ confirmed: false, note: '' });
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !actionModal.classList.contains('hidden')) {
+            closeActionModal({ confirmed: false, note: '' });
+        }
+    });
+
+    keywordInput.addEventListener('input', () => {
+        state.keyword = keywordInput.value.trim();
+        state.page = 0;
+        loadContracts();
+    });
+
+    statusSelect.addEventListener('change', () => {
+        state.status = statusSelect.value;
+        state.page = 0;
+        loadContracts();
+    });
+
+    occupancySelect.addEventListener('change', () => {
+        state.occupancyType = occupancySelect.value;
+        state.page = 0;
+        loadContracts();
+    });
+
+    sortSelect.addEventListener('change', () => {
+        const [sortBy, direction] = sortSelect.value.split(',');
+        state.sortBy = sortBy;
+        state.direction = direction;
+        state.page = 0;
+        loadContracts();
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+        loadContracts();
+        loadChangeRequests();
+    });
+
+    loadContracts();
+    loadChangeRequests();
+</script>
+</body>
+
+</html>

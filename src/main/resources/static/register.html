@@ -60,12 +60,36 @@
                     <input id="fullName" type="text" required class="w-full rounded-base border border-border px-4 py-3" placeholder="Nguyễn Văn A">
                 </div>
                 <div>
+                    <label for="studentCode" class="block text-sm font-medium mb-2">Mã sinh viên</label>
+                    <input id="studentCode" type="text" required class="w-full rounded-base border border-border px-4 py-3" placeholder="SV2026001">
+                </div>
+                <div>
+                    <label for="cccd" class="block text-sm font-medium mb-2">CCCD</label>
+                    <input id="cccd" type="text" required class="w-full rounded-base border border-border px-4 py-3" placeholder="079204000001">
+                </div>
+                <div>
                     <label for="username" class="block text-sm font-medium mb-2">Tên đăng nhập</label>
                     <input id="username" type="text" required class="w-full rounded-base border border-border px-4 py-3" placeholder="student_new">
                 </div>
                 <div>
                     <label for="email" class="block text-sm font-medium mb-2">Email</label>
                     <input id="email" type="email" class="w-full rounded-base border border-border px-4 py-3" placeholder="student@example.com">
+                </div>
+                <div>
+                    <label for="phone" class="block text-sm font-medium mb-2">Số điện thoại</label>
+                    <input id="phone" type="text" class="w-full rounded-base border border-border px-4 py-3" placeholder="09xxxxxxxx">
+                </div>
+                <div>
+                    <label for="gender" class="block text-sm font-medium mb-2">Giới tính</label>
+                    <select id="gender" class="w-full rounded-base border border-border px-4 py-3">
+                        <option value="">Chọn giới tính</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="dateOfBirth" class="block text-sm font-medium mb-2">Ngày sinh</label>
+                    <input id="dateOfBirth" type="date" class="w-full rounded-base border border-border px-4 py-3">
                 </div>
                 <div>
                     <label for="password" class="block text-sm font-medium mb-2">Mật khẩu</label>
@@ -116,8 +140,13 @@
 
             const payload = {
                 fullName: document.getElementById('fullName').value.trim(),
+                studentCode: document.getElementById('studentCode').value.trim(),
+                cccd: document.getElementById('cccd').value.trim(),
                 username: document.getElementById('username').value.trim(),
                 email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                gender: document.getElementById('gender').value,
+                dateOfBirth: document.getElementById('dateOfBirth').value || null,
                 password
             };
 

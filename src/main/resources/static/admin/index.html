@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 
 <head>
@@ -39,223 +39,235 @@
 </head>
 
 <body class="font-body text-text-main bg-bg-page min-h-screen">
-    <div id="adminLayout" class="max-w-[1200px] mx-auto p-4 md:p-6 min-h-screen">
-        <div class="admin-grid grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6 min-h-[calc(100vh-3rem)]">
-            <div id="adminSidebarMount"></div>
+<div id="adminLayout" class="w-full max-w-[1440px] mx-auto p-4 md:p-6 min-h-screen">
+    <div class="admin-grid grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6 min-h-[calc(100vh-3rem)]">
+        <div id="adminSidebarMount"></div>
 
-            <main class="space-y-6">
+        <main class="space-y-6">
+            <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                <h2 class="font-heading text-2xl">Xin chào quản trị viên, <span id="fullName">...</span></h2>
+                <p class="text-text-muted mt-2">Tổng quan thống kê và lối tắt điều hướng hệ thống.</p>
 
-                <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
-                    <h2 class="font-heading text-2xl">Tổng quan quản trị</h2>
-                    <p class="text-text-muted mt-2">Theo dõi nhanh số lượng tòa nhà, tổng số tầng và số lượng phòng trong hệ thống.</p>
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <a href="/admin/student_management.html" class="rounded-base border border-border p-4 bg-teal-50 hover:bg-teal-100 transition-colors block">
+                        <p class="text-xs text-text-muted">Tính năng hệ thống</p>
+                        <p class="mt-1 font-medium text-primary">Quản lý Sinh Viên</p>
+                    </a>
 
-                    <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="rounded-base border border-border p-4">
-                            <p class="text-xs text-text-muted">Số tòa nhà</p>
-                            <p id="buildingCount" class="mt-1 text-2xl font-heading">0</p>
-                        </div>
-                        <div class="rounded-base border border-border p-4">
-                            <p class="text-xs text-text-muted">Tổng số tầng</p>
-                            <p id="floorsCount" class="mt-1 text-2xl font-heading">0</p>
-                        </div>
-                        <div class="rounded-base border border-border p-4">
-                            <p class="text-xs text-text-muted">Số phòng</p>
-                            <p id="roomCount" class="mt-1 text-2xl font-heading">0</p>
-                        </div>
-                        <div class="rounded-base border border-border p-4 bg-orange-50">
-                            <p class="text-xs text-text-muted">Vai trò</p>
-                            <p id="adminRoles" class="mt-1 font-medium text-warning">...</p>
-                        </div>
+                    <a href="/admin/contracts-management.html" class="rounded-base border border-border p-4 bg-emerald-50 hover:bg-emerald-100 transition-colors block">
+                        <p class="text-xs text-text-muted">Tính năng hệ thống</p>
+                        <p class="mt-1 font-medium text-primary">Duyệt Hợp Đồng</p>
+                    </a>
+
+                    <a href="/admin/contract_registration.html" class="rounded-base border border-border p-4 hover:bg-slate-50 transition-colors block">
+                        <p class="text-xs text-text-muted">Tác vụ</p>
+                        <p class="mt-1 font-medium">Lập hợp đồng mới</p>
+                    </a>
+
+                    <a href="/home.html" class="rounded-base border border-border p-4 hover:bg-slate-50 transition-colors block">
+                        <p class="text-xs text-text-muted">Giao diện người dùng</p>
+                        <p class="mt-1 font-medium">Trang chủ KTX</p>
+                    </a>
+
+                    <div class="rounded-base border border-border p-4 bg-orange-50">
+                        <p class="text-xs text-text-muted">Vai trò hiện tại</p>
+                        <p id="adminRoles" class="mt-1 font-medium text-warning">...</p>
                     </div>
-                </section>
 
-                <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
-                    <div class="flex items-center justify-between gap-3">
-                        <h3 class="font-heading text-xl">Danh sách tòa nhà</h3>
-                        <a href="/admin/buildings" class="text-sm text-primary hover:underline">Mở trang CRUD tòa nhà</a>
+                    <div class="rounded-base border border-border p-4">
+                        <p class="text-xs text-text-muted">Tòa nhà / Phòng</p>
+                        <p class="mt-1 text-2xl font-heading"><span id="buildingCount">0</span> <span class="text-sm font-normal text-text-muted">/ <span id="roomCount">0</span></span></p>
                     </div>
-
-                    <div class="mt-4 overflow-x-auto rounded-base border border-border">
-                        <table class="w-full min-w-[680px]">
-                            <thead>
-                                <tr class="bg-slate-50 border-b border-border text-text-muted text-left text-xs uppercase tracking-wide font-medium">
-                                    <th class="px-4 py-3 w-16">ID</th>
-                                    <th class="px-4 py-3">Tên tòa</th>
-                                    <th class="px-4 py-3 w-32">Số tầng</th>
-                                    <th class="px-4 py-3">Mô tả</th>
-                                </tr>
-                            </thead>
-                            <tbody id="buildingBody" class="divide-y divide-border"></tbody>
-                        </table>
-                    </div>
-                    <div id="buildingPagination" class="mt-4 flex items-center justify-end gap-2"></div>
-                </section>
-            </main>
-        </div>
-    </div>
-
-    <script>
-        const ITEMS_PER_PAGE = 10;
-        const token = localStorage.getItem('dormitory_access_token');
-
-        let buildingItems = [];
-        let buildingPage = 1;
-
-        if (!token) {
-            window.location.href = '/login';
-        }
-
-        function initAdminSidebar() {
-            if (!window.AdminSidebar || typeof window.AdminSidebar.mount !== 'function') {
-                window.setTimeout(initAdminSidebar, 50);
-                return;
-            }
-
-            window.AdminSidebar.mount({
-                mountId: 'adminSidebarMount',
-                active: 'dashboard',
-                caption: 'Quản trị hệ thống'
-            });
-        }
-
-        initAdminSidebar();
-
-        function escHtml(str) {
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
-        function paginate(items, page) {
-            const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
-            const safePage = Math.min(Math.max(page, 1), totalPages);
-            const start = (safePage - 1) * ITEMS_PER_PAGE;
-            return {
-                safePage,
-                totalPages,
-                data: items.slice(start, start + ITEMS_PER_PAGE)
-            };
-        }
-
-        function renderPagination(container, page, totalPages, onChange) {
-            if (totalPages <= 1) {
-                container.innerHTML = '';
-                return;
-            }
-
-            const start = Math.max(1, page - 2);
-            const end = Math.min(totalPages, page + 2);
-            let pageButtons = '';
-            for (let i = start; i <= end; i++) {
-                const active = i === page;
-                pageButtons += `<button class="rounded-base border px-3 py-1.5 text-sm ${active ? 'border-primary bg-primary text-white' : 'border-border hover:bg-slate-50'}" data-page="${i}">${i}</button>`;
-            }
-
-            const startResult = (page - 1) * ITEMS_PER_PAGE + 1;
-            const endResult = Math.min(page * ITEMS_PER_PAGE, buildingItems.length);
-
-            container.innerHTML = `
-                <p class="text-sm text-text-muted">Hiển thị ${startResult}-${endResult} trên tổng số ${buildingItems.length} kết quả</p>
-                <div class="flex flex-wrap items-center gap-2">
-                    <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === 1 ? 'disabled' : ''} data-page="${page - 1}">Trước</button>
-                    ${pageButtons}
-                    <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === totalPages ? 'disabled' : ''} data-page="${page + 1}">Sau</button>
                 </div>
-            `;
+            </section>
 
-            container.querySelectorAll('button[data-page]').forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    onChange(Number(btn.dataset.page));
-                    document.querySelector('main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                });
+            <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                <div class="flex items-center justify-between gap-3">
+                    <h3 class="font-heading text-xl">Danh sách tòa nhà</h3>
+                    <a href="/admin/buildings" class="text-sm text-primary hover:underline">Mở trang quản lý tòa nhà</a>
+                </div>
+
+                <div class="mt-4 overflow-x-auto rounded-base border border-border">
+                    <table class="w-full min-w-[680px]">
+                        <thead>
+                        <tr class="bg-slate-50 border-b border-border text-text-muted text-left text-xs uppercase tracking-wide font-medium">
+                            <th class="px-4 py-3 w-16">ID</th>
+                            <th class="px-4 py-3">Tên tòa</th>
+                            <th class="px-4 py-3 w-32">Số tầng</th>
+                            <th class="px-4 py-3">Mô tả</th>
+                        </tr>
+                        </thead>
+                        <tbody id="buildingBody" class="divide-y divide-border"></tbody>
+                    </table>
+                </div>
+                <div id="buildingPagination" class="mt-4 flex items-center justify-end gap-2"></div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script>
+    const ITEMS_PER_PAGE = 10;
+    const token = localStorage.getItem('dormitory_access_token');
+
+    let buildingItems = [];
+    let buildingPage = 1;
+
+    if (!token) {
+        window.location.href = '/login.html';
+    }
+
+    function initAdminSidebar() {
+        if (!window.AdminSidebar || typeof window.AdminSidebar.mount !== 'function') {
+            window.setTimeout(initAdminSidebar, 50);
+            return;
+        }
+
+        window.AdminSidebar.mount({
+            mountId: 'adminSidebarMount',
+            active: 'dashboard',
+            caption: 'Quản trị hệ thống'
+        });
+    }
+
+    initAdminSidebar();
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function paginate(items, page) {
+        const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
+        const safePage = Math.min(Math.max(page, 1), totalPages);
+        const start = (safePage - 1) * ITEMS_PER_PAGE;
+        return {
+            safePage,
+            totalPages,
+            data: items.slice(start, start + ITEMS_PER_PAGE)
+        };
+    }
+
+    function renderPagination(container, page, totalPages, onChange) {
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const start = Math.max(1, page - 2);
+        const end = Math.min(totalPages, page + 2);
+        let pageButtons = '';
+        for (let i = start; i <= end; i++) {
+            const active = i === page;
+            pageButtons += `<button class="rounded-base border px-3 py-1.5 text-sm ${active ? 'border-primary bg-primary text-white' : 'border-border hover:bg-slate-50'}" data-page="${i}">${i}</button>`;
+        }
+
+        const startResult = (page - 1) * ITEMS_PER_PAGE + 1;
+        const endResult = Math.min(page * ITEMS_PER_PAGE, buildingItems.length);
+
+        container.innerHTML = `
+            <p class="text-sm text-text-muted">Hiển thị ${startResult}-${endResult} trên tổng số ${buildingItems.length} kết quả</p>
+            <div class="flex flex-wrap items-center gap-2">
+                <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === 1 ? 'disabled' : ''} data-page="${page - 1}">Trước</button>
+                ${pageButtons}
+                <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === totalPages ? 'disabled' : ''} data-page="${page + 1}">Sau</button>
+            </div>
+        `;
+
+        container.querySelectorAll('button[data-page]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                onChange(Number(btn.dataset.page));
+                document.querySelector('main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
+        });
+    }
+
+    function renderBuildings(page) {
+        const body = document.getElementById('buildingBody');
+        const pagination = document.getElementById('buildingPagination');
+        const paged = paginate(buildingItems, page);
+        buildingPage = paged.safePage;
+
+        if (!paged.data.length) {
+            body.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-sm text-text-muted">Chưa có tòa nhà.</td></tr>';
+            pagination.innerHTML = '';
+            return;
         }
 
-        function renderBuildings(page) {
-            const body = document.getElementById('buildingBody');
-            const pagination = document.getElementById('buildingPagination');
-            const paged = paginate(buildingItems, page);
-            buildingPage = paged.safePage;
+        body.innerHTML = paged.data.map((item) => `
+            <tr>
+                <td class="px-4 py-3 text-sm">${item.id ?? '-'}</td>
+                <td class="px-4 py-3 text-sm font-medium">${escHtml(item.name || '-')}</td>
+                <td class="px-4 py-3 text-sm">${Number(item.totalFloors) || 0}</td>
+                <td class="px-4 py-3 text-sm text-text-muted">${escHtml(item.description || 'Chưa cập nhật')}</td>
+            </tr>
+        `).join('');
 
-            if (!paged.data.length) {
-                body.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-sm text-text-muted">Chưa có tòa nhà.</td></tr>';
-                pagination.innerHTML = '';
-                return;
-            }
+        renderPagination(pagination, buildingPage, paged.totalPages, renderBuildings);
+    }
 
-            body.innerHTML = paged.data.map((item) => `
-                <tr>
-                    <td class="px-4 py-3 text-sm">${item.id ?? '-'}</td>
-                    <td class="px-4 py-3 text-sm font-medium">${escHtml(item.name || '-')}</td>
-                    <td class="px-4 py-3 text-sm">${Number(item.totalFloors) || 0}</td>
-                    <td class="px-4 py-3 text-sm text-text-muted">${escHtml(item.description || 'Chưa cập nhật')}</td>
-                </tr>
-            `).join('');
+    async function loadCurrentUser() {
+        const response = await fetch('/api/v1/auth/me', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json();
 
-            renderPagination(pagination, buildingPage, paged.totalPages, renderBuildings);
+        if (!response.ok) {
+            throw new Error(data.message || 'Phiên đăng nhập không hợp lệ');
         }
 
-        async function loadCurrentUser() {
-            const response = await fetch('/api/v1/auth/me', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await response.json();
+        const user = data.result;
+        const roles = Array.isArray(user.roles) ? user.roles : [];
 
-            if (!response.ok) {
-                throw new Error(data.message || 'Phiên đăng nhập không hợp lệ');
-            }
-
-            const user = data.result;
-            const roles = Array.isArray(user.roles) ? user.roles : [];
-            if (!roles.includes('ROLE_ADMIN')) {
-                window.location.href = '/home';
-                return;
-            }
-
-            document.getElementById('adminRoles').textContent = roles.join(', ');
+        if (!roles.includes('ROLE_ADMIN')) {
+            window.location.href = '/home.html';
+            return;
         }
 
-        async function loadDashboardStats() {
-            const [buildingResponse, roomResponse] = await Promise.all([
-                fetch('/api/v1/buildings?page=0&size=500&sortBy=id&direction=desc', { headers: { Authorization: `Bearer ${token}` } }),
-                fetch('/api/v1/rooms?page=0&size=500&sortBy=id&direction=desc', { headers: { Authorization: `Bearer ${token}` } })
-            ]);
+        document.getElementById('fullName').textContent = user.fullName;
+        document.getElementById('adminRoles').textContent = roles.join(', ');
+    }
 
-            const buildingPayload = await buildingResponse.json();
-            const roomPayload = await roomResponse.json();
+    async function loadDashboardStats() {
+        const [buildingResponse, roomResponse] = await Promise.all([
+            fetch('/api/v1/buildings?page=0&size=500&sortBy=id&direction=desc', { headers: { Authorization: `Bearer ${token}` } }),
+            fetch('/api/v1/rooms?page=0&size=500&sortBy=id&direction=desc', { headers: { Authorization: `Bearer ${token}` } })
+        ]);
 
-            if (!buildingResponse.ok) {
-                throw new Error(buildingPayload.message || 'Không tải được danh sách tòa nhà');
-            }
-            if (!roomResponse.ok) {
-                throw new Error(roomPayload.message || 'Không tải được danh sách phòng');
-            }
+        const buildingPayload = await buildingResponse.json();
+        const roomPayload = await roomResponse.json();
 
-            buildingItems = Array.isArray(buildingPayload.result?.content) ? buildingPayload.result.content : [];
-            const rooms = Array.isArray(roomPayload.result?.content) ? roomPayload.result.content : [];
-            const floors = buildingItems.reduce((sum, item) => sum + (Number(item.totalFloors) || 0), 0);
-            const roomTotal = typeof roomPayload.result?.totalElements === 'number' ? roomPayload.result.totalElements : rooms.length;
-
-            document.getElementById('buildingCount').textContent = String(buildingItems.length);
-            document.getElementById('floorsCount').textContent = String(floors);
-            document.getElementById('roomCount').textContent = String(roomTotal);
-
-            renderBuildings(1);
+        if (!buildingResponse.ok) {
+            throw new Error(buildingPayload.message || 'Không tải được danh sách tòa nhà');
+        }
+        if (!roomResponse.ok) {
+            throw new Error(roomPayload.message || 'Không tải được danh sách phòng');
         }
 
-        (async () => {
-            try {
-                await loadCurrentUser();
-                await loadDashboardStats();
-            } catch {
-                localStorage.removeItem('dormitory_access_token');
-                window.location.href = '/login';
-            }
-        })();
-    </script>
+        buildingItems = Array.isArray(buildingPayload.result?.content) ? buildingPayload.result.content : [];
+        const rooms = Array.isArray(roomPayload.result?.content) ? roomPayload.result.content : [];
+        const roomTotal = typeof roomPayload.result?.totalElements === 'number' ? roomPayload.result.totalElements : rooms.length;
+
+        document.getElementById('buildingCount').textContent = String(buildingItems.length);
+        document.getElementById('roomCount').textContent = String(roomTotal);
+
+        renderBuildings(1);
+    }
+
+    (async () => {
+        try {
+            await loadCurrentUser();
+            await loadDashboardStats();
+        } catch {
+            localStorage.removeItem('dormitory_access_token');
+            window.location.href = '/login.html';
+        }
+    })();
+</script>
 </body>
 
 </html>

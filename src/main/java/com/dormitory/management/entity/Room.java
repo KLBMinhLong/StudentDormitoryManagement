@@ -46,6 +46,9 @@ public class Room extends BaseEntity {
     @JoinColumn(name = "room_type_id", nullable = false)
     private RoomType roomType;
 
+    @Column(name = "gender_allowed", columnDefinition = "nvarchar(20)")
+    private String genderAllowed;
+
     @JsonIgnore
     @Builder.Default
     @ToString.Exclude
