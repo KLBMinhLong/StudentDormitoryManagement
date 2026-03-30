@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 public class ContractResponseDTO {
     private Long id;
     private Long studentId;
+    private String studentCode;
     private String studentName;
     private Long roomId;
     private String roomNumber;
@@ -36,4 +37,6 @@ public class ContractResponseDTO {
     private String guardianName;
     private String guardianPhone;
     private String studentNote;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

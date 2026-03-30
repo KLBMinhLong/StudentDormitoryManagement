@@ -55,4 +55,14 @@ public class HomeController {
     public String adminBedsPage() {
         return "forward:/admin/beds.html";
     }
+
+    @GetMapping("/my-contracts")
+    public String myContractsPage() {
+        return "forward:/user/contracts.html";
+    }
+
+    @GetMapping("/admin/contracts")
+    public String adminContractsPage() {
+        return "forward:/admin/contracts-management.html";
+    }
 }

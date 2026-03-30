@@ -50,6 +50,8 @@
 
             <a href="/user/student-profile.html" id="profileBtn" class="hidden rounded-base border border-border px-3 py-2 text-sm font-medium text-text-main hover:bg-slate-50">Hồ sơ của tôi</a>
 
+            <a href="/user/contracts.html" id="contractBtn" class="hidden rounded-base border border-border px-3 py-2 text-sm font-medium text-text-main hover:bg-slate-50">Hợp đồng của tôi</a>
+
             <a href="/admin.html" id="adminBtn" class="hidden rounded-base border border-border px-3 py-2 text-sm font-medium text-text-main hover:bg-slate-50">Trang admin</a>
 
             <button id="logoutBtn" class="hidden rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium transition-colors">Đăng xuất</button>
@@ -66,6 +68,11 @@
             <a href="/user/student-profile.html" id="studentMenuBox" class="hidden rounded-base border-2 border-primary p-4 bg-teal-50 hover:bg-teal-100 transition-colors block">
                 <p class="text-xs text-text-muted">Dành cho sinh viên</p>
                 <p class="mt-1 font-medium text-primary">Quản lý thông tin cá nhân</p>
+            </a>
+
+            <a href="/user/contracts.html" id="studentContractBox" class="hidden rounded-base border-2 border-secondary p-4 bg-blue-50 hover:bg-blue-100 transition-colors block">
+                <p class="text-xs text-text-muted">Dành cho sinh viên</p>
+                <p class="mt-1 font-medium text-secondary">Theo dõi hợp đồng nội trú</p>
             </a>
 
             <div class="rounded-base border border-border p-4">
@@ -173,7 +180,9 @@
     const logoutBtn = document.getElementById('logoutBtn');
     const adminBtn = document.getElementById('adminBtn');
     const profileBtn = document.getElementById('profileBtn');
+    const contractBtn = document.getElementById('contractBtn');
     const studentMenuBox = document.getElementById('studentMenuBox');
+    const studentContractBox = document.getElementById('studentContractBox');
     const roomBody = document.getElementById('roomBody');
     const message = document.getElementById('message');
     const roomPagination = document.getElementById('roomPagination');
@@ -493,7 +502,9 @@
 
             if (roles.includes('ROLE_STUDENT')) {
                 profileBtn.classList.remove('hidden');
+                contractBtn.classList.remove('hidden');
                 studentMenuBox.classList.remove('hidden');
+                studentContractBox.classList.remove('hidden');
             }
 
             if (payload.result?.fullName) {

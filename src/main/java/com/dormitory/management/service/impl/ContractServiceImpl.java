@@ -4,19 +4,26 @@ import com.dormitory.management.dto.contract.ContractRequestDTO;
 import com.dormitory.management.dto.contract.ContractReservationRequestDTO;
 import com.dormitory.management.dto.contract.ContractResponseDTO;
 import com.dormitory.management.dto.contract.ContractSubmitRequestDTO;
+import com.dormitory.management.dto.contract.ContractChangeRequestCreateDTO;
+import com.dormitory.management.dto.contract.ContractChangeRequestResponseDTO;
+import com.dormitory.management.dto.common.PagedResponseDTO;
 import com.dormitory.management.entity.AppUser;
 import com.dormitory.management.entity.Bed;
 import com.dormitory.management.entity.Building;
 import com.dormitory.management.entity.Contract;
+import com.dormitory.management.entity.ContractChangeRequest;
 import com.dormitory.management.entity.Room;
 import com.dormitory.management.entity.RoomType;
 import com.dormitory.management.entity.Student;
+import com.dormitory.management.entity.enums.ContractChangeRequestStatus;
+import com.dormitory.management.entity.enums.ContractChangeType;
 import com.dormitory.management.entity.enums.ContractStatus;
 import com.dormitory.management.entity.enums.RoomStatus;
 import com.dormitory.management.exception.AppException;
 import com.dormitory.management.exception.ErrorCode;
 import com.dormitory.management.repository.AppUserRepository;
 import com.dormitory.management.repository.BedRepository;
+import com.dormitory.management.repository.ContractChangeRequestRepository;
 import com.dormitory.management.repository.ContractRepository;
 import com.dormitory.management.repository.RoomRepository;
 import com.dormitory.management.repository.StudentRepository;
@@ -29,6 +36,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +52,7 @@ public class ContractServiceImpl implements ContractService {
     private static final int DEFAULT_DURATION_MONTHS = 6;
 
     private final ContractRepository contractRepository;
+    private final ContractChangeRequestRepository contractChangeRequestRepository;
     private final StudentRepository studentRepository;
     private final RoomRepository roomRepository;
     private final BedRepository bedRepository;
@@ -278,12 +290,278 @@ public class ContractServiceImpl implements ContractService {
     }
 
     @Override
+    @Transactional
+    public int expireActiveContractsAndReleaseBeds() {
+        List<Contract> expiredContracts = contractRepository.findByStatusAndEndDateBefore(ContractStatus.ACTIVE, LocalDate.now());
+        for (Contract contract : expiredContracts) {
+            Bed bed = bedRepository.findByIdForUpdate(contract.getBed().getId())
+                    .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy giường"));
+
+            contract.setStatus(ContractStatus.EXPIRED);
+            contract.setStudentNote("Hợp đồng tự động hết hạn, sinh viên hoàn tất trả phòng tại ban quản lý");
+            contractRepository.save(contract);
+
+            if (bed.getStudent() == null || Objects.equals(bed.getStudent().getId(), contract.getStudent().getId())) {
+                bed.setOccupied(false);
+                bed.setStudent(null);
+                bed.setReservedUntil(null);
+                bed.setReservedContractId(null);
+                bedRepository.save(bed);
+                updateRoomStatusByBeds(contract.getRoom());
+            }
+        }
+
+        return expiredContracts.size();
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<ContractResponseDTO> getPendingContractsForAdmin() {
         return contractRepository.findByStatusOrderByCreatedAtDesc(ContractStatus.PENDING)
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PagedResponseDTO<ContractResponseDTO> getMyContracts(
+            String username,
+            String status,
+            String keyword,
+            int page,
+            int size,
+            String sortBy,
+            String direction) {
+        Student student = resolveStudentByUsername(username);
+        ContractStatus parsedStatus = parseStatus(status);
+        Pageable pageable = buildContractPageable(page, size, sortBy, direction);
+        Page<ContractResponseDTO> dtoPage = contractRepository
+            .searchStudentContracts(student.getId(), parsedStatus, normalizeKeyword(keyword), pageable)
+            .map(this::toResponse);
+        return PagedResponseDTO.fromPage(dtoPage);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ContractResponseDTO getMyContractDetail(String username, Long contractId) {
+        Student student = resolveStudentByUsername(username);
+        Contract contract = contractRepository.findByIdAndStudentId(contractId, student.getId())
+            .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy hợp đồng"));
+        return toResponse(contract);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PagedResponseDTO<ContractResponseDTO> getContractsForAdmin(
+            String status,
+            String keyword,
+            int page,
+            int size,
+            String sortBy,
+            String direction) {
+        ContractStatus parsedStatus = parseStatus(status);
+        Pageable pageable = buildContractPageable(page, size, sortBy, direction);
+        Page<ContractResponseDTO> dtoPage = contractRepository
+            .searchContractsForAdmin(parsedStatus, normalizeKeyword(keyword), pageable)
+            .map(this::toResponse);
+        return PagedResponseDTO.fromPage(dtoPage);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ContractResponseDTO getContractDetailForAdmin(Long contractId) {
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy hợp đồng"));
+        return toResponse(contract);
+    }
+
+    @Override
+    @Transactional
+    public ContractResponseDTO cancelContractEarlyByAdmin(Long contractId, String reason) {
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy hợp đồng"));
+
+        if (contract.getStatus() != ContractStatus.ACTIVE) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Chỉ có thể hủy sớm hợp đồng đang hiệu lực");
+        }
+
+        Bed bed = bedRepository.findByIdForUpdate(contract.getBed().getId())
+            .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy giường"));
+
+        String normalizedReason = (reason == null || reason.isBlank())
+            ? "Hủy hợp đồng sớm bởi quản trị viên"
+            : reason.trim();
+
+        contract.setStatus(ContractStatus.CANCELLED);
+        contract.setStudentNote(normalizedReason);
+        contract.setHoldExpiresAt(LocalDateTime.now());
+
+        Contract saved = contractRepository.save(contract);
+
+        if (bed.getStudent() == null || Objects.equals(bed.getStudent().getId(), contract.getStudent().getId())) {
+            bed.setOccupied(false);
+            bed.setStudent(null);
+            bed.setReservedUntil(null);
+            bed.setReservedContractId(null);
+            bedRepository.save(bed);
+            updateRoomStatusByBeds(contract.getRoom());
+        }
+
+        return toResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PagedResponseDTO<ContractChangeRequestResponseDTO> getMyContractChangeRequests(
+            String username,
+            String status,
+            String changeType,
+            String keyword,
+            int page,
+            int size,
+            String sortBy,
+            String direction) {
+        Student student = resolveStudentByUsername(username);
+        ContractChangeRequestStatus parsedStatus = parseRequestStatus(status);
+        ContractChangeType parsedType = parseChangeType(changeType);
+        Pageable pageable = buildChangeRequestPageable(page, size, sortBy, direction);
+
+        Page<ContractChangeRequestResponseDTO> dtoPage = contractChangeRequestRepository
+                .searchByStudent(student.getId(), parsedStatus, parsedType, normalizeKeyword(keyword), pageable)
+                .map(this::toChangeRequestResponse);
+        return PagedResponseDTO.fromPage(dtoPage);
+    }
+
+    @Override
+    @Transactional
+    public ContractChangeRequestResponseDTO createMyContractChangeRequest(
+            String username,
+            Long contractId,
+            ContractChangeRequestCreateDTO request) {
+        Student student = resolveStudentByUsername(username);
+        Contract contract = contractRepository.findByIdAndStudentId(contractId, student.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy hợp đồng"));
+
+        if (contract.getStatus() != ContractStatus.ACTIVE) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Chỉ hợp đồng đang hiệu lực mới được gửi yêu cầu thay đổi");
+        }
+
+        if (request.getChangeType() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Loại yêu cầu là bắt buộc");
+        }
+
+        if (contractChangeRequestRepository.existsByContractIdAndStatus(contract.getId(), ContractChangeRequestStatus.PENDING)) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Hợp đồng này đang có yêu cầu chờ xử lý");
+        }
+
+        if (request.getChangeType() == ContractChangeType.EXTEND) {
+            if (request.getRequestedEndDate() == null) {
+                throw new AppException(ErrorCode.BAD_REQUEST, "Yêu cầu gia hạn phải có ngày kết thúc mới");
+            }
+            int extensionMonths = resolveExtensionMonths(contract.getEndDate(), request.getRequestedEndDate());
+            request.setRequestedEndDate(contract.getEndDate().plusMonths(extensionMonths));
+        }
+
+        if (request.getReason() == null || request.getReason().isBlank()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Vui lòng nhập lý do yêu cầu thay đổi hợp đồng");
+        }
+
+        ContractChangeRequest saved = contractChangeRequestRepository.save(ContractChangeRequest.builder()
+                .changeType(request.getChangeType())
+                .status(ContractChangeRequestStatus.PENDING)
+                .requestedEndDate(request.getChangeType() == ContractChangeType.EXTEND ? request.getRequestedEndDate() : null)
+                .reason(request.getReason().trim())
+                .contract(contract)
+                .student(student)
+                .build());
+
+        return toChangeRequestResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PagedResponseDTO<ContractChangeRequestResponseDTO> getContractChangeRequestsForAdmin(
+            String status,
+            String changeType,
+            String keyword,
+            int page,
+            int size,
+            String sortBy,
+            String direction) {
+        ContractChangeRequestStatus parsedStatus = parseRequestStatus(status);
+        ContractChangeType parsedType = parseChangeType(changeType);
+        Pageable pageable = buildChangeRequestPageable(page, size, sortBy, direction);
+
+        Page<ContractChangeRequestResponseDTO> dtoPage = contractChangeRequestRepository
+                .searchForAdmin(parsedStatus, parsedType, normalizeKeyword(keyword), pageable)
+                .map(this::toChangeRequestResponse);
+        return PagedResponseDTO.fromPage(dtoPage);
+    }
+
+    @Override
+    @Transactional
+    public ContractChangeRequestResponseDTO approveContractChangeRequest(Long requestId, String adminUsername, String adminNote) {
+        ContractChangeRequest request = contractChangeRequestRepository.findById(requestId)
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy yêu cầu thay đổi hợp đồng"));
+
+        if (request.getStatus() != ContractChangeRequestStatus.PENDING) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Yêu cầu này đã được xử lý trước đó");
+        }
+
+        Contract contract = contractRepository.findById(request.getContract().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy hợp đồng"));
+
+        if (contract.getStatus() != ContractStatus.ACTIVE) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Chỉ duyệt yêu cầu cho hợp đồng đang hiệu lực");
+        }
+
+        if (request.getChangeType() == ContractChangeType.CANCEL) {
+            Bed bed = bedRepository.findByIdForUpdate(contract.getBed().getId())
+                    .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy giường"));
+            releaseBedAndCancelContract(contract, bed, "Hủy theo yêu cầu sinh viên sau khi đối soát tại ban quản lý");
+        } else {
+            LocalDate requestedEndDate = request.getRequestedEndDate();
+            int extensionMonths = resolveExtensionMonths(contract.getEndDate(), requestedEndDate);
+            LocalDate normalizedEndDate = contract.getEndDate().plusMonths(extensionMonths);
+
+            BigDecimal monthlyPrice = normalizeMoney(contract.getMonthlyRoomPrice() == null
+                    ? contract.getRoom().getRoomType().getBasePrice()
+                    : contract.getMonthlyRoomPrice());
+            int durationMonths = Math.max(1,
+                (normalizedEndDate.getYear() - contract.getStartDate().getYear()) * 12
+                    + normalizedEndDate.getMonthValue() - contract.getStartDate().getMonthValue() + 1);
+
+            contract.setEndDate(normalizedEndDate);
+            contract.setDurationMonths(durationMonths);
+            contract.setMonthlyRoomPrice(monthlyPrice);
+            contract.setTotalRoomAmount(monthlyPrice.multiply(BigDecimal.valueOf(durationMonths)));
+            contractRepository.save(contract);
+        }
+
+        request.setStatus(ContractChangeRequestStatus.APPROVED);
+        request.setAdminNote(adminNote == null ? null : adminNote.trim());
+        request.setResolvedAt(LocalDateTime.now());
+        request.setResolvedBy(adminUsername);
+        return toChangeRequestResponse(contractChangeRequestRepository.save(request));
+    }
+
+    @Override
+    @Transactional
+    public ContractChangeRequestResponseDTO rejectContractChangeRequest(Long requestId, String adminUsername, String adminNote) {
+        ContractChangeRequest request = contractChangeRequestRepository.findById(requestId)
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy yêu cầu thay đổi hợp đồng"));
+
+        if (request.getStatus() != ContractChangeRequestStatus.PENDING) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Yêu cầu này đã được xử lý trước đó");
+        }
+
+        request.setStatus(ContractChangeRequestStatus.REJECTED);
+        request.setAdminNote(adminNote == null ? null : adminNote.trim());
+        request.setResolvedAt(LocalDateTime.now());
+        request.setResolvedBy(adminUsername);
+
+        return toChangeRequestResponse(contractChangeRequestRepository.save(request));
     }
 
     private void cancelPendingContractInternal(Contract contract, String reason) {
@@ -394,10 +672,167 @@ public class ContractServiceImpl implements ContractService {
         return amount.setScale(2, RoundingMode.HALF_UP);
     }
 
+    private Pageable buildContractPageable(int page, int size, String sortBy, String direction) {
+        String normalizedSortBy = (sortBy == null || sortBy.isBlank()) ? "createdAt" : sortBy;
+        Set<String> allowedSorts = Set.of("id", "createdAt", "updatedAt", "startDate", "endDate", "holdExpiresAt", "status");
+        if (!allowedSorts.contains(normalizedSortBy)) {
+            normalizedSortBy = "createdAt";
+        }
+
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.max(size, 1);
+        Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        return PageRequest.of(safePage, safeSize, Sort.by(sortDirection, normalizedSortBy));
+    }
+
+    private ContractStatus parseStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+
+        try {
+            return ContractStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Trạng thái hợp đồng không hợp lệ");
+        }
+    }
+
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        return keyword.trim();
+    }
+
+    private Pageable buildChangeRequestPageable(int page, int size, String sortBy, String direction) {
+        String normalizedSortBy = (sortBy == null || sortBy.isBlank()) ? "createdAt" : sortBy;
+        Set<String> allowedSorts = Set.of("id", "createdAt", "updatedAt", "resolvedAt", "status", "changeType");
+        if (!allowedSorts.contains(normalizedSortBy)) {
+            normalizedSortBy = "createdAt";
+        }
+
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.max(size, 1);
+        Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        return PageRequest.of(safePage, safeSize, Sort.by(sortDirection, normalizedSortBy));
+    }
+
+    private ContractChangeRequestStatus parseRequestStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+
+        try {
+            return ContractChangeRequestStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Trạng thái yêu cầu không hợp lệ");
+        }
+    }
+
+    private ContractChangeType parseChangeType(String changeType) {
+        if (changeType == null || changeType.isBlank()) {
+            return null;
+        }
+
+        try {
+            return ContractChangeType.valueOf(changeType.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Loại yêu cầu không hợp lệ");
+        }
+    }
+
+    private void releaseBedAndCancelContract(Contract contract, Bed bed, String reason) {
+        contract.setStatus(ContractStatus.CANCELLED);
+        contract.setStudentNote(reason);
+        contract.setHoldExpiresAt(LocalDateTime.now());
+        contractRepository.save(contract);
+
+        if (bed.getStudent() == null || Objects.equals(bed.getStudent().getId(), contract.getStudent().getId())) {
+            bed.setOccupied(false);
+            bed.setStudent(null);
+            bed.setReservedUntil(null);
+            bed.setReservedContractId(null);
+            bedRepository.save(bed);
+            updateRoomStatusByBeds(contract.getRoom());
+        }
+    }
+
+    private ContractChangeRequestResponseDTO toChangeRequestResponse(ContractChangeRequest request) {
+        Contract contract = request.getContract();
+        Student student = request.getStudent();
+        Integer extensionMonths = null;
+        BigDecimal additionalAmount = null;
+
+        if (request.getChangeType() == ContractChangeType.EXTEND && contract != null && request.getRequestedEndDate() != null) {
+            extensionMonths = tryResolveExtensionMonths(contract.getEndDate(), request.getRequestedEndDate());
+            BigDecimal monthlyPrice = normalizeMoney(contract.getMonthlyRoomPrice() == null
+                    ? contract.getRoom().getRoomType().getBasePrice()
+                    : contract.getMonthlyRoomPrice());
+            if (extensionMonths != null) {
+                additionalAmount = monthlyPrice.multiply(BigDecimal.valueOf(extensionMonths));
+            }
+        }
+
+        return ContractChangeRequestResponseDTO.builder()
+                .id(request.getId())
+                .contractId(contract == null ? null : contract.getId())
+                .studentCode(student == null ? null : student.getStudentCode())
+                .studentName(student == null ? null : student.getFullName())
+                .roomNumber(contract == null || contract.getRoom() == null ? null : contract.getRoom().getRoomNumber())
+                .bedNumber(contract == null || contract.getBed() == null ? 0 : contract.getBed().getBedNumber())
+                .changeType(request.getChangeType())
+                .status(request.getStatus())
+                .currentEndDate(contract == null ? null : contract.getEndDate())
+                .requestedEndDate(request.getRequestedEndDate())
+                .extensionMonths(extensionMonths)
+                .additionalAmount(additionalAmount)
+                .reason(request.getReason())
+                .adminNote(request.getAdminNote())
+                .resolvedAt(request.getResolvedAt())
+                .resolvedBy(request.getResolvedBy())
+                .createdAt(request.getCreatedAt())
+                .build();
+    }
+
+    private int resolveExtensionMonths(LocalDate currentEndDate, LocalDate requestedEndDate) {
+        if (currentEndDate == null || requestedEndDate == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày gia hạn không hợp lệ");
+        }
+
+        if (!requestedEndDate.isAfter(currentEndDate)) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày gia hạn phải lớn hơn ngày kết thúc hiện tại");
+        }
+
+        if (requestedEndDate.equals(currentEndDate.plusMonths(6))) {
+            return 6;
+        }
+
+        if (requestedEndDate.equals(currentEndDate.plusMonths(12))) {
+            return 12;
+        }
+
+        int monthDiff = (requestedEndDate.getYear() - currentEndDate.getYear()) * 12
+                + requestedEndDate.getMonthValue() - currentEndDate.getMonthValue();
+        if (monthDiff == 6 || monthDiff == 12) {
+            return monthDiff;
+        }
+
+        throw new AppException(ErrorCode.BAD_REQUEST, "Gia hạn chỉ hỗ trợ 6 hoặc 12 tháng");
+    }
+
+    private Integer tryResolveExtensionMonths(LocalDate currentEndDate, LocalDate requestedEndDate) {
+        try {
+            return resolveExtensionMonths(currentEndDate, requestedEndDate);
+        } catch (AppException ex) {
+            return null;
+        }
+    }
+
     private ContractResponseDTO toResponse(Contract contract) {
         return ContractResponseDTO.builder()
                 .id(contract.getId())
                 .studentId(contract.getStudent() == null ? null : contract.getStudent().getId())
+            .studentCode(contract.getStudent() == null ? null : contract.getStudent().getStudentCode())
                 .studentName(contract.getStudent() == null ? null : contract.getStudent().getFullName())
                 .roomId(contract.getRoom() == null ? null : contract.getRoom().getId())
                 .roomNumber(contract.getRoom() == null ? null : contract.getRoom().getRoomNumber())
@@ -418,6 +853,8 @@ public class ContractServiceImpl implements ContractService {
                 .guardianName(contract.getGuardianName())
                 .guardianPhone(contract.getGuardianPhone())
                 .studentNote(contract.getStudentNote())
+                .createdAt(contract.getCreatedAt())
+                .updatedAt(contract.getUpdatedAt())
                 .build();
     }
 }

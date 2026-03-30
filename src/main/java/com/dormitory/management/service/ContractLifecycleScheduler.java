@@ -22,5 +22,10 @@ public class ContractLifecycleScheduler {
         if (cancelled > 0) {
             LOGGER.info("Auto-cancelled {} expired pending contracts", cancelled);
         }
+
+        int expired = contractService.expireActiveContractsAndReleaseBeds();
+        if (expired > 0) {
+            LOGGER.info("Auto-expired {} active contracts and released beds", expired);
+        }
     }
 }

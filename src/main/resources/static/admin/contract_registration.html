@@ -182,6 +182,23 @@
     </div>
 </div>
 
+<div id="actionModal" class="hidden fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-sm p-4">
+    <div class="max-w-lg mx-auto mt-[14vh] bg-bg-card border border-border rounded-base shadow-soft overflow-hidden">
+        <div class="px-5 py-4 border-b border-border">
+            <h4 id="actionModalTitle" class="font-heading text-lg">Xác nhận thao tác</h4>
+            <p id="actionModalMessage" class="text-sm text-text-muted mt-1"></p>
+        </div>
+        <div class="px-5 py-4 space-y-2">
+            <label id="actionModalLabel" for="actionModalInput" class="hidden text-sm text-text-muted"></label>
+            <textarea id="actionModalInput" rows="3" class="hidden w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder=""></textarea>
+        </div>
+        <div class="px-5 py-4 border-t border-border flex justify-end gap-2">
+            <button id="actionModalCancel" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Hủy</button>
+            <button id="actionModalConfirm" type="button" class="rounded-base bg-primary text-white px-4 py-2 text-sm font-medium hover:bg-primary-hover">Xác nhận</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const token = localStorage.getItem('dormitory_access_token');
     if (!token) window.location.href = '/login.html';
@@ -193,13 +210,22 @@
         }
         window.AdminSidebar.mount({
             mountId: 'adminSidebarMount',
-            active: 'contracts',
+            active: 'contractRegistration',
             caption: 'Đăng ký nội trú'
         });
     }
     initSidebar();
 
     const message = document.getElementById('message');
+    const actionModal = document.getElementById('actionModal');
+    const actionModalTitle = document.getElementById('actionModalTitle');
+    const actionModalMessage = document.getElementById('actionModalMessage');
+    const actionModalLabel = document.getElementById('actionModalLabel');
+    const actionModalInput = document.getElementById('actionModalInput');
+    const actionModalCancel = document.getElementById('actionModalCancel');
+    const actionModalConfirm = document.getElementById('actionModalConfirm');
+    let resolveActionModal = null;
+
     function showMessage(type, text) {
         message.className = 'mb-6 rounded-base px-4 py-3 text-sm block';
         message.classList.add(type === 'error' ? 'bg-red-50' : 'bg-green-50');
@@ -227,6 +253,57 @@
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Lỗi hệ thống');
         return data.result;
+    }
+
+    function openActionModal(config) {
+        const settings = {
+            title: 'Xác nhận thao tác',
+            message: 'Bạn có chắc chắn muốn tiếp tục?',
+            inputLabel: 'Lý do (không bắt buộc)',
+            inputPlaceholder: '',
+            defaultValue: '',
+            confirmText: 'Xác nhận',
+            confirmClass: 'bg-primary text-white hover:bg-primary-hover',
+            showInput: false,
+            ...config
+        };
+
+        actionModalTitle.textContent = settings.title;
+        actionModalMessage.textContent = settings.message;
+        actionModalConfirm.textContent = settings.confirmText;
+        actionModalConfirm.className = `rounded-base px-4 py-2 text-sm font-medium ${settings.confirmClass}`;
+
+        if (settings.showInput) {
+            actionModalLabel.textContent = settings.inputLabel;
+            actionModalLabel.classList.remove('hidden');
+            actionModalInput.classList.remove('hidden');
+            actionModalInput.placeholder = settings.inputPlaceholder;
+            actionModalInput.value = settings.defaultValue;
+        } else {
+            actionModalLabel.classList.add('hidden');
+            actionModalInput.classList.add('hidden');
+            actionModalInput.value = '';
+        }
+
+        actionModal.classList.remove('hidden');
+        if (settings.showInput) {
+            setTimeout(() => actionModalInput.focus(), 0);
+        } else {
+            setTimeout(() => actionModalConfirm.focus(), 0);
+        }
+
+        return new Promise((resolve) => {
+            resolveActionModal = resolve;
+        });
+    }
+
+    function closeActionModal(payload) {
+        actionModal.classList.add('hidden');
+        if (resolveActionModal) {
+            const resolver = resolveActionModal;
+            resolveActionModal = null;
+            resolver(payload);
+        }
     }
 
     let currentStep = 1;
@@ -429,10 +506,32 @@
 
         try {
             if (action === 'approve') {
+                const dialog = await openActionModal({
+                    title: 'Duyệt hợp đồng',
+                    message: 'Xác nhận duyệt hợp đồng này?',
+                    confirmText: 'Duyệt',
+                    confirmClass: 'bg-primary text-white hover:bg-primary-hover'
+                });
+                if (!dialog.confirmed) {
+                    return;
+                }
                 await fetchAPI(`/api/v1/contracts/${contractId}/approve`, { method: 'PUT' });
                 showMessage('success', 'Duyệt hợp đồng thành công. Sinh viên đã nhận phòng.');
             } else {
-                const reason = prompt('Nhập lý do từ chối hợp đồng (không bắt buộc):', 'Thiếu giấy tờ đối chiếu');
+                const dialog = await openActionModal({
+                    title: 'Từ chối hợp đồng',
+                    message: 'Xác nhận từ chối hợp đồng này?',
+                    inputLabel: 'Lý do từ chối (không bắt buộc)',
+                    inputPlaceholder: 'Ví dụ: Thiếu giấy tờ đối chiếu.',
+                    defaultValue: 'Thiếu giấy tờ đối chiếu',
+                    confirmText: 'Từ chối',
+                    confirmClass: 'bg-danger text-white hover:bg-red-700',
+                    showInput: true
+                });
+                if (!dialog.confirmed) {
+                    return;
+                }
+                const reason = dialog.note;
                 const query = reason ? `?reason=${encodeURIComponent(reason)}` : '';
                 await fetchAPI(`/api/v1/contracts/${contractId}/reject${query}`, { method: 'PUT' });
                 showMessage('success', 'Đã từ chối hợp đồng và trả giường về trạng thái trống.');
@@ -445,6 +544,26 @@
     });
 
     document.getElementById('refreshPendingBtn').addEventListener('click', loadPendingContracts);
+
+    actionModalCancel.addEventListener('click', () => {
+        closeActionModal({ confirmed: false, note: '' });
+    });
+
+    actionModalConfirm.addEventListener('click', () => {
+        closeActionModal({ confirmed: true, note: actionModalInput.value.trim() });
+    });
+
+    actionModal.addEventListener('click', (event) => {
+        if (event.target === actionModal) {
+            closeActionModal({ confirmed: false, note: '' });
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !actionModal.classList.contains('hidden')) {
+            closeActionModal({ confirmed: false, note: '' });
+        }
+    });
 
     loadBuildings('');
     loadPendingContracts();
