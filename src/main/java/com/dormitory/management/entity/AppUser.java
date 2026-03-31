@@ -33,7 +33,7 @@ public class AppUser extends BaseEntity {
         @Column(name = "full_name", nullable = false, columnDefinition = "nvarchar(150)")
     private String fullName;
 
-        @Column(name = "email", columnDefinition = "nvarchar(120)")
+        @Column(name = "email", columnDefinition = "nvarchar(255)")
     private String email;
 
     @OneToOne

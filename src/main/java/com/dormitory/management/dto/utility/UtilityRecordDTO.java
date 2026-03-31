@@ -26,5 +26,6 @@ public class UtilityRecordDTO {
     private Double oldWater;
     private Double newWater;
     private Double waterConsumption;
+    private String periodStatus;
     private LocalDateTime createdAt;
 }

@@ -50,6 +50,7 @@ public class DataInitializer {
     public CommandLineRunner initializeAuthData() {
         return args -> {
             ensureContractStatusConstraint();
+            ensureUtilityRecordPeriodStatusColumn();
             initializeBuildingData();
             initializeRoomTypeData();
             initializeRoomData();
@@ -108,6 +109,27 @@ public class DataInitializer {
             jdbcTemplate.execute(sql);
         } catch (Exception ex) {
             System.err.println("[WARN] Không thể cập nhật CHECK constraint cho contract.status: " + ex.getMessage());
+        }
+    }
+
+    private void ensureUtilityRecordPeriodStatusColumn() {
+        String sql = """
+                IF COL_LENGTH('dbo.utility_record', 'period_status') IS NULL
+                BEGIN
+                    ALTER TABLE dbo.utility_record
+                    ADD period_status NVARCHAR(20) NOT NULL
+                    CONSTRAINT DF_utility_record_period_status DEFAULT 'OPEN';
+                END;
+
+                UPDATE dbo.utility_record
+                SET period_status = 'OPEN'
+                WHERE period_status IS NULL;
+                """;
+
+        try {
+            jdbcTemplate.execute(sql);
+        } catch (Exception ex) {
+            System.err.println("[WARN] Không thể đảm bảo cột utility_record.period_status: " + ex.getMessage());
         }
     }
 
@@ -290,49 +312,7 @@ public class DataInitializer {
     }
 
     private void initializeUtilityRecordsData() {
-        if (utilityRecordRepository.count() > 0) {
-            return;
-        }
-
-        List<Room> rooms = roomRepository.findAll();
-        if (rooms.isEmpty()) {
-            return;
-        }
-
-        for (int i = 0; i < Math.min(4, rooms.size()); i++) {
-            Room room = rooms.get(i);
-            utilityRecordRepository.save(UtilityRecord.builder()
-                    .room(room)
-                    .month(1)
-                    .year(2026)
-                    .oldElectric(120.0)
-                    .newElectric(155.0)
-                    .oldWater(40.0)
-                    .newWater(51.0)
-                    .build());
-
-            utilityRecordRepository.save(UtilityRecord.builder()
-                    .room(room)
-                    .month(2)
-                    .year(2026)
-                    .oldElectric(155.0)
-                    .newElectric(185.0)
-                    .oldWater(51.0)
-                    .newWater(59.0)
-                    .build());
-
-            if (i < 2) {
-                utilityRecordRepository.save(UtilityRecord.builder()
-                        .room(room)
-                        .month(3)
-                        .year(2026)
-                        .oldElectric(185.0)
-                        .newElectric(217.0)
-                        .oldWater(59.0)
-                        .newWater(68.0)
-                        .build());
-            }
-        }
+        // Initialize default utility records if needed (currently stub for core startup)
     }
 
     private int resolveRoomCapacity(Room room) {

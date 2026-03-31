@@ -17,7 +17,7 @@ public class UtilityRecordBatchRequestDTO {
 
     private Long buildingId;
 
-    @NotEmpty(message = "Utility record list cannot be empty")
+    @NotEmpty(message = "Danh sách chỉ số điện nước không được trống")
     @Valid
     private List<UtilityRecordRequestDTO> records;
 }

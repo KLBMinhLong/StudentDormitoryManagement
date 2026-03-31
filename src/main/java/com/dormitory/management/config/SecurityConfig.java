@@ -73,6 +73,7 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/api/v1/buildings/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/v1/utility-records/me/**").hasAuthority("ROLE_STUDENT")
                         .requestMatchers("/api/v1/rooms/**", "/api/v1/room-types/**", "/api/v1/utility-records/**")
                         .hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/v1/students/**").hasAnyAuthority("ROLE_STUDENT", "ROLE_ADMIN")

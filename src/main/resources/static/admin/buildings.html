@@ -75,6 +75,7 @@
                                     <th class="px-4 py-3 w-16">ID</th>
                                     <th class="px-4 py-3">Tên tòa</th>
                                     <th class="px-4 py-3 w-28">Số tầng</th>
+                                    <th class="px-4 py-3 w-24">Quy định giới tính</th>
                                     <th class="px-4 py-3">Mô tả</th>
                                     <th class="px-4 py-3 w-40">Ngày tạo</th>
                                     <th class="px-4 py-3 w-40">Cập nhật</th>
@@ -83,7 +84,7 @@
                             </thead>
                             <tbody id="buildingTableBody" class="divide-y divide-border">
                                 <tr id="rowLoading">
-                                    <td colspan="7" class="px-4 py-8 text-center text-text-muted">Đang tải dữ liệu...</td>
+                                    <td colspan="8" class="px-4 py-8 text-center text-text-muted">Đang tải dữ liệu...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -123,6 +124,16 @@
                         <input id="fieldFloors" type="number" min="1" max="99" placeholder="Nhập số tầng..."
                             class="w-full rounded-base border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition">
                         <p id="floorsError" class="text-danger text-xs mt-1 hidden"></p>
+                    </div>
+                    <div class="mb-4">
+                        <label for="fieldGender" class="block text-sm font-medium mb-1.5">Quy định giới tính <span class="text-danger">*</span></label>
+                        <select id="fieldGender" class="w-full rounded-base border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition bg-bg-card">
+                            <option value="">-- Chọn quy định giới tính --</option>
+                            <option value="Nam">Nam</option>
+                            <option value="Nữ">Nữ</option>
+                            <option value="Nam/Nữ">Nam/Nữ</option>
+                        </select>
+                        <p id="genderError" class="text-danger text-xs mt-1 hidden"></p>
                     </div>
                     <div class="mb-6">
                         <label for="fieldDesc" class="block text-sm font-medium mb-1.5">Mô tả</label>
@@ -295,6 +306,9 @@
                     <td class="px-4 py-3 text-text-muted font-mono text-xs">${b.id}</td>
                     <td class="px-4 py-3 font-medium">${escHtml(b.name)}</td>
                     <td class="px-4 py-3 text-text-muted">${Number(b.totalFloors) || 0}</td>
+                    <td class="px-4 py-3 text-text-muted text-sm">
+                        <span class="${b.genderAllowed === 'Nam' ? 'text-blue-600' : b.genderAllowed === 'Nữ' ? 'text-pink-600' : 'text-purple-600'}">${escHtml(b.genderAllowed || '-')}</span>
+                    </td>
                     <td class="px-4 py-3 text-text-muted max-w-xs truncate" title="${escHtml(b.description || '')}">${escHtml(b.description || '-')}</td>
                     <td class="px-4 py-3 text-text-muted text-xs">${fmtDate(b.createdAt)}</td>
                     <td class="px-4 py-3 text-text-muted text-xs">${fmtDate(b.updatedAt)}</td>
@@ -341,6 +355,7 @@
             document.getElementById('editId').value = '';
             document.getElementById('nameError').classList.add('hidden');
             document.getElementById('floorsError').classList.add('hidden');
+            document.getElementById('genderError').classList.add('hidden');
             document.getElementById('modalTitle').textContent = 'Thêm tòa nhà';
         }
 
@@ -351,6 +366,7 @@
             document.getElementById('editId').value = id;
             document.getElementById('fieldName').value = b.name;
             document.getElementById('fieldFloors').value = b.totalFloors;
+            document.getElementById('fieldGender').value = b.genderAllowed || '';
             document.getElementById('fieldDesc').value = b.description || '';
             openModal();
         }
@@ -372,8 +388,10 @@
             const name = document.getElementById('fieldName').value.trim();
             const floorsValue = document.getElementById('fieldFloors').value;
             const floors = Number(floorsValue);
+            const gender = document.getElementById('fieldGender').value.trim();
             const nameErr = document.getElementById('nameError');
             const floorsErr = document.getElementById('floorsError');
+            const genderErr = document.getElementById('genderError');
             let valid = true;
 
             if (!name) {
@@ -392,6 +410,14 @@
                 floorsErr.classList.add('hidden');
             }
 
+            if (!gender) {
+                genderErr.textContent = 'Quy định giới tính không được để trống.';
+                genderErr.classList.remove('hidden');
+                valid = false;
+            } else {
+                genderErr.classList.add('hidden');
+            }
+
             return valid;
         }
 
@@ -403,6 +429,7 @@
             const payload = {
                 name: document.getElementById('fieldName').value.trim(),
                 totalFloors: Number(document.getElementById('fieldFloors').value),
+                genderAllowed: document.getElementById('fieldGender').value.trim(),
                 description: document.getElementById('fieldDesc').value.trim() || null
             };
 

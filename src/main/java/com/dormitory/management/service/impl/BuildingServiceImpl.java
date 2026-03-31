@@ -7,8 +7,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.dormitory.management.dto.building.BuildingDTO;
 import com.dormitory.management.dto.building.BuildingRequestDTO;
+import com.dormitory.management.dto.building.BuildingResponseDTO;
 import com.dormitory.management.dto.common.PagedResponseDTO;
 import com.dormitory.management.entity.Building;
 import com.dormitory.management.exception.ResourceNotFoundException;
@@ -25,26 +25,27 @@ public class BuildingServiceImpl implements BuildingService {
     private final BuildingRepository buildingRepository;
 
     @Override
-    public PagedResponseDTO<BuildingDTO> getAllBuildings(int page, int size, String sortBy, String direction) {
+    public PagedResponseDTO<BuildingResponseDTO> getAllBuildings(int page, int size, String sortBy, String direction) {
         Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
-        Page<BuildingDTO> result = buildingRepository.findAll(pageable).map(this::toDto);
+        Page<BuildingResponseDTO> result = buildingRepository.findAll(pageable).map(this::toDto);
         return PagedResponseDTO.fromPage(result);
     }
 
     @Override
-    public BuildingDTO getBuildingById(Long id) {
+    public BuildingResponseDTO getBuildingById(Long id) {
         Building building = findBuildingOrThrow(id);
         return toDto(building);
     }
 
     @Override
     @Transactional
-    public BuildingDTO createBuilding(BuildingRequestDTO request) {
+    public BuildingResponseDTO createBuilding(BuildingRequestDTO request) {
         Building building = new Building();
         building.setName(request.getName().trim());
         building.setTotalFloors(request.getTotalFloors());
-        building.setDescription(request.getDescription());
+        building.setGenderAllowed(request.getGenderAllowed().trim());
+        building.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
 
         Building saved = buildingRepository.save(building);
         return toDto(saved);
@@ -52,11 +53,12 @@ public class BuildingServiceImpl implements BuildingService {
 
     @Override
     @Transactional
-    public BuildingDTO updateBuilding(Long id, BuildingRequestDTO request) {
+    public BuildingResponseDTO updateBuilding(Long id, BuildingRequestDTO request) {
         Building existing = findBuildingOrThrow(id);
         existing.setName(request.getName().trim());
         existing.setTotalFloors(request.getTotalFloors());
-        existing.setDescription(request.getDescription());
+        existing.setGenderAllowed(request.getGenderAllowed().trim());
+        existing.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
 
         Building updated = buildingRepository.save(existing);
         return toDto(updated);
@@ -71,17 +73,19 @@ public class BuildingServiceImpl implements BuildingService {
 
     private Building findBuildingOrThrow(Long id) {
         return buildingRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Building not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Tòa nhà không tồn tại với id: " + id));
     }
 
-    private BuildingDTO toDto(Building building) {
-        return BuildingDTO.builder()
+    private BuildingResponseDTO toDto(Building building) {
+        return BuildingResponseDTO.builder()
                 .id(building.getId())
                 .name(building.getName())
                 .totalFloors(building.getTotalFloors())
+                .genderAllowed(building.getGenderAllowed())
                 .description(building.getDescription())
                 .createdAt(building.getCreatedAt())
                 .updatedAt(building.getUpdatedAt())
                 .build();
     }
 }
+
