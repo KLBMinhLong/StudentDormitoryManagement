@@ -18,6 +18,7 @@ import com.dormitory.management.entity.Bed;
 import com.dormitory.management.entity.Room;
 import com.dormitory.management.entity.RoomType;
 import com.dormitory.management.entity.Student;
+import com.dormitory.management.entity.UtilityRecord;
 import com.dormitory.management.entity.enums.RoomStatus;
 import com.dormitory.management.repository.AppUserRepository;
 import com.dormitory.management.repository.BedRepository;
@@ -26,6 +27,7 @@ import com.dormitory.management.repository.RoleRepository;
 import com.dormitory.management.repository.RoomRepository;
 import com.dormitory.management.repository.RoomTypeRepository;
 import com.dormitory.management.repository.StudentRepository;
+import com.dormitory.management.repository.UtilityRecordRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -40,6 +42,7 @@ public class DataInitializer {
     private final RoomTypeRepository roomTypeRepository;
     private final BedRepository bedRepository;
     private final StudentRepository studentRepository;
+    private final UtilityRecordRepository utilityRecordRepository;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
 
@@ -51,6 +54,7 @@ public class DataInitializer {
             initializeRoomTypeData();
             initializeRoomData();
             initializeBedData();
+            initializeUtilityRecordsData();
 
             Role adminRole = findOrCreateRole("ROLE_ADMIN");
             Role studentRole = findOrCreateRole("ROLE_STUDENT");
@@ -281,6 +285,52 @@ public class DataInitializer {
                     continue;
                 }
                 bedRepository.delete(bed);
+            }
+        }
+    }
+
+    private void initializeUtilityRecordsData() {
+        if (utilityRecordRepository.count() > 0) {
+            return;
+        }
+
+        List<Room> rooms = roomRepository.findAll();
+        if (rooms.isEmpty()) {
+            return;
+        }
+
+        for (int i = 0; i < Math.min(4, rooms.size()); i++) {
+            Room room = rooms.get(i);
+            utilityRecordRepository.save(UtilityRecord.builder()
+                    .room(room)
+                    .month(1)
+                    .year(2026)
+                    .oldElectric(120.0)
+                    .newElectric(155.0)
+                    .oldWater(40.0)
+                    .newWater(51.0)
+                    .build());
+
+            utilityRecordRepository.save(UtilityRecord.builder()
+                    .room(room)
+                    .month(2)
+                    .year(2026)
+                    .oldElectric(155.0)
+                    .newElectric(185.0)
+                    .oldWater(51.0)
+                    .newWater(59.0)
+                    .build());
+
+            if (i < 2) {
+                utilityRecordRepository.save(UtilityRecord.builder()
+                        .room(room)
+                        .month(3)
+                        .year(2026)
+                        .oldElectric(185.0)
+                        .newElectric(217.0)
+                        .oldWater(59.0)
+                        .newWater(68.0)
+                        .build());
             }
         }
     }
