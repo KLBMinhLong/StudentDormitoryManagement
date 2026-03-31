@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KTX - Quản lý chỉ số điện nước</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="/ui/admin-sidebar.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        danger: '#DC2626',
+                        'danger-hover': '#B91C1C',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        success: '#16A34A',
+                        warning: '#D97706'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+    <div id="toast" class="fixed top-5 right-5 z-50 hidden">
+        <div id="toastBox" class="flex items-center gap-3 rounded-base px-4 py-3 shadow-soft text-sm font-medium">
+            <span id="toastMsg"></span>
+        </div>
+    </div>
+
+    <div id="adminLayout" class="max-w-[1200px] mx-auto p-4 md:p-6 min-h-screen">
+        <div class="admin-grid grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6 min-h-[calc(100vh-3rem)]">
+            <div id="adminSidebarMount"></div>
+
+            <main class="space-y-6">
+                <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
+                        <div>
+                            <h2 class="font-heading text-2xl">Lịch sử tiêu thụ theo thời gian</h2>
+                            <p class="text-sm text-text-muted mt-1">So sánh lượng điện, nước tiêu thụ theo từng tháng.</p>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-2 w-full lg:w-auto">
+                            <select id="chartBuilding" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
+                                <option value="">Tất cả tòa nhà</option>
+                            </select>
+                            <select id="chartRoom" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
+                                <option value="">Tất cả phòng</option>
+                            </select>
+                            <input id="chartFromYear" type="number" min="2000" max="2099" placeholder="Từ năm" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                            <input id="chartToYear" type="number" min="2000" max="2099" placeholder="Đến năm" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                            <button id="btnLoadChart" type="button" class="rounded-base bg-secondary hover:bg-blue-600 text-white px-4 py-2 text-sm font-medium transition-colors">Xem biểu đồ</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                        <div class="rounded-base border border-border p-3 bg-slate-50">
+                            <p class="text-xs text-text-muted">Tổng điện tiêu thụ</p>
+                            <p id="sumElectric" class="font-heading text-xl text-secondary mt-1">0 kWh</p>
+                        </div>
+                        <div class="rounded-base border border-border p-3 bg-slate-50">
+                            <p class="text-xs text-text-muted">Tổng nước tiêu thụ</p>
+                            <p id="sumWater" class="font-heading text-xl text-primary mt-1">0 m³</p>
+                        </div>
+                        <div class="rounded-base border border-border p-3 bg-slate-50">
+                            <p class="text-xs text-text-muted">Số kỳ ghi nhận</p>
+                            <p id="sumPeriods" class="font-heading text-xl text-text-main mt-1">0 kỳ</p>
+                        </div>
+                    </div>
+
+                    <div class="rounded-base border border-border p-4">
+                        <canvas id="consumptionChart" height="120"></canvas>
+                        <p id="chartEmpty" class="hidden text-sm text-text-muted text-center py-6">Chưa có dữ liệu để hiển thị biểu đồ.</p>
+                    </div>
+                </section>
+
+                <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-4">
+                        <div>
+                            <h2 class="font-heading text-2xl">Nhập hàng loạt theo tòa</h2>
+                            <p class="text-sm text-text-muted mt-1">Chọn tòa + kỳ tháng, hệ thống tự điền chỉ số cũ để nhập nhanh chỉ số mới.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" id="btnLoadBulk" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Tải danh sách phòng</button>
+                            <button type="button" id="btnCancelBulk" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Hủy nhập</button>
+                            <button type="button" id="btnSaveBulk" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium">Lưu hàng loạt</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                        <div>
+                            <label class="block text-xs font-medium text-text-muted mb-1">Tòa nhà</label>
+                            <select id="bulkBuilding" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
+                                <option value="">-- Chọn tòa nhà --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-text-muted mb-1">Tháng</label>
+                            <select id="bulkMonth" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
+                                <option value="">-- Chọn tháng --</option>
+                                <option value="1">Tháng 1</option>
+                                <option value="2">Tháng 2</option>
+                                <option value="3">Tháng 3</option>
+                                <option value="4">Tháng 4</option>
+                                <option value="5">Tháng 5</option>
+                                <option value="6">Tháng 6</option>
+                                <option value="7">Tháng 7</option>
+                                <option value="8">Tháng 8</option>
+                                <option value="9">Tháng 9</option>
+                                <option value="10">Tháng 10</option>
+                                <option value="11">Tháng 11</option>
+                                <option value="12">Tháng 12</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-text-muted mb-1">Năm</label>
+                            <input type="number" id="bulkYear" min="2000" max="2099" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Nhập năm...">
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-base border border-border">
+                        <table class="w-full min-w-[980px] text-sm">
+                            <thead>
+                            <tr class="bg-slate-50 border-b border-border text-xs uppercase tracking-wide text-text-muted">
+                                <th class="px-3 py-2 text-left">Phòng</th>
+                                <th class="px-3 py-2 text-left">Điện cũ</th>
+                                <th class="px-3 py-2 text-left">Điện mới</th>
+                                <th class="px-3 py-2 text-left">Nước cũ</th>
+                                <th class="px-3 py-2 text-left">Nước mới</th>
+                                <th class="px-3 py-2 text-left">Ghi chú kiểm tra</th>
+                            </tr>
+                            </thead>
+                            <tbody id="bulkTableBody" class="divide-y divide-border">
+                            <tr>
+                                <td colspan="6" class="px-3 py-6 text-center text-text-muted">Chọn tòa nhà và kỳ tháng để bắt đầu nhập hàng loạt.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                    <div class="flex items-center justify-between mb-6 gap-3">
+                        <div>
+                            <h2 class="font-heading text-2xl">Danh sách chỉ số điện nước</h2>
+                            <p class="text-sm text-text-muted mt-1">Quản lý chỉ số đo điện, nước theo phòng và tháng.</p>
+                        </div>
+                        <button type="button" id="btnAddRecord" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium transition-colors flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Thêm chỉ số
+                        </button>
+                    </div>
+
+                    <div class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-text-muted mb-1">Tòa nhà</label>
+                            <select id="filterBuilding" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition bg-bg-card">
+                                <option value="">-- Tất cả tòa nhà --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-text-muted mb-1">Tháng</label>
+                            <select id="filterMonth" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition bg-bg-card">
+                                <option value="">-- Tất cả tháng --</option>
+                                <option value="1">Tháng 1</option>
+                                <option value="2">Tháng 2</option>
+                                <option value="3">Tháng 3</option>
+                                <option value="4">Tháng 4</option>
+                                <option value="5">Tháng 5</option>
+                                <option value="6">Tháng 6</option>
+                                <option value="7">Tháng 7</option>
+                                <option value="8">Tháng 8</option>
+                                <option value="9">Tháng 9</option>
+                                <option value="10">Tháng 10</option>
+                                <option value="11">Tháng 11</option>
+                                <option value="12">Tháng 12</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-text-muted mb-1">Năm</label>
+                            <input type="number" id="filterYear" min="2000" max="2099" placeholder="Nhập năm..." class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition">
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <button type="button" id="btnSearch" class="flex-1 rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-2 text-xs md:text-sm font-medium transition-colors">Tìm kiếm</button>
+                            <button type="button" id="btnClosePeriod" class="hidden rounded-base border border-warning text-warning px-3 py-2 text-xs md:text-sm font-medium hover:bg-amber-50 transition-colors">Chốt kỳ</button>
+                            <button type="button" id="btnReopenPeriod" class="hidden rounded-base border border-secondary text-secondary px-3 py-2 text-xs md:text-sm font-medium hover:bg-blue-50 transition-colors">Mở khóa kỳ</button>
+                            <button type="button" id="btnReset" class="rounded-base border border-border px-3 py-2 text-xs md:text-sm font-medium hover:bg-slate-50 text-text-muted transition-colors">Đặt lại</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-base border border-border">
+                        <table class="w-full text-sm min-w-[960px]">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-border text-text-muted text-left text-xs uppercase tracking-wide font-medium">
+                                    <th class="px-4 py-3 w-16">ID</th>
+                                    <th class="px-4 py-3">Tòa / Phòng</th>
+                                    <th class="px-4 py-3 w-20">Tháng/Năm</th>
+                                    <th class="px-4 py-3 w-32">Điện (kWh)</th>
+                                    <th class="px-4 py-3 w-32">Nước (m³)</th>
+                                    <th class="px-4 py-3 w-24">Trạng thái</th>
+                                    <th class="px-4 py-3 w-28 text-right">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recordTableBody" class="divide-y divide-border">
+                                <tr id="rowLoading">
+                                    <td colspan="7" class="px-4 py-8 text-center text-text-muted">Đang tải dữ liệu...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="tablePagination" class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"></div>
+
+                    <div id="emptyState" class="hidden text-center py-12">
+                        <p class="text-text-muted text-sm">Chưa có chỉ số điện nước nào. Nhấn <strong>Thêm chỉ số</strong> để bắt đầu.</p>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Thêm/Sửa chỉ số -->
+    <div id="modal" class="fixed inset-0 z-40 hidden">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="modalBackdrop"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="relative bg-bg-card rounded-base shadow-soft w-full max-w-2xl p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 id="modalTitle" class="font-heading text-xl">Thêm chỉ số điện nước</h3>
+                    <button type="button" id="modalClose" class="text-text-muted hover:text-text-main transition-colors p-1 rounded-base focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary" aria-label="Đóng">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form id="recordForm" novalidate class="space-y-4">
+                    <input type="hidden" id="editId">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="fieldRoom" class="block text-sm font-medium mb-1.5">Phòng <span class="text-danger">*</span></label>
+                            <select id="fieldRoom" class="w-full rounded-base border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition bg-bg-card">
+                                <option value="">-- Chọn phòng --</option>
+                            </select>
+                            <p id="roomError" class="text-danger text-xs mt-1 hidden"></p>
+                        </div>
+
+                        <div>
+                            <label for="fieldMonth" class="block text-sm font-medium mb-1.5">Tháng/Năm <span class="text-danger">*</span></label>
+                            <div class="flex gap-2">
+                                <select id="fieldMonth" class="flex-1 rounded-base border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition bg-bg-card">
+                                    <option value="">Tháng</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                </select>
+                                <input type="number" id="fieldYear" min="2000" max="2099" placeholder="Năm" class="w-24 rounded-base border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition">
+                            </div>
+                            <p id="dateError" class="text-danger text-xs mt-1 hidden"></p>
+                            <p id="prefillHint" class="text-xs text-text-muted mt-1"></p>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-border pt-4">
+                        <p class="text-sm font-medium text-text-main mb-3">Chỉ số điện (kWh)</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="fieldOldElectric" class="block text-xs font-medium text-text-muted mb-1">Chỉ số cũ <span class="text-danger">*</span></label>
+                                <input type="number" id="fieldOldElectric" step="0.01" min="0" placeholder="0" class="w-full rounded-base border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition">
+                            </div>
+                            <div>
+                                <label for="fieldNewElectric" class="block text-xs font-medium text-text-muted mb-1">Chỉ số mới <span class="text-danger">*</span></label>
+                                <input type="number" id="fieldNewElectric" step="0.01" min="0" placeholder="0" class="w-full rounded-base border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition">
+                            </div>
+                        </div>
+                        <p id="electricError" class="text-danger text-xs mt-1 hidden"></p>
+                        <p id="electricWarn" class="text-warning text-xs mt-1 hidden"></p>
+                    </div>
+
+                    <div class="border-t border-border pt-4">
+                        <p class="text-sm font-medium text-text-main mb-3">Chỉ số nước (m³)</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="fieldOldWater" class="block text-xs font-medium text-text-muted mb-1">Chỉ số cũ <span class="text-danger">*</span></label>
+                                <input type="number" id="fieldOldWater" step="0.01" min="0" placeholder="0" class="w-full rounded-base border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition">
+                            </div>
+                            <div>
+                                <label for="fieldNewWater" class="block text-xs font-medium text-text-muted mb-1">Chỉ số mới <span class="text-danger">*</span></label>
+                                <input type="number" id="fieldNewWater" step="0.01" min="0" placeholder="0" class="w-full rounded-base border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition">
+                            </div>
+                        </div>
+                        <p id="waterError" class="text-danger text-xs mt-1 hidden"></p>
+                        <p id="waterWarn" class="text-warning text-xs mt-1 hidden"></p>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-4 border-t border-border">
+                        <button type="button" id="btnCancel" class="rounded-base border border-border px-4 py-2.5 text-sm font-medium text-text-main hover:bg-slate-50 transition-colors">Hủy</button>
+                        <button type="submit" id="btnSubmit" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2.5 text-sm font-medium transition-colors">Lưu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Xóa -->
+    <div id="deleteModal" class="fixed inset-0 z-40 hidden">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="relative bg-bg-card rounded-base shadow-soft w-full max-w-sm p-6 text-center">
+                <h3 class="font-heading text-lg mb-2">Xác nhận xóa</h3>
+                <p class="text-text-muted text-sm mb-6">Bạn có chắc chắn muốn xóa chỉ số điện nước <strong id="deleteName"></strong> không?</p>
+                <div class="flex justify-center gap-3">
+                    <button type="button" id="deleteCancel" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 transition-colors">Hủy</button>
+                    <button type="button" id="deleteConfirm" class="rounded-base bg-danger hover:bg-danger-hover text-white px-4 py-2 text-sm font-medium transition-colors">Xóa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/v1';
+        const token = localStorage.getItem('dormitory_access_token');
+        const ITEMS_PER_PAGE = 10;
+        
+        let recordsCache = [];
+        let buildingsCache = [];
+        let roomsCache = [];
+        let currentPage = 0;
+        let totalPages = 0;
+        let totalElements = 0;
+        let deleteTargetId = null;
+        let consumptionChart = null;
+        let bulkRowsCache = [];
+
+        if (!token) {
+            window.location.href = '/login';
+        }
+
+        function initAdminSidebar() {
+            if (!window.AdminSidebar || typeof window.AdminSidebar.mount !== 'function') {
+                window.setTimeout(initAdminSidebar, 50);
+                return;
+            }
+
+            window.AdminSidebar.mount({
+                mountId: 'adminSidebarMount',
+                active: 'utilities',
+                caption: 'Quản trị hệ thống'
+            });
+        }
+
+        initAdminSidebar();
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const box = document.getElementById('toastBox');
+            const msg = document.getElementById('toastMsg');
+            const colors = {
+                success: 'bg-green-50 text-success border border-green-200',
+                error: 'bg-red-50 text-danger border border-red-200',
+                info: 'bg-blue-50 text-secondary border border-blue-200'
+            };
+            box.className = `flex items-center gap-3 rounded-base px-4 py-3 shadow-soft text-sm font-medium ${colors[type] || colors.info}`;
+            msg.textContent = message;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        function escHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function authHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+            };
+        }
+
+        async function ensureAdmin() {
+            const res = await fetch(`${API_BASE}/auth/me`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const payload = await res.json();
+            if (!res.ok) {
+                throw new Error(payload.message || 'Phiên đăng nhập không hợp lệ');
+            }
+
+            const roles = Array.isArray(payload.result?.roles) ? payload.result.roles : [];
+            if (!roles.includes('ROLE_ADMIN')) {
+                window.location.href = '/home';
+                return;
+            }
+        }
+
+        function toFixed2(value) {
+            return Number(value || 0).toFixed(2);
+        }
+
+        function getCurrentPeriod() {
+            const now = new Date();
+            return { month: now.getMonth() + 1, year: now.getFullYear() };
+        }
+
+        async function fetchPrefill(roomId, month, year) {
+            const params = new URLSearchParams({
+                roomId: String(roomId),
+                month: String(month),
+                year: String(year)
+            });
+            const res = await fetch(`${API_BASE}/utility-records/prefill?${params}`, { headers: authHeaders() });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || 'Không lấy được dữ liệu gợi ý');
+            }
+            return data.result || {};
+        }
+
+        function updateSingleWarnings(prefill) {
+            const electricWarn = document.getElementById('electricWarn');
+            const waterWarn = document.getElementById('waterWarn');
+            electricWarn.classList.add('hidden');
+            waterWarn.classList.add('hidden');
+
+            const oldE = Number(document.getElementById('fieldOldElectric').value || 0);
+            const newE = Number(document.getElementById('fieldNewElectric').value || 0);
+            const oldW = Number(document.getElementById('fieldOldWater').value || 0);
+            const newW = Number(document.getElementById('fieldNewWater').value || 0);
+
+            const prevElectric = Number(prefill?.previousElectricConsumption || 0);
+            const prevWater = Number(prefill?.previousWaterConsumption || 0);
+            const currentElectric = newE - oldE;
+            const currentWater = newW - oldW;
+
+            if (prevElectric > 0 && currentElectric > prevElectric * 5) {
+                electricWarn.textContent = 'Cảnh báo: Điện tiêu thụ tăng đột biến so với kỳ trước.';
+                electricWarn.classList.remove('hidden');
+            }
+
+            if (prevWater > 0 && currentWater > prevWater * 5) {
+                waterWarn.textContent = 'Cảnh báo: Nước tiêu thụ tăng đột biến so với kỳ trước.';
+                waterWarn.classList.remove('hidden');
+            }
+        }
+
+        async function applyPrefillSingleForm() {
+            const roomId = Number(document.getElementById('fieldRoom').value || 0);
+            const month = Number(document.getElementById('fieldMonth').value || 0);
+            const year = Number(document.getElementById('fieldYear').value || 0);
+            const hint = document.getElementById('prefillHint');
+
+            hint.textContent = '';
+            if (!roomId || !month || !year) {
+                return;
+            }
+
+            try {
+                const prefill = await fetchPrefill(roomId, month, year);
+                if (prefill.hasPreviousRecord) {
+                    document.getElementById('fieldOldElectric').value = prefill.suggestedOldElectric ?? '';
+                    document.getElementById('fieldOldWater').value = prefill.suggestedOldWater ?? '';
+                    document.getElementById('fieldOldElectric').readOnly = true;
+                    document.getElementById('fieldOldWater').readOnly = true;
+                    hint.textContent = `Đã tự điền chỉ số cũ từ kỳ ${prefill.previousMonth}/${prefill.previousYear}.`;
+                } else {
+                    document.getElementById('fieldOldElectric').readOnly = false;
+                    document.getElementById('fieldOldWater').readOnly = false;
+                    hint.textContent = 'Phòng chưa có lịch sử, vui lòng nhập tay chỉ số cũ.';
+                }
+                updateSingleWarnings(prefill);
+                document.getElementById('recordForm').dataset.prefill = JSON.stringify(prefill || {});
+            } catch (error) {
+                hint.textContent = error.message || 'Không thể gợi ý chỉ số cũ.';
+            }
+        }
+
+        function getDefaultChartYears() {
+            const currentYear = new Date().getFullYear();
+            return { from: currentYear - 1, to: currentYear };
+        }
+
+        function renderConsumptionChart(items) {
+            const chartEmpty = document.getElementById('chartEmpty');
+            const canvas = document.getElementById('consumptionChart');
+            const labels = items.map((it) => it.periodLabel || `${it.month}/${it.year}`);
+            const electricData = items.map((it) => Number(it.totalElectricConsumption || 0));
+            const waterData = items.map((it) => Number(it.totalWaterConsumption || 0));
+
+            if (consumptionChart) {
+                consumptionChart.destroy();
+                consumptionChart = null;
+            }
+
+            if (!items.length) {
+                chartEmpty.classList.remove('hidden');
+                canvas.classList.add('hidden');
+                document.getElementById('sumElectric').textContent = '0 kWh';
+                document.getElementById('sumWater').textContent = '0 m³';
+                document.getElementById('sumPeriods').textContent = '0 kỳ';
+                return;
+            }
+
+            chartEmpty.classList.add('hidden');
+            canvas.classList.remove('hidden');
+
+            const totalElectric = electricData.reduce((sum, val) => sum + val, 0);
+            const totalWater = waterData.reduce((sum, val) => sum + val, 0);
+            document.getElementById('sumElectric').textContent = `${toFixed2(totalElectric)} kWh`;
+            document.getElementById('sumWater').textContent = `${toFixed2(totalWater)} m³`;
+            document.getElementById('sumPeriods').textContent = `${items.length} kỳ`;
+
+            consumptionChart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Điện tiêu thụ (kWh)',
+                            data: electricData,
+                            backgroundColor: 'rgba(59, 130, 246, 0.75)',
+                            borderColor: '#3B82F6',
+                            borderWidth: 1,
+                            yAxisID: 'yElectric'
+                        },
+                        {
+                            label: 'Nước tiêu thụ (m³)',
+                            data: waterData,
+                            type: 'line',
+                            borderColor: '#0EA5A5',
+                            backgroundColor: 'rgba(14, 165, 165, 0.2)',
+                            tension: 0.25,
+                            yAxisID: 'yWater'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        yElectric: {
+                            type: 'linear',
+                            position: 'left',
+                            beginAtZero: true,
+                            title: { display: true, text: 'kWh' }
+                        },
+                        yWater: {
+                            type: 'linear',
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: { drawOnChartArea: false },
+                            title: { display: true, text: 'm³' }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+        }
+
+        async function loadTimeline() {
+            const buildingId = document.getElementById('chartBuilding').value || null;
+            const roomId = document.getElementById('chartRoom').value || null;
+            const fromYear = document.getElementById('chartFromYear').value || null;
+            const toYear = document.getElementById('chartToYear').value || null;
+
+            const params = new URLSearchParams({
+                ...(buildingId && { buildingId }),
+                ...(roomId && { roomId }),
+                ...(fromYear && { fromYear, fromMonth: '1' }),
+                ...(toYear && { toYear, toMonth: '12' })
+            });
+
+            try {
+                const res = await fetch(`${API_BASE}/utility-records/timeline?${params}`, { headers: authHeaders() });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || 'Lỗi tải biểu đồ tiêu thụ');
+                }
+
+                const items = Array.isArray(data.result) ? data.result : [];
+                renderConsumptionChart(items);
+            } catch (err) {
+                renderConsumptionChart([]);
+                showToast(err.message, 'error');
+            }
+        }
+
+        function buildPageButtons(pageNo, totalPageCount) {
+            if (totalPageCount <= 0) return '';
+            const start = Math.max(0, pageNo - 2);
+            const end = Math.min(totalPageCount - 1, pageNo + 2);
+            let html = '';
+            for (let i = start; i <= end; i++) {
+                const active = i === pageNo;
+                html += `<button class="rounded-base border px-3 py-1.5 text-sm ${active ? 'border-primary bg-primary text-white' : 'border-border hover:bg-slate-50'}" data-page="${i}">${i + 1}</button>`;
+            }
+            return html;
+        }
+
+        function renderPagination() {
+            const container = document.getElementById('tablePagination');
+            if (totalElements <= 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const pageNo = currentPage;
+            const totalPageCount = Math.max(1, totalPages);
+            const startResult = pageNo * ITEMS_PER_PAGE + 1;
+            const endResult = Math.min((pageNo + 1) * ITEMS_PER_PAGE, totalElements);
+            container.innerHTML = `
+                <p class="text-sm text-text-muted">Hiển thị ${startResult}-${endResult} trên tổng số ${totalElements} kết quả</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button class="rounded-base border border-border px-3 py-1.5 text-sm ${pageNo === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${pageNo === 0 ? 'disabled' : ''} data-page="${pageNo - 1}">Trước</button>
+                    ${buildPageButtons(pageNo, totalPageCount)}
+                    <button class="rounded-base border border-border px-3 py-1.5 text-sm ${pageNo + 1 >= totalPageCount ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${pageNo + 1 >= totalPageCount ? 'disabled' : ''} data-page="${pageNo + 1}">Sau</button>
+                </div>
+            `;
+
+            container.querySelectorAll('button[data-page]').forEach((btn) => {
+                btn.addEventListener('click', () => loadRecords(Number(btn.dataset.page)));
+            });
+        }
+
+        function updatePeriodActionButtons() {
+            const btnClose = document.getElementById('btnClosePeriod');
+            const btnReopen = document.getElementById('btnReopenPeriod');
+            const monthRaw = document.getElementById('filterMonth').value;
+            const yearRaw = document.getElementById('filterYear').value;
+
+            // If no month/year selected, hide both buttons
+            if (!monthRaw || !yearRaw) {
+                btnClose.classList.add('hidden');
+                btnReopen.classList.add('hidden');
+                return;
+            }
+
+            // Month/year selected: show exactly one button based on record status
+            if (recordsCache.length > 0 && recordsCache.every((r) => r.periodStatus === 'CLOSED')) {
+                // All records closed → show reopen button
+                btnClose.classList.add('hidden');
+                btnReopen.classList.remove('hidden');
+            } else {
+                // Has unclosed records or no records → show close button
+                btnClose.classList.remove('hidden');
+                btnReopen.classList.add('hidden');
+            }
+        }
+
+        function renderRows() {
+            const tbody = document.getElementById('recordTableBody');
+            const empty = document.getElementById('emptyState');
+
+            if (!recordsCache.length) {
+                tbody.innerHTML = '';
+                empty.classList.remove('hidden');
+                document.getElementById('tablePagination').innerHTML = '';
+                updatePeriodActionButtons();
+                return;
+            }
+
+            empty.classList.add('hidden');
+            tbody.innerHTML = recordsCache.map((r) => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-4 py-3 text-text-muted font-mono text-xs">${r.id}</td>
+                    <td class="px-4 py-3 font-medium">${escHtml(r.buildingName)} / ${escHtml(r.roomNumber)}</td>
+                    <td class="px-4 py-3 text-text-muted text-sm">${r.month}/${r.year}</td>
+                    <td class="px-4 py-3 text-text-muted text-sm">${r.oldElectric?.toFixed(2) || 0} → ${r.newElectric?.toFixed(2) || 0}</td>
+                    <td class="px-4 py-3 text-text-muted text-sm">${r.oldWater?.toFixed(2) || 0} → ${r.newWater?.toFixed(2) || 0}</td>
+                    <td class="px-4 py-3 text-xs">
+                        <span class="inline-flex rounded-full px-2.5 py-1 ${r.periodStatus === 'CLOSED' ? 'bg-amber-50 text-warning border border-amber-200' : 'bg-emerald-50 text-success border border-emerald-200'}">${r.periodStatus === 'CLOSED' ? 'Đã chốt' : 'Đang mở'}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex justify-end gap-1">
+                            <button onclick="openEditModal(${r.id})" ${r.periodStatus === 'CLOSED' ? 'disabled' : ''} class="p-1.5 rounded-base text-text-muted hover:text-primary hover:bg-slate-100 transition-colors ${r.periodStatus === 'CLOSED' ? 'opacity-50 cursor-not-allowed' : ''}" aria-label="Sửa">Sửa</button>
+                            <button onclick="openDeleteModal(${r.id})" ${r.periodStatus === 'CLOSED' ? 'disabled' : ''} class="p-1.5 rounded-base text-text-muted hover:text-danger hover:bg-red-50 transition-colors ${r.periodStatus === 'CLOSED' ? 'opacity-50 cursor-not-allowed' : ''}" aria-label="Xóa">Xóa</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            renderPagination();
+            updatePeriodActionButtons();
+        }
+
+        async function loadRecords(page = 0) {
+            const buildingId = document.getElementById('filterBuilding').value || null;
+            const month = document.getElementById('filterMonth').value || null;
+            const year = document.getElementById('filterYear').value || null;
+
+            const params = new URLSearchParams({
+                page: String(page),
+                size: String(ITEMS_PER_PAGE),
+                sortBy: 'year',
+                direction: 'desc',
+                ...(buildingId && { buildingId }),
+                ...(month && { month }),
+                ...(year && { year })
+            });
+
+            try {
+                const res = await fetch(`${API_BASE}/utility-records/history?${params}`, { headers: authHeaders() });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Lỗi tải dữ liệu');
+
+                const result = data.result || {};
+                recordsCache = Array.isArray(result.content) ? result.content : [];
+                currentPage = result.pageNo ?? page;
+                totalPages = result.totalPages ?? 0;
+                totalElements = result.totalElements ?? 0;
+                renderRows();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function loadBuildingsAndRooms() {
+            try {
+                const [bRes, rRes] = await Promise.all([
+                    fetch(`${API_BASE}/buildings?page=0&size=500`, { headers: authHeaders() }),
+                    fetch(`${API_BASE}/rooms?page=0&size=500`, { headers: authHeaders() })
+                ]);
+                const bData = await bRes.json();
+                const rData = await rRes.json();
+                if (!bRes.ok || !rRes.ok) throw new Error('Lỗi tải dữ liệu');
+
+                buildingsCache = Array.isArray(bData.result?.content) ? bData.result.content : [];
+                roomsCache = Array.isArray(rData.result?.content) ? rData.result.content : [];
+
+                // Populate building filter
+                const buildingSelect = document.getElementById('filterBuilding');
+                buildingsCache.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.text = b.name;
+                    buildingSelect.appendChild(opt);
+                });
+
+                const chartBuildingSelect = document.getElementById('chartBuilding');
+                const bulkBuildingSelect = document.getElementById('bulkBuilding');
+                buildingsCache.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.text = b.name;
+                    chartBuildingSelect.appendChild(opt);
+
+                    const bulkOpt = document.createElement('option');
+                    bulkOpt.value = b.id;
+                    bulkOpt.text = b.name;
+                    bulkBuildingSelect.appendChild(bulkOpt);
+                });
+
+                // Populate room select in form
+                const roomSelect = document.getElementById('fieldRoom');
+                roomsCache.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r.id;
+                    opt.text = `${r.roomNumber} (${r.buildingName || 'Chưa xác định'})`;
+                    roomSelect.appendChild(opt);
+                });
+
+                const chartRoomSelect = document.getElementById('chartRoom');
+                roomsCache.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r.id;
+                    opt.text = `${r.roomNumber} (${r.buildingName || 'Chưa xác định'})`;
+                    chartRoomSelect.appendChild(opt);
+                });
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function openModal() {
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+            document.getElementById('recordForm').reset();
+            document.getElementById('editId').value = '';
+            ['roomError', 'dateError', 'electricError', 'waterError'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById('electricWarn').classList.add('hidden');
+            document.getElementById('waterWarn').classList.add('hidden');
+            document.getElementById('prefillHint').textContent = '';
+            document.getElementById('fieldOldElectric').readOnly = false;
+            document.getElementById('fieldOldWater').readOnly = false;
+            document.getElementById('modalTitle').textContent = 'Thêm chỉ số điện nước';
+        }
+
+        function openEditModal(id) {
+            const r = recordsCache.find(x => x.id === id);
+            if (!r) return;
+            if (r.periodStatus === 'CLOSED') {
+                showToast('Kỳ đã chốt, không thể chỉnh sửa.', 'error');
+                return;
+            }
+            document.getElementById('modalTitle').textContent = 'Chỉnh sửa chỉ số điện nước';
+            document.getElementById('editId').value = id;
+            document.getElementById('fieldRoom').value = r.roomId;
+            document.getElementById('fieldMonth').value = r.month;
+            document.getElementById('fieldYear').value = r.year;
+            document.getElementById('fieldOldElectric').value = r.oldElectric || '';
+            document.getElementById('fieldNewElectric').value = r.newElectric || '';
+            document.getElementById('fieldOldWater').value = r.oldWater || '';
+            document.getElementById('fieldNewWater').value = r.newWater || '';
+            document.getElementById('fieldOldElectric').readOnly = false;
+            document.getElementById('fieldOldWater').readOnly = false;
+            document.getElementById('prefillHint').textContent = 'Bạn đang chỉnh sửa bản ghi đã có.';
+            openModal();
+        }
+
+        function openDeleteModal(id) {
+            const r = recordsCache.find(x => x.id === id);
+            if (!r) return;
+            if (r.periodStatus === 'CLOSED') {
+                showToast('Kỳ đã chốt, không thể xóa.', 'error');
+                return;
+            }
+            deleteTargetId = id;
+            document.getElementById('deleteName').textContent = `${r.buildingName} / ${r.roomNumber} (${r.month}/${r.year})`;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            deleteTargetId = null;
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        function validateForm() {
+            const errors = {};
+            const room = document.getElementById('fieldRoom').value;
+            const month = document.getElementById('fieldMonth').value;
+            const year = document.getElementById('fieldYear').value;
+            const oldE = Number(document.getElementById('fieldOldElectric').value);
+            const newE = Number(document.getElementById('fieldNewElectric').value);
+            const oldW = Number(document.getElementById('fieldOldWater').value);
+            const newW = Number(document.getElementById('fieldNewWater').value);
+
+            if (!room) errors.room = 'Phòng không được để trống.';
+            if (!month || !year) errors.date = 'Tháng/Năm không được để trống.';
+            if (isNaN(oldE) || isNaN(newE) || newE < oldE) errors.electric = 'Chỉ số điện không hợp lệ.';
+            if (isNaN(oldW) || isNaN(newW) || newW < oldW) errors.water = 'Chỉ số nước không hợp lệ.';
+
+            ['roomError', 'dateError', 'electricError', 'waterError'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+
+            if (errors.room) {
+                document.getElementById('roomError').textContent = errors.room;
+                document.getElementById('roomError').classList.remove('hidden');
+            }
+            if (errors.date) {
+                document.getElementById('dateError').textContent = errors.date;
+                document.getElementById('dateError').classList.remove('hidden');
+            }
+            if (errors.electric) {
+                document.getElementById('electricError').textContent = errors.electric;
+                document.getElementById('electricError').classList.remove('hidden');
+            }
+            if (errors.water) {
+                document.getElementById('waterError').textContent = errors.water;
+                document.getElementById('waterError').classList.remove('hidden');
+            }
+
+            if (Object.keys(errors).length === 0) {
+                const prefill = JSON.parse(document.getElementById('recordForm').dataset.prefill || '{}');
+                const prevElectric = Number(prefill?.previousElectricConsumption || 0);
+                const prevWater = Number(prefill?.previousWaterConsumption || 0);
+                const currentElectric = newE - oldE;
+                const currentWater = newW - oldW;
+                if ((prevElectric > 0 && currentElectric > prevElectric * 5)
+                    || (prevWater > 0 && currentWater > prevWater * 5)) {
+                    const confirmed = window.confirm('Chỉ số tăng đột biến so với kỳ trước. Bạn có chắc chắn muốn lưu?');
+                    if (!confirmed) {
+                        return false;
+                    }
+                }
+            }
+
+            return Object.keys(errors).length === 0;
+        }
+
+        async function loadBulkRows() {
+            const buildingId = Number(document.getElementById('bulkBuilding').value || 0);
+            const month = Number(document.getElementById('bulkMonth').value || 0);
+            const year = Number(document.getElementById('bulkYear').value || 0);
+            const tbody = document.getElementById('bulkTableBody');
+
+            if (!buildingId || !month || !year) {
+                showToast('Vui lòng chọn tòa nhà, tháng và năm cho nhập hàng loạt.', 'error');
+                return;
+            }
+
+            const targetRooms = roomsCache
+                .filter((r) => Number(r.buildingId) === buildingId)
+                .sort((a, b) => String(a.roomNumber || '').localeCompare(String(b.roomNumber || ''), 'vi', { numeric: true }));
+            if (!targetRooms.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-6 text-center text-text-muted">Không có phòng nào thuộc tòa đã chọn.</td></tr>';
+                bulkRowsCache = [];
+                return;
+            }
+
+            tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-6 text-center text-text-muted">Đang chuẩn bị dữ liệu gợi ý chỉ số cũ...</td></tr>';
+            const rows = await Promise.all(targetRooms.map(async (room) => {
+                try {
+                    const prefill = await fetchPrefill(room.id, month, year);
+                    return { room, prefill };
+                } catch {
+                    return { room, prefill: { hasPreviousRecord: false } };
+                }
+            }));
+
+            bulkRowsCache = rows;
+            tbody.innerHTML = rows.map(({ room, prefill }) => {
+                const oldElectric = prefill.hasPreviousRecord ? (prefill.suggestedOldElectric ?? '') : '';
+                const oldWater = prefill.hasPreviousRecord ? (prefill.suggestedOldWater ?? '') : '';
+                const lockAttr = prefill.hasPreviousRecord ? 'readonly' : '';
+                const note = prefill.hasPreviousRecord
+                    ? `Kỳ trước: ${prefill.previousMonth}/${prefill.previousYear}`
+                    : 'Chưa có lịch sử, nhập tay chỉ số cũ';
+
+                return `
+                    <tr data-room-id="${room.id}">
+                        <td class="px-3 py-2 font-medium">${escHtml(room.roomNumber || '-')}</td>
+                        <td class="px-3 py-2"><input ${lockAttr} type="number" step="0.01" min="0" value="${oldElectric}" class="bulk-old-electric w-28 rounded-base border border-border px-2 py-1.5"></td>
+                        <td class="px-3 py-2"><input type="number" step="0.01" min="0" class="bulk-new-electric w-28 rounded-base border border-border px-2 py-1.5"></td>
+                        <td class="px-3 py-2"><input ${lockAttr} type="number" step="0.01" min="0" value="${oldWater}" class="bulk-old-water w-28 rounded-base border border-border px-2 py-1.5"></td>
+                        <td class="px-3 py-2"><input type="number" step="0.01" min="0" class="bulk-new-water w-28 rounded-base border border-border px-2 py-1.5"></td>
+                        <td class="px-3 py-2 text-xs text-text-muted">${note}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function clearBulkRows() {
+            bulkRowsCache = [];
+            document.getElementById('bulkTableBody').innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-3 py-6 text-center text-text-muted">Đã hủy nhập hàng loạt. Chọn tòa nhà và kỳ tháng để nhập lại.</td>
+                </tr>
+            `;
+        }
+
+        async function closeOrReopenPeriod(action) {
+            const buildingIdRaw = document.getElementById('filterBuilding').value;
+            const monthRaw = document.getElementById('filterMonth').value;
+            const yearRaw = document.getElementById('filterYear').value;
+
+            if (!monthRaw || !yearRaw) {
+                showToast('Vui lòng chọn tháng và năm trước khi thao tác chốt kỳ.', 'error');
+                return;
+            }
+
+            const payload = {
+                month: Number(monthRaw),
+                year: Number(yearRaw),
+                ...(buildingIdRaw ? { buildingId: Number(buildingIdRaw) } : {})
+            };
+
+            const endpoint = action === 'close' ? 'close' : 'reopen';
+            const actionText = action === 'close' ? 'chốt' : 'mở khóa';
+            const confirmText = action === 'close'
+                ? 'Bạn chắc chắn muốn chốt kỳ? Sau khi chốt, bản ghi sẽ bị khóa sửa/xóa.'
+                : 'Bạn chắc chắn muốn mở khóa kỳ để cho phép chỉnh sửa lại?';
+
+            if (!window.confirm(confirmText)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/utility-records/period/${endpoint}`, {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || `Không thể ${actionText} kỳ.`);
+                }
+
+                const affected = Number(data.result || 0);
+                showToast(`${actionText === 'chốt' ? 'Chốt' : 'Mở khóa'} kỳ thành công (${affected} bản ghi).`);
+                await loadRecords(currentPage);
+            } catch (error) {
+                showToast(error.message || `Lỗi ${actionText} kỳ.`, 'error');
+            }
+        }
+
+        async function saveBulkRows() {
+            const buildingId = Number(document.getElementById('bulkBuilding').value || 0);
+            const month = Number(document.getElementById('bulkMonth').value || 0);
+            const year = Number(document.getElementById('bulkYear').value || 0);
+
+            if (!buildingId || !month || !year) {
+                showToast('Vui lòng chọn đủ tòa nhà, tháng và năm.', 'error');
+                return;
+            }
+
+            const entries = [];
+            let hasSpike = false;
+            const bulkMap = new Map(bulkRowsCache.map((x) => [Number(x.room.id), x.prefill]));
+
+            document.querySelectorAll('#bulkTableBody tr[data-room-id]').forEach((row) => {
+                const roomId = Number(row.dataset.roomId);
+                const oldElectric = Number(row.querySelector('.bulk-old-electric').value);
+                const newElectricRaw = row.querySelector('.bulk-new-electric').value;
+                const oldWater = Number(row.querySelector('.bulk-old-water').value);
+                const newWaterRaw = row.querySelector('.bulk-new-water').value;
+
+                if (newElectricRaw === '' && newWaterRaw === '') {
+                    return;
+                }
+
+                const newElectric = Number(newElectricRaw);
+                const newWater = Number(newWaterRaw);
+                if ([oldElectric, newElectric, oldWater, newWater].some(Number.isNaN)) {
+                    throw new Error('Có dòng nhập thiếu hoặc sai định dạng số.');
+                }
+                if (newElectric < oldElectric || newWater < oldWater) {
+                    throw new Error('Chỉ số mới phải lớn hơn hoặc bằng chỉ số cũ ở tất cả các dòng.');
+                }
+
+                const prefill = bulkMap.get(roomId) || {};
+                const prevElectric = Number(prefill.previousElectricConsumption || 0);
+                const prevWater = Number(prefill.previousWaterConsumption || 0);
+                const currentElectric = newElectric - oldElectric;
+                const currentWater = newWater - oldWater;
+                if ((prevElectric > 0 && currentElectric > prevElectric * 5)
+                    || (prevWater > 0 && currentWater > prevWater * 5)) {
+                    hasSpike = true;
+                }
+
+                entries.push({ roomId, month, year, oldElectric, newElectric, oldWater, newWater });
+            });
+
+            if (!entries.length) {
+                showToast('Chưa có dữ liệu chỉ số mới để lưu.', 'error');
+                return;
+            }
+
+            if (hasSpike) {
+                const confirmed = window.confirm('Một số phòng có mức tăng đột biến so với kỳ trước. Bạn có chắc chắn lưu hàng loạt?');
+                if (!confirmed) {
+                    return;
+                }
+            }
+
+            const payload = { buildingId, records: entries };
+            const saveBtn = document.getElementById('btnSaveBulk');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Đang lưu...';
+
+            try {
+                const res = await fetch(`${API_BASE}/utility-records/batch`, {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || 'Lưu hàng loạt thất bại.');
+                }
+
+                showToast(`Đã lưu ${entries.length} phòng thành công.`);
+                await loadRecords(currentPage);
+                await loadTimeline();
+                await loadBulkRows();
+            } catch (error) {
+                showToast(error.message || 'Lỗi lưu hàng loạt.', 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Lưu hàng loạt';
+            }
+        }
+
+        document.getElementById('recordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!validateForm()) return;
+
+            const id = document.getElementById('editId').value;
+            const payload = {
+                roomId: Number(document.getElementById('fieldRoom').value),
+                month: Number(document.getElementById('fieldMonth').value),
+                year: Number(document.getElementById('fieldYear').value),
+                oldElectric: Number(document.getElementById('fieldOldElectric').value),
+                newElectric: Number(document.getElementById('fieldNewElectric').value),
+                oldWater: Number(document.getElementById('fieldOldWater').value),
+                newWater: Number(document.getElementById('fieldNewWater').value)
+            };
+
+            const isEdit = !!id;
+            const url = isEdit ? `${API_BASE}/utility-records/${id}` : `${API_BASE}/utility-records`;
+            const method = isEdit ? 'PUT' : 'POST';
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true;
+            btn.textContent = 'Đang lưu...';
+
+            try {
+                const res = await fetch(url, {
+                    method,
+                    headers: authHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Lỗi lưu dữ liệu');
+
+                showToast(isEdit ? 'Cập nhật thành công!' : 'Thêm thành công!');
+                closeModal();
+                await loadRecords(currentPage);
+                await loadTimeline();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Lưu';
+            }
+        });
+
+        document.getElementById('deleteConfirm').addEventListener('click', async () => {
+            if (!deleteTargetId) return;
+            const btn = document.getElementById('deleteConfirm');
+            btn.disabled = true;
+            btn.textContent = 'Đang xóa...';
+
+            try {
+                const res = await fetch(`${API_BASE}/utility-records/${deleteTargetId}`, {
+                    method: 'DELETE',
+                    headers: authHeaders()
+                });
+                let data = null;
+                const text = await res.text();
+                if (text) {
+                    data = JSON.parse(text);
+                }
+                if (!res.ok) throw new Error(data?.message || 'Lỗi xóa dữ liệu');
+
+                showToast('Xóa thành công!');
+                closeDeleteModal();
+                await loadRecords(currentPage);
+                await loadTimeline();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Xóa';
+            }
+        });
+
+        document.getElementById('btnAddRecord').addEventListener('click', () => {
+            document.getElementById('modalTitle').textContent = 'Thêm chỉ số điện nước';
+            openModal();
+            applyPrefillSingleForm();
+        });
+
+        document.getElementById('fieldRoom').addEventListener('change', applyPrefillSingleForm);
+        document.getElementById('fieldMonth').addEventListener('change', applyPrefillSingleForm);
+        document.getElementById('fieldYear').addEventListener('change', applyPrefillSingleForm);
+        document.getElementById('fieldNewElectric').addEventListener('input', () => {
+            const prefill = JSON.parse(document.getElementById('recordForm').dataset.prefill || '{}');
+            updateSingleWarnings(prefill);
+        });
+        document.getElementById('fieldNewWater').addEventListener('input', () => {
+            const prefill = JSON.parse(document.getElementById('recordForm').dataset.prefill || '{}');
+            updateSingleWarnings(prefill);
+        });
+
+        document.getElementById('btnSearch').addEventListener('click', async () => {
+            await loadRecords();
+            document.getElementById('chartBuilding').value = document.getElementById('filterBuilding').value;
+            await loadTimeline();
+        });
+        document.getElementById('btnReset').addEventListener('click', () => {
+            document.getElementById('filterBuilding').value = '';
+            document.getElementById('filterMonth').value = '';
+            document.getElementById('filterYear').value = '';
+            document.getElementById('chartBuilding').value = '';
+            document.getElementById('chartRoom').value = '';
+            const years = getDefaultChartYears();
+            document.getElementById('chartFromYear').value = years.from;
+            document.getElementById('chartToYear').value = years.to;
+            loadRecords();
+            loadTimeline();
+        });
+
+        document.getElementById('btnLoadChart').addEventListener('click', loadTimeline);
+        document.getElementById('btnClosePeriod').addEventListener('click', () => closeOrReopenPeriod('close'));
+        document.getElementById('btnReopenPeriod').addEventListener('click', () => closeOrReopenPeriod('reopen'));
+        document.getElementById('btnLoadBulk').addEventListener('click', async () => {
+            try {
+                await loadBulkRows();
+            } catch (error) {
+                showToast(error.message || 'Lỗi tải danh sách nhập hàng loạt.', 'error');
+            }
+        });
+        document.getElementById('btnCancelBulk').addEventListener('click', clearBulkRows);
+        document.getElementById('btnSaveBulk').addEventListener('click', async () => {
+            try {
+                await saveBulkRows();
+            } catch (error) {
+                showToast(error.message || 'Lỗi lưu nhập hàng loạt.', 'error');
+            }
+        });
+
+        document.getElementById('modalClose').addEventListener('click', closeModal);
+        document.getElementById('btnCancel').addEventListener('click', closeModal);
+        document.getElementById('modalBackdrop').addEventListener('click', closeModal);
+        document.getElementById('deleteCancel').addEventListener('click', closeDeleteModal);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                closeDeleteModal();
+            }
+        });
+
+        (async () => {
+            try {
+                const years = getDefaultChartYears();
+                document.getElementById('chartFromYear').value = years.from;
+                document.getElementById('chartToYear').value = years.to;
+                const period = getCurrentPeriod();
+                document.getElementById('bulkMonth').value = String(period.month);
+                document.getElementById('bulkYear').value = String(period.year);
+                await ensureAdmin();
+                await loadBuildingsAndRooms();
+                await loadRecords();
+                await loadTimeline();
+            } catch (error) {
+                localStorage.removeItem('dormitory_access_token');
+                window.location.href = '/login';
+            }
+        })();
+    </script>
+</body>
+
+</html>

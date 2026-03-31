@@ -63,15 +63,19 @@ public class SecurityConfig {
                                 "/rooms.html",
                                 "/room-detail.html",
                                 "/student_management.html",
-                                "/student-profile.html",    
+                                "/student-profile.html",
                                 "/ui/**",
                                 "/images/**",
                                 "/error")
                         .permitAll()
-                            .requestMatchers(HttpMethod.GET, "/api/v1/buildings/**", "/api/v1/rooms/**", "/api/v1/room-types/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/buildings/**", "/api/v1/rooms/**",
+                                "/api/v1/room-types/**")
+                        .permitAll()
                         .requestMatchers("/api/v1/buildings/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/api/v1/rooms/**", "/api/v1/room-types/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/v1/utility-records/me/**").hasAuthority("ROLE_STUDENT")
+                        .requestMatchers("/api/v1/rooms/**", "/api/v1/room-types/**", "/api/v1/utility-records/**")
+                        .hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/v1/students/**").hasAnyAuthority("ROLE_STUDENT", "ROLE_ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex

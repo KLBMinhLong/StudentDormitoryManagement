@@ -20,8 +20,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.dormitory.management.dto.building.BuildingDTO;
 import com.dormitory.management.dto.building.BuildingRequestDTO;
+import com.dormitory.management.dto.building.BuildingResponseDTO;
 import com.dormitory.management.dto.common.PagedResponseDTO;
 import com.dormitory.management.entity.Building;
 import com.dormitory.management.exception.ResourceNotFoundException;
@@ -45,12 +45,14 @@ class BuildingServiceImplTest {
         mockBuilding = Building.builder()
                 .name("Tòa A")
             .totalFloors(5)
+                .genderAllowed("Nam")
                 .description("Mô tả tòa A")
                 .build();
 
         mockRequest = BuildingRequestDTO.builder()
                 .name("Tòa A")
             .totalFloors(5)
+                .genderAllowed("Nam")
                 .description("Mô tả tòa A")
                 .build();
     }
@@ -62,7 +64,7 @@ class BuildingServiceImplTest {
     void getAllBuildings_returnsDtoList() {
         when(buildingRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(mockBuilding)));
 
-        PagedResponseDTO<BuildingDTO> result = buildingService.getAllBuildings(0, 10, "id", "desc");
+        PagedResponseDTO<BuildingResponseDTO> result = buildingService.getAllBuildings(0, 10, "id", "desc");
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getName()).isEqualTo("Tòa A");
@@ -75,7 +77,7 @@ class BuildingServiceImplTest {
     void getAllBuildings_returnsEmptyList() {
         when(buildingRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
 
-        PagedResponseDTO<BuildingDTO> result = buildingService.getAllBuildings(0, 10, "id", "desc");
+        PagedResponseDTO<BuildingResponseDTO> result = buildingService.getAllBuildings(0, 10, "id", "desc");
 
         assertThat(result.getContent()).isEmpty();
     }
@@ -87,7 +89,7 @@ class BuildingServiceImplTest {
     void getBuildingById_found_returnsDto() {
         when(buildingRepository.findById(1L)).thenReturn(Optional.of(mockBuilding));
 
-        BuildingDTO result = buildingService.getBuildingById(1L);
+        BuildingResponseDTO result = buildingService.getBuildingById(1L);
 
         assertThat(result.getName()).isEqualTo("Tòa A");
         assertThat(result.getTotalFloors()).isEqualTo(5);
@@ -111,7 +113,7 @@ class BuildingServiceImplTest {
     void createBuilding_validRequest_returnsDto() {
         when(buildingRepository.save(any(Building.class))).thenReturn(mockBuilding);
 
-        BuildingDTO result = buildingService.createBuilding(mockRequest);
+        BuildingResponseDTO result = buildingService.createBuilding(mockRequest);
 
         assertThat(result.getName()).isEqualTo("Tòa A");
         assertThat(result.getTotalFloors()).isEqualTo(5);
@@ -125,12 +127,13 @@ class BuildingServiceImplTest {
         BuildingRequestDTO requestWithSpaces = BuildingRequestDTO.builder()
                 .name("  Tòa B  ")
             .totalFloors(6)
+                .genderAllowed("Nữ")
                 .description(null)
                 .build();
-        Building trimmedBuilding = Building.builder().name("Tòa B").totalFloors(6).description(null).build();
+        Building trimmedBuilding = Building.builder().name("Tòa B").totalFloors(6).genderAllowed("Nữ").description(null).build();
         when(buildingRepository.save(any(Building.class))).thenReturn(trimmedBuilding);
 
-        BuildingDTO result = buildingService.createBuilding(requestWithSpaces);
+        BuildingResponseDTO result = buildingService.createBuilding(requestWithSpaces);
 
         assertThat(result.getName()).isEqualTo("Tòa B");
         assertThat(result.getTotalFloors()).isEqualTo(6);
@@ -144,18 +147,20 @@ class BuildingServiceImplTest {
         BuildingRequestDTO updateRequest = BuildingRequestDTO.builder()
                 .name("Tòa B")
             .totalFloors(8)
+                .genderAllowed("Nữ")
                 .description("Mô tả tòa B")
                 .build();
         Building updatedBuilding = Building.builder()
                 .name("Tòa B")
             .totalFloors(8)
+                .genderAllowed("Nữ")
                 .description("Mô tả tòa B")
                 .build();
 
         when(buildingRepository.findById(1L)).thenReturn(Optional.of(mockBuilding));
         when(buildingRepository.save(any(Building.class))).thenReturn(updatedBuilding);
 
-        BuildingDTO result = buildingService.updateBuilding(1L, updateRequest);
+        BuildingResponseDTO result = buildingService.updateBuilding(1L, updateRequest);
 
         assertThat(result.getName()).isEqualTo("Tòa B");
         assertThat(result.getTotalFloors()).isEqualTo(8);

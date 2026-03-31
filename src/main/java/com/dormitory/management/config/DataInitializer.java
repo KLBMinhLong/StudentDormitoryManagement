@@ -18,6 +18,7 @@ import com.dormitory.management.entity.Bed;
 import com.dormitory.management.entity.Room;
 import com.dormitory.management.entity.RoomType;
 import com.dormitory.management.entity.Student;
+import com.dormitory.management.entity.UtilityRecord;
 import com.dormitory.management.entity.enums.RoomStatus;
 import com.dormitory.management.repository.AppUserRepository;
 import com.dormitory.management.repository.BedRepository;
@@ -26,6 +27,7 @@ import com.dormitory.management.repository.RoleRepository;
 import com.dormitory.management.repository.RoomRepository;
 import com.dormitory.management.repository.RoomTypeRepository;
 import com.dormitory.management.repository.StudentRepository;
+import com.dormitory.management.repository.UtilityRecordRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -40,6 +42,7 @@ public class DataInitializer {
     private final RoomTypeRepository roomTypeRepository;
     private final BedRepository bedRepository;
     private final StudentRepository studentRepository;
+    private final UtilityRecordRepository utilityRecordRepository;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
 
@@ -47,10 +50,12 @@ public class DataInitializer {
     public CommandLineRunner initializeAuthData() {
         return args -> {
             ensureContractStatusConstraint();
+            ensureUtilityRecordPeriodStatusColumn();
             initializeBuildingData();
             initializeRoomTypeData();
             initializeRoomData();
             initializeBedData();
+            initializeUtilityRecordsData();
 
             Role adminRole = findOrCreateRole("ROLE_ADMIN");
             Role studentRole = findOrCreateRole("ROLE_STUDENT");
@@ -104,6 +109,27 @@ public class DataInitializer {
             jdbcTemplate.execute(sql);
         } catch (Exception ex) {
             System.err.println("[WARN] Không thể cập nhật CHECK constraint cho contract.status: " + ex.getMessage());
+        }
+    }
+
+    private void ensureUtilityRecordPeriodStatusColumn() {
+        String sql = """
+                IF COL_LENGTH('dbo.utility_record', 'period_status') IS NULL
+                BEGIN
+                    ALTER TABLE dbo.utility_record
+                    ADD period_status NVARCHAR(20) NOT NULL
+                    CONSTRAINT DF_utility_record_period_status DEFAULT 'OPEN';
+                END;
+
+                UPDATE dbo.utility_record
+                SET period_status = 'OPEN'
+                WHERE period_status IS NULL;
+                """;
+
+        try {
+            jdbcTemplate.execute(sql);
+        } catch (Exception ex) {
+            System.err.println("[WARN] Không thể đảm bảo cột utility_record.period_status: " + ex.getMessage());
         }
     }
 
@@ -283,6 +309,10 @@ public class DataInitializer {
                 bedRepository.delete(bed);
             }
         }
+    }
+
+    private void initializeUtilityRecordsData() {
+        // Initialize default utility records if needed (currently stub for core startup)
     }
 
     private int resolveRoomCapacity(Room room) {

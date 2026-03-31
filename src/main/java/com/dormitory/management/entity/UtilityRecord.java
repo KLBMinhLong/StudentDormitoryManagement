@@ -2,10 +2,14 @@ package com.dormitory.management.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+
+import com.dormitory.management.entity.enums.UtilityRecordStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -38,6 +42,11 @@ public class UtilityRecord extends BaseEntity {
 
     @Column(name = "new_water")
     private Double newWater;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "period_status", nullable = false, length = 20)
+    private UtilityRecordStatus periodStatus = UtilityRecordStatus.OPEN;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)

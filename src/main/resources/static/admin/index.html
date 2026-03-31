@@ -49,34 +49,55 @@
                 <p class="text-text-muted mt-2">Tổng quan thống kê và lối tắt điều hướng hệ thống.</p>
 
                 <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <a href="/admin/student_management.html" class="rounded-base border border-border p-4 bg-teal-50 hover:bg-teal-100 transition-colors block">
-                        <p class="text-xs text-text-muted">Tính năng hệ thống</p>
-                        <p class="mt-1 font-medium text-primary">Quản lý Sinh Viên</p>
+                    <!-- Quản lý chính -->
+                    <a href="/admin/student_management.html" class="rounded-base border border-border p-4 bg-blue-50 hover:bg-blue-100 transition-colors block">
+                        <p class="text-xs text-text-muted uppercase font-medium">Quản lý</p>
+                        <p class="mt-2 font-heading text-lg">Sinh Viên</p>
+                        <p class="text-xs text-text-muted mt-1">Quản lý hồ sơ sinh viên</p>
                     </a>
 
-                    <a href="/admin/contracts-management.html" class="rounded-base border border-border p-4 bg-emerald-50 hover:bg-emerald-100 transition-colors block">
-                        <p class="text-xs text-text-muted">Tính năng hệ thống</p>
-                        <p class="mt-1 font-medium text-primary">Duyệt Hợp Đồng</p>
+                    <a href="/admin/contracts-management.html" class="rounded-base border border-border p-4 bg-teal-50 hover:bg-teal-100 transition-colors block">
+                        <p class="text-xs text-text-muted uppercase font-medium">Quản lý</p>
+                        <p class="mt-2 font-heading text-lg">Hợp Đồng</p>
+                        <p class="text-xs text-text-muted mt-1">Duyệt & cập nhật HĐ</p>
                     </a>
 
-                    <a href="/admin/contract_registration.html" class="rounded-base border border-border p-4 hover:bg-slate-50 transition-colors block">
-                        <p class="text-xs text-text-muted">Tác vụ</p>
-                        <p class="mt-1 font-medium">Lập hợp đồng mới</p>
+                    <!-- Tác vụ -->
+                    <a href="/admin/contract_registration.html" class="rounded-base border border-border p-4 bg-green-50 hover:bg-green-100 transition-colors block">
+                        <p class="text-xs text-text-muted uppercase font-medium">Tác vụ</p>
+                        <p class="mt-2 font-heading text-lg">Lập HĐ Mới</p>
+                        <p class="text-xs text-text-muted mt-1">Tạo hợp đồng mới</p>
                     </a>
 
                     <a href="/home.html" class="rounded-base border border-border p-4 hover:bg-slate-50 transition-colors block">
-                        <p class="text-xs text-text-muted">Giao diện người dùng</p>
-                        <p class="mt-1 font-medium">Trang chủ KTX</p>
+                        <p class="text-xs text-text-muted uppercase font-medium">Exit</p>
+                        <p class="mt-2 font-heading text-lg">Trang Chủ</p>
+                        <p class="text-xs text-text-muted mt-1">Quay về trang chủ</p>
                     </a>
 
+                    <!-- Thống kê -->
                     <div class="rounded-base border border-border p-4 bg-orange-50">
-                        <p class="text-xs text-text-muted">Vai trò hiện tại</p>
-                        <p id="adminRoles" class="mt-1 font-medium text-warning">...</p>
+                        <p class="text-xs text-text-muted uppercase font-medium">Thống kê</p>
+                        <p id="adminRoles" class="mt-2 font-heading text-sm">...</p>
+                        <p class="text-xs text-text-muted mt-1">Vai trò hiện tại</p>
+                    </div>
+
+                    <div class="rounded-base border border-border p-4 bg-cyan-50">
+                        <p class="text-xs text-text-muted uppercase font-medium">Thống kê</p>
+                        <p class="mt-2 text-2xl font-heading text-primary"><span id="buildingCount">0</span> / <span id="roomCount">0</span></p>
+                        <p class="text-xs text-text-muted mt-1">Tòa nhà / Phòng</p>
+                    </div>
+
+                    <div class="rounded-base border border-border p-4 bg-indigo-50">
+                        <p class="text-xs text-text-muted uppercase font-medium">Thống kê</p>
+                        <p class="mt-2 text-2xl font-heading text-secondary"><span id="contractCount">0</span> <span class="text-sm font-normal text-text-muted">HĐ</span></p>
+                        <p class="text-xs text-text-muted mt-1">Tổng hợp đồng</p>
                     </div>
 
                     <div class="rounded-base border border-border p-4">
-                        <p class="text-xs text-text-muted">Tòa nhà / Phòng</p>
-                        <p class="mt-1 text-2xl font-heading"><span id="buildingCount">0</span> <span class="text-sm font-normal text-text-muted">/ <span id="roomCount">0</span></span></p>
+                        <p class="text-xs text-text-muted uppercase font-medium">Hệ thống</p>
+                        <p class="mt-2 font-heading text-sm">Đã sẵn sàng</p>
+                        <p class="text-xs text-text-muted mt-1">✓ API active + DB sync</p>
                     </div>
                 </div>
             </section>
@@ -88,13 +109,14 @@
                 </div>
 
                 <div class="mt-4 overflow-x-auto rounded-base border border-border">
-                    <table class="w-full min-w-[680px]">
-                        <thead>
+                        <table class="w-full min-w-[760px]">
+                            <thead>
                         <tr class="bg-slate-50 border-b border-border text-text-muted text-left text-xs uppercase tracking-wide font-medium">
                             <th class="px-4 py-3 w-16">ID</th>
                             <th class="px-4 py-3">Tên tòa</th>
-                            <th class="px-4 py-3 w-32">Số tầng</th>
-                            <th class="px-4 py-3">Mô tả</th>
+                            <th class="px-4 py-3 w-24">Số tầng</th>
+                            <th class="px-4 py-3 w-24">Quy định</th>
+                            <th class="px-4 py-3 flex-1">Mô tả</th>
                         </tr>
                         </thead>
                         <tbody id="buildingBody" class="divide-y divide-border"></tbody>
@@ -109,6 +131,7 @@
 <script>
     const ITEMS_PER_PAGE = 10;
     const token = localStorage.getItem('dormitory_access_token');
+    const AUTH_EXPIRED = 'AUTH_EXPIRED';
 
     let buildingItems = [];
     let buildingPage = 1;
@@ -192,17 +215,20 @@
         buildingPage = paged.safePage;
 
         if (!paged.data.length) {
-            body.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-sm text-text-muted">Chưa có tòa nhà.</td></tr>';
+            body.innerHTML = '<tr><td colspan="5" class="px-4 py-3 text-sm text-text-muted">Chưa có tòa nhà.</td></tr>';
             pagination.innerHTML = '';
             return;
         }
 
         body.innerHTML = paged.data.map((item) => `
-            <tr>
-                <td class="px-4 py-3 text-sm">${item.id ?? '-'}</td>
+            <tr class="hover:bg-slate-50">
+                <td class="px-4 py-3 text-sm font-mono text-text-muted">${item.id ?? '-'}</td>
                 <td class="px-4 py-3 text-sm font-medium">${escHtml(item.name || '-')}</td>
-                <td class="px-4 py-3 text-sm">${Number(item.totalFloors) || 0}</td>
-                <td class="px-4 py-3 text-sm text-text-muted">${escHtml(item.description || 'Chưa cập nhật')}</td>
+                <td class="px-4 py-3 text-sm text-text-muted">${Number(item.totalFloors) || 0}</td>
+                <td class="px-4 py-3 text-sm">
+                    <span class="${item.genderAllowed === 'Nam' ? 'text-blue-600' : item.genderAllowed === 'Nữ' ? 'text-pink-600' : 'text-purple-600'}">${escHtml(item.genderAllowed || '-')}</span>
+                </td>
+                <td class="px-4 py-3 text-sm text-text-muted ">${escHtml(item.description || 'Chưa cập nhật')}</td>
             </tr>
         `).join('');
 
@@ -216,7 +242,7 @@
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.message || 'Phiên đăng nhập không hợp lệ');
+            throw new Error(AUTH_EXPIRED);
         }
 
         const user = data.result;
@@ -232,13 +258,15 @@
     }
 
     async function loadDashboardStats() {
-        const [buildingResponse, roomResponse] = await Promise.all([
+        const [buildingResponse, roomResponse, contractResponse] = await Promise.all([
             fetch('/api/v1/buildings?page=0&size=500&sortBy=id&direction=desc', { headers: { Authorization: `Bearer ${token}` } }),
-            fetch('/api/v1/rooms?page=0&size=500&sortBy=id&direction=desc', { headers: { Authorization: `Bearer ${token}` } })
+            fetch('/api/v1/rooms?page=0&size=500&sortBy=id&direction=desc', { headers: { Authorization: `Bearer ${token}` } }),
+            fetch('/api/v1/contracts/admin/management?page=0&size=1&sortBy=id&direction=desc', { headers: { Authorization: `Bearer ${token}` } })
         ]);
 
         const buildingPayload = await buildingResponse.json();
         const roomPayload = await roomResponse.json();
+        const contractPayload = await contractResponse.json();
 
         if (!buildingResponse.ok) {
             throw new Error(buildingPayload.message || 'Không tải được danh sách tòa nhà');
@@ -250,9 +278,13 @@
         buildingItems = Array.isArray(buildingPayload.result?.content) ? buildingPayload.result.content : [];
         const rooms = Array.isArray(roomPayload.result?.content) ? roomPayload.result.content : [];
         const roomTotal = typeof roomPayload.result?.totalElements === 'number' ? roomPayload.result.totalElements : rooms.length;
+        const totalContracts = contractResponse.ok && typeof contractPayload.result?.totalElements === 'number'
+            ? contractPayload.result.totalElements
+            : 0;
 
         document.getElementById('buildingCount').textContent = String(buildingItems.length);
         document.getElementById('roomCount').textContent = String(roomTotal);
+        document.getElementById('contractCount').textContent = String(totalContracts);
 
         renderBuildings(1);
     }
@@ -261,9 +293,13 @@
         try {
             await loadCurrentUser();
             await loadDashboardStats();
-        } catch {
-            localStorage.removeItem('dormitory_access_token');
-            window.location.href = '/login.html';
+        } catch (error) {
+            if ((error && error.message) === AUTH_EXPIRED) {
+                localStorage.removeItem('dormitory_access_token');
+                window.location.href = '/login.html';
+            } else {
+                console.error(error);
+            }
         }
     })();
 </script>
