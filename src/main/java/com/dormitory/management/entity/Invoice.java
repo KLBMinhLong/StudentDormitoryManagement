@@ -42,6 +42,9 @@ public class Invoice extends BaseEntity {
     @Column(name = "water_fee", nullable = false, precision = 18, scale = 2)
     private BigDecimal waterFee;
 
+    @Column(name = "service_fee", nullable = false, precision = 18, scale = 2)
+    private BigDecimal serviceFee;
+
     @Column(name = "total_amount", nullable = false, precision = 18, scale = 2)
     private BigDecimal totalAmount;
 
