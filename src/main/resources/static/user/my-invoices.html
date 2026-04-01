@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hóa đơn của tôi - Ký túc xá</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+<header class="border-b border-border bg-bg-card">
+    <div class="max-w-[1200px] mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <p class="text-xs text-text-muted">Khu vực sinh viên</p>
+            <h1 class="font-heading text-xl">Hóa đơn của tôi</h1>
+        </div>
+        <nav class="flex flex-wrap items-center gap-2">
+            <a href="/home.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Trang chủ</a>
+            <a href="/user/student-profile.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Hồ sơ</a>
+            <a href="/user/utility-dashboard.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Biểu đồ điện nước</a>
+            <button id="logoutBtn" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium">Đăng xuất</button>
+        </nav>
+    </div>
+</header>
+
+<main class="max-w-[1200px] mx-auto px-4 py-8">
+    <div id="message" class="hidden mb-6 rounded-base px-4 py-3 text-sm"></div>
+
+    <section class="bg-bg-card rounded-base shadow-soft border border-border p-6">
+        <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
+            <div>
+                <h2 class="font-heading text-2xl">Danh sách hóa đơn</h2>
+                <p class="text-sm text-text-muted mt-1">Xem nhanh trạng thái thanh toán và mở chi tiết từng hóa đơn.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-2 w-full lg:w-auto">
+                <select id="invoiceFilterMonth" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
+                    <option value="">Tất cả tháng</option>
+                </select>
+                <input id="invoiceFilterYear" type="number" min="2000" max="2099" placeholder="Năm" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                <select id="invoiceFilterStatus" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="UNPAID">Chưa thanh toán</option>
+                    <option value="OVERDUE">Quá hạn</option>
+                    <option value="PAID">Đã thanh toán</option>
+                    <option value="CANCELLED">Đã hủy</option>
+                </select>
+                <button id="invoiceSearchBtn" type="button" class="rounded-base bg-secondary hover:bg-blue-600 text-white px-4 py-2 text-sm font-medium">Tìm kiếm</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-5">
+            <div class="rounded-base border border-border p-3 bg-emerald-50">
+                <p class="text-xs text-text-muted">Chưa thanh toán</p>
+                <p id="invoiceUnpaidCount" class="font-heading text-xl text-primary mt-1">0</p>
+            </div>
+            <div class="rounded-base border border-border p-3 bg-amber-50">
+                <p class="text-xs text-text-muted">Quá hạn</p>
+                <p id="invoiceOverdueCount" class="font-heading text-xl text-amber-700 mt-1">0</p>
+            </div>
+            <div class="rounded-base border border-border p-3 bg-blue-50">
+                <p class="text-xs text-text-muted">Đã thanh toán</p>
+                <p id="invoicePaidCount" class="font-heading text-xl text-secondary mt-1">0</p>
+            </div>
+            <div class="rounded-base border border-border p-3 bg-slate-50">
+                <p class="text-xs text-text-muted">Tổng tiền trang hiện tại</p>
+                <p id="invoicePageTotal" class="font-heading text-xl text-text-main mt-1">0 đ</p>
+            </div>
+        </div>
+
+        <div id="invoiceCards" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+        <div class="mt-5 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <p id="invoicePagingText" class="text-sm text-text-muted">Hiển thị 0-0 trên tổng số 0 kết quả</p>
+            <div class="flex items-center gap-2">
+                <button id="invoicePrevBtn" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">Trước</button>
+                <span id="invoicePageInfo" class="text-sm text-text-muted min-w-[96px] text-center">Trang 0/0</span>
+                <button id="invoiceNextBtn" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">Sau</button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<div id="invoiceDetailModal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm p-4">
+    <div class="max-w-2xl mx-auto bg-bg-card rounded-base border border-border shadow-soft overflow-hidden">
+        <div class="px-5 py-4 border-b border-border flex items-center justify-between gap-3">
+            <div>
+                <p class="text-xs text-text-muted">Chi tiết hóa đơn</p>
+                <h3 id="detailTitle" class="font-heading text-lg mt-1">-</h3>
+            </div>
+            <button id="detailCloseBtn" type="button" class="rounded-base border border-border px-3 py-1.5 text-sm hover:bg-slate-50">Đóng</button>
+        </div>
+        <div id="detailBody" class="p-5 space-y-4"></div>
+        <div class="px-5 py-4 border-t border-border flex flex-wrap justify-end gap-2">
+            <button id="detailPaymentBtn" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">Thanh toán ngay</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('dormitory_access_token');
+    const message = document.getElementById('message');
+    const invoiceCards = document.getElementById('invoiceCards');
+    const invoiceFilterMonth = document.getElementById('invoiceFilterMonth');
+    const invoiceFilterYear = document.getElementById('invoiceFilterYear');
+    const invoiceFilterStatus = document.getElementById('invoiceFilterStatus');
+    const invoiceSearchBtn = document.getElementById('invoiceSearchBtn');
+    const invoicePagingText = document.getElementById('invoicePagingText');
+    const invoicePageInfo = document.getElementById('invoicePageInfo');
+    const invoicePrevBtn = document.getElementById('invoicePrevBtn');
+    const invoiceNextBtn = document.getElementById('invoiceNextBtn');
+
+    const invoiceState = {
+        page: 0,
+        size: 8,
+        sortBy: 'createdAt',
+        direction: 'desc'
+    };
+
+    let currentRows = [];
+    let selectedInvoiceId = null;
+
+    if (!token) {
+        window.location.href = '/login.html';
+    }
+
+    function showMessage(type, text) {
+        message.className = 'mb-6 rounded-base px-4 py-3 text-sm block';
+        if (type === 'error') {
+            message.classList.add('bg-red-50', 'text-red-700', 'border', 'border-red-100');
+        } else {
+            message.classList.add('bg-green-50', 'text-green-700', 'border', 'border-green-100');
+        }
+        message.textContent = text;
+        setTimeout(() => { message.classList.add('hidden'); }, 2500);
+    }
+
+    function formatDateTime(value) {
+        if (!value) return 'Chưa có';
+        const dt = new Date(value);
+        if (Number.isNaN(dt.getTime())) return 'Chưa có';
+        return dt.toLocaleString('vi-VN');
+    }
+
+    function fmtCurrency(value) {
+        return `${Number(value || 0).toLocaleString('vi-VN')} đ`;
+    }
+
+    function invoiceStatusChip(status) {
+        const s = String(status || '').toUpperCase();
+        if (s === 'PAID') return { label: 'Đã thanh toán', classes: 'bg-emerald-50 text-green-700 border border-emerald-100' };
+        if (s === 'OVERDUE') return { label: 'Quá hạn', classes: 'bg-amber-50 text-amber-700 border border-amber-100' };
+        if (s === 'CANCELLED') return { label: 'Đã hủy', classes: 'bg-slate-100 text-slate-700 border border-slate-200' };
+        return { label: 'Chưa thanh toán', classes: 'bg-blue-50 text-blue-700 border border-blue-100' };
+    }
+
+    function populateInvoiceMonthSelect() {
+        invoiceFilterMonth.innerHTML = '<option value="">Tất cả tháng</option>';
+        for (let month = 1; month <= 12; month++) {
+            const option = document.createElement('option');
+            option.value = String(month);
+            option.textContent = `Tháng ${month}`;
+            invoiceFilterMonth.appendChild(option);
+        }
+    }
+
+    function renderCards(items) {
+        if (!Array.isArray(items) || items.length === 0) {
+            invoiceCards.innerHTML = '<article class="rounded-base border border-dashed border-border p-5 text-sm text-text-muted">Không có hóa đơn phù hợp bộ lọc.</article>';
+            document.getElementById('invoiceUnpaidCount').textContent = '0';
+            document.getElementById('invoiceOverdueCount').textContent = '0';
+            document.getElementById('invoicePaidCount').textContent = '0';
+            document.getElementById('invoicePageTotal').textContent = '0 đ';
+            return;
+        }
+
+        let unpaid = 0;
+        let overdue = 0;
+        let paid = 0;
+        let pageTotal = 0;
+
+        invoiceCards.innerHTML = items.map((item) => {
+            const status = invoiceStatusChip(item.status);
+            const s = String(item.status || '').toUpperCase();
+            if (s === 'UNPAID') unpaid += 1;
+            if (s === 'OVERDUE') overdue += 1;
+            if (s === 'PAID') paid += 1;
+            pageTotal += Number(item.totalAmount || 0);
+
+            const canPay = s === 'UNPAID' || s === 'OVERDUE';
+
+            return `
+                <article class="rounded-base border border-border p-4 bg-white">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="font-mono text-xs text-text-muted">${item.invoiceCode || '-'}</p>
+                            <h3 class="font-semibold text-base mt-1">Kỳ ${item.month}/${item.year}</h3>
+                            <p class="text-sm text-text-muted mt-1">${item.buildingName || '-'} / ${item.roomNumber || '-'}</p>
+                        </div>
+                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${status.classes}">${status.label}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-4 text-sm">
+                        <p class="text-text-muted">Tổng tiền</p>
+                        <p class="font-semibold text-right">${fmtCurrency(item.totalAmount)}</p>
+                        <p class="text-text-muted">Ngày phát hành</p>
+                        <p class="text-right">${formatDateTime(item.issuedAt)}</p>
+                        <p class="text-text-muted">Hạn thanh toán</p>
+                        <p class="text-right">${formatDateTime(item.dueAt)}</p>
+                    </div>
+                    <div class="mt-4 flex flex-wrap gap-2 justify-end">
+                        <button data-action="detail" data-id="${item.id}" class="rounded-base border border-secondary text-secondary px-3 py-1.5 text-sm font-medium hover:bg-blue-50">Xem chi tiết</button>
+                        <button data-action="payment" data-id="${item.id}" ${canPay ? '' : 'disabled'} class="rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-1.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">Thanh toán</button>
+                    </div>
+                </article>
+            `;
+        }).join('');
+
+        document.getElementById('invoiceUnpaidCount').textContent = String(unpaid);
+        document.getElementById('invoiceOverdueCount').textContent = String(overdue);
+        document.getElementById('invoicePaidCount').textContent = String(paid);
+        document.getElementById('invoicePageTotal').textContent = fmtCurrency(pageTotal);
+
+        invoiceCards.querySelectorAll('button[data-action="detail"]').forEach((btn) => {
+            btn.addEventListener('click', () => openDetailModal(Number(btn.dataset.id)));
+        });
+        invoiceCards.querySelectorAll('button[data-action="payment"]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                try {
+                    const result = await createPaymentLink(Number(btn.dataset.id));
+                    showMessage('success', 'Đang chuyển đến cổng thanh toán...');
+                    if (result?.paymentLink) {
+                        window.open(result.paymentLink, '_blank', 'noopener');
+                    }
+                    await loadMyInvoices();
+                } catch (error) {
+                    showMessage('error', error.message);
+                }
+            });
+        });
+    }
+
+    function renderPaging(meta) {
+        const total = Number(meta.totalElements || 0);
+        const pageNo = Number(meta.pageNo || 0);
+        const pageSize = Number(meta.pageSize || invoiceState.size);
+        const totalPages = Number(meta.totalPages || 0);
+
+        const start = total === 0 ? 0 : pageNo * pageSize + 1;
+        const end = total === 0 ? 0 : Math.min((pageNo + 1) * pageSize, total);
+
+        invoicePagingText.textContent = `Hiển thị ${start}-${end} trên tổng số ${total} kết quả`;
+        invoicePageInfo.textContent = `Trang ${totalPages === 0 ? 0 : pageNo + 1}/${totalPages}`;
+        invoicePrevBtn.disabled = pageNo <= 0;
+        invoiceNextBtn.disabled = totalPages === 0 || pageNo >= totalPages - 1;
+    }
+
+    async function loadMyInvoices() {
+        const params = new URLSearchParams({
+            page: String(invoiceState.page),
+            size: String(invoiceState.size),
+            sortBy: invoiceState.sortBy,
+            direction: invoiceState.direction
+        });
+
+        const month = invoiceFilterMonth.value;
+        const year = invoiceFilterYear.value;
+        const status = invoiceFilterStatus.value;
+        if (month) params.set('month', month);
+        if (year) params.set('year', year);
+        if (status) params.set('status', status);
+
+        const response = await fetch(`/api/v1/invoices/me?${params.toString()}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Không tải được danh sách hóa đơn.');
+        }
+
+        const result = data.result || {};
+        currentRows = Array.isArray(result.content) ? result.content : [];
+        renderCards(currentRows);
+        renderPaging(result);
+    }
+
+    async function createPaymentLink(invoiceId) {
+        const response = await fetch(`/api/v1/invoices/me/${invoiceId}/create-payment-link`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Không thể tạo liên kết thanh toán.');
+        }
+
+        return data.result;
+    }
+
+    function openDetailModal(invoiceId) {
+        const item = currentRows.find((x) => Number(x.id) === Number(invoiceId));
+        if (!item) return;
+        selectedInvoiceId = Number(item.id);
+
+        document.getElementById('detailTitle').textContent = `${item.invoiceCode || 'Hóa đơn'} - ${item.month}/${item.year}`;
+
+        const status = invoiceStatusChip(item.status);
+        const body = document.getElementById('detailBody');
+        body.innerHTML = `
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-text-muted">Trạng thái</p>
+                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${status.classes}">${status.label}</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div class="rounded-base border border-border p-3">
+                    <p class="text-text-muted">Sinh viên</p>
+                    <p class="font-medium mt-1">${item.studentName || '-'} (${item.studentCode || '-'})</p>
+                </div>
+                <div class="rounded-base border border-border p-3">
+                    <p class="text-text-muted">Phòng</p>
+                    <p class="font-medium mt-1">${item.buildingName || '-'} / ${item.roomNumber || '-'}</p>
+                </div>
+            </div>
+            <div class="rounded-base border border-border p-3">
+                <h4 class="font-semibold">Chi tiết tính tiền</h4>
+                <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+                    <p class="text-text-muted">Điện tiêu thụ</p><p class="text-right">${Number(item.electricUsage || 0).toFixed(2)} kWh</p>
+                    <p class="text-text-muted">Đơn giá điện</p><p class="text-right">${fmtCurrency(item.electricUnitPrice)}</p>
+                    <p class="text-text-muted">Tiền điện</p><p class="text-right">${fmtCurrency(item.electricUsage * item.electricUnitPrice)}</p>
+                    <p class="text-text-muted">Nước tiêu thụ</p><p class="text-right">${Number(item.waterUsage || 0).toFixed(2)} m³</p>
+                    <p class="text-text-muted">Đơn giá nước</p><p class="text-right">${fmtCurrency(item.waterUnitPrice)}</p>
+                    <p class="text-text-muted">Tiền nước</p><p class="text-right">${fmtCurrency(item.waterUsage * item.waterUnitPrice)}</p>
+                    <p class="text-text-muted">Số sinh viên chia phòng</p><p class="text-right">${item.studentsInRoom || 0}</p>
+                    <p class="text-text-muted">Chi phí điện nước mỗi sinh viên</p><p class="text-right">${fmtCurrency(item.utilityAmountPerStudent)}</p>
+                    <p class="text-text-muted">Phí dịch vụ</p><p class="text-right">${fmtCurrency(item.serviceFee)}</p>
+                    <p class="font-semibold">Tổng cộng</p><p class="text-right font-semibold text-primary">${fmtCurrency(item.totalAmount)}</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div class="rounded-base border border-border p-3">
+                    <p class="text-text-muted">Ngày phát hành</p>
+                    <p class="mt-1">${formatDateTime(item.issuedAt)}</p>
+                </div>
+                <div class="rounded-base border border-border p-3">
+                    <p class="text-text-muted">Hạn thanh toán</p>
+                    <p class="mt-1">${formatDateTime(item.dueAt)}</p>
+                </div>
+                <div class="rounded-base border border-border p-3">
+                    <p class="text-text-muted">Ngày thanh toán</p>
+                    <p class="mt-1">${formatDateTime(item.paidAt)}</p>
+                </div>
+                <div class="rounded-base border border-border p-3">
+                    <p class="text-text-muted">Nguồn thanh toán</p>
+                    <p class="mt-1">${item.paymentProvider || 'Chưa có'}</p>
+                </div>
+            </div>
+        `;
+
+        const canPay = ['UNPAID', 'OVERDUE'].includes(String(item.status || '').toUpperCase());
+        const detailPaymentBtn = document.getElementById('detailPaymentBtn');
+        detailPaymentBtn.disabled = !canPay;
+        detailPaymentBtn.textContent = canPay ? 'Thanh toán ngay' : 'Không thể thanh toán';
+
+        document.getElementById('invoiceDetailModal').classList.remove('hidden');
+    }
+
+    function closeDetailModal() {
+        document.getElementById('invoiceDetailModal').classList.add('hidden');
+    }
+
+    invoiceSearchBtn.addEventListener('click', async () => {
+        try {
+            invoiceState.page = 0;
+            await loadMyInvoices();
+        } catch (error) {
+            showMessage('error', error.message);
+        }
+    });
+
+    invoicePrevBtn.addEventListener('click', async () => {
+        if (invoiceState.page <= 0) return;
+        try {
+            invoiceState.page -= 1;
+            await loadMyInvoices();
+        } catch (error) {
+            showMessage('error', error.message);
+        }
+    });
+
+    invoiceNextBtn.addEventListener('click', async () => {
+        try {
+            invoiceState.page += 1;
+            await loadMyInvoices();
+        } catch (error) {
+            showMessage('error', error.message);
+        }
+    });
+
+    document.getElementById('detailCloseBtn').addEventListener('click', closeDetailModal);
+    document.getElementById('invoiceDetailModal').addEventListener('click', (event) => {
+        if (event.target.id === 'invoiceDetailModal') {
+            closeDetailModal();
+        }
+    });
+    document.getElementById('detailPaymentBtn').addEventListener('click', async () => {
+        if (!selectedInvoiceId) {
+            showMessage('error', 'Không tìm thấy hóa đơn để thanh toán.');
+            return;
+        }
+        try {
+            const result = await createPaymentLink(selectedInvoiceId);
+            showMessage('success', 'Đang chuyển đến cổng thanh toán...');
+            if (result?.paymentLink) {
+                window.open(result.paymentLink, '_blank', 'noopener');
+            }
+            closeDetailModal();
+            await loadMyInvoices();
+        } catch (error) {
+            showMessage('error', error.message);
+        }
+    });
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('dormitory_access_token');
+        window.location.href = '/login.html';
+    });
+
+    populateInvoiceMonthSelect();
+    loadMyInvoices().catch((error) => showMessage('error', error.message));
+</script>
+</body>
+
+</html>

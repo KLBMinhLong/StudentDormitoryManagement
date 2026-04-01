@@ -55,6 +55,22 @@
 
             <main class="space-y-6">
                 <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                        <div>
+                            <h2 class="font-heading text-2xl">Đơn giá điện nước hiện hành</h2>
+                            <p class="text-sm text-text-muted mt-1">Giá này được dùng để sinh hóa đơn tự động cho kỳ mới.</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 w-full lg:w-auto">
+                            <input id="priceElectric" type="number" min="1" step="1" placeholder="Giá điện (VNĐ/kWh)" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                            <input id="priceWater" type="number" min="1" step="1" placeholder="Giá nước (VNĐ/m³)" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                            <input id="priceService" type="number" min="1" step="1" placeholder="Phí dịch vụ (VNĐ/tháng)" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                            <button id="btnSavePricing" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium">Cập nhật đơn giá</button>
+                        </div>
+                    </div>
+                    <p id="pricingMeta" class="text-xs text-text-muted mt-3"></p>
+                </section>
+
+                <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
                     <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
                         <div>
                             <h2 class="font-heading text-2xl">Lịch sử tiêu thụ theo thời gian</h2>
@@ -360,6 +376,7 @@
         let deleteTargetId = null;
         let consumptionChart = null;
         let bulkRowsCache = [];
+        let latestPricingPolicy = null;
 
         if (!token) {
             window.location.href = '/login';
@@ -409,6 +426,63 @@
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`
             };
+        }
+
+        function fmtCurrency(value) {
+            return `${Number(value || 0).toLocaleString('vi-VN')} đ`;
+        }
+
+        function renderPricingMeta() {
+            const meta = document.getElementById('pricingMeta');
+            if (!latestPricingPolicy) {
+                meta.textContent = 'Chưa có đơn giá trong hệ thống.';
+                return;
+            }
+            const effective = latestPricingPolicy.effectiveFrom || 'N/A';
+            const notes = latestPricingPolicy.notes ? ` | Ghi chú: ${latestPricingPolicy.notes}` : '';
+            meta.textContent = `Hiệu lực từ: ${effective} | Điện: ${fmtCurrency(latestPricingPolicy.electricUnitPrice)} | Nước: ${fmtCurrency(latestPricingPolicy.waterUnitPrice)} | Phí dịch vụ: ${fmtCurrency(latestPricingPolicy.serviceFee)}${notes}`;
+        }
+
+        async function loadPricingPolicy() {
+            const res = await fetch(`${API_BASE}/pricing-policies/latest`, { headers: authHeaders() });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Không tải được đơn giá điện nước');
+
+            latestPricingPolicy = data.result || null;
+            if (latestPricingPolicy) {
+                document.getElementById('priceElectric').value = Number(latestPricingPolicy.electricUnitPrice || 0);
+                document.getElementById('priceWater').value = Number(latestPricingPolicy.waterUnitPrice || 0);
+                document.getElementById('priceService').value = Number(latestPricingPolicy.serviceFee || 0);
+            }
+            renderPricingMeta();
+        }
+
+        async function updatePricingPolicy() {
+            const electricUnitPrice = Number(document.getElementById('priceElectric').value || 0);
+            const waterUnitPrice = Number(document.getElementById('priceWater').value || 0);
+            const serviceFee = Number(document.getElementById('priceService').value || 0);
+
+            if (electricUnitPrice <= 0 || waterUnitPrice <= 0 || serviceFee <= 0) {
+                showToast('Vui lòng nhập đầy đủ đơn giá lớn hơn 0.', 'error');
+                return;
+            }
+
+            const res = await fetch(`${API_BASE}/pricing-policies/update`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({
+                    electricUnitPrice,
+                    waterUnitPrice,
+                    serviceFee,
+                    notes: 'Cập nhật từ trang quản lý điện nước'
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Cập nhật đơn giá thất bại');
+
+            latestPricingPolicy = data.result || null;
+            renderPricingMeta();
+            showToast('Cập nhật đơn giá điện nước thành công.');
         }
 
         async function ensureAdmin() {
@@ -1221,6 +1295,13 @@
         });
 
         document.getElementById('btnLoadChart').addEventListener('click', loadTimeline);
+        document.getElementById('btnSavePricing').addEventListener('click', async () => {
+            try {
+                await updatePricingPolicy();
+            } catch (error) {
+                showToast(error.message || 'Lỗi cập nhật đơn giá.', 'error');
+            }
+        });
         document.getElementById('btnClosePeriod').addEventListener('click', () => closeOrReopenPeriod('close'));
         document.getElementById('btnReopenPeriod').addEventListener('click', () => closeOrReopenPeriod('reopen'));
         document.getElementById('btnLoadBulk').addEventListener('click', async () => {
@@ -1260,6 +1341,7 @@
                 document.getElementById('bulkMonth').value = String(period.month);
                 document.getElementById('bulkYear').value = String(period.year);
                 await ensureAdmin();
+                await loadPricingPolicy();
                 await loadBuildingsAndRooms();
                 await loadRecords();
                 await loadTimeline();

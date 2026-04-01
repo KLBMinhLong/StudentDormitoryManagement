@@ -9,7 +9,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.dormitory.management.entity.AppUser;
 import com.dormitory.management.entity.Building;
@@ -18,7 +18,6 @@ import com.dormitory.management.entity.Bed;
 import com.dormitory.management.entity.Room;
 import com.dormitory.management.entity.RoomType;
 import com.dormitory.management.entity.Student;
-import com.dormitory.management.entity.UtilityRecord;
 import com.dormitory.management.entity.enums.RoomStatus;
 import com.dormitory.management.repository.AppUserRepository;
 import com.dormitory.management.repository.BedRepository;
@@ -27,7 +26,6 @@ import com.dormitory.management.repository.RoleRepository;
 import com.dormitory.management.repository.RoomRepository;
 import com.dormitory.management.repository.RoomTypeRepository;
 import com.dormitory.management.repository.StudentRepository;
-import com.dormitory.management.repository.UtilityRecordRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,100 +40,58 @@ public class DataInitializer {
     private final RoomTypeRepository roomTypeRepository;
     private final BedRepository bedRepository;
     private final StudentRepository studentRepository;
-    private final UtilityRecordRepository utilityRecordRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JdbcTemplate jdbcTemplate;
 
     @Bean
+    @Transactional
     public CommandLineRunner initializeAuthData() {
         return args -> {
-            ensureContractStatusConstraint();
-            ensureUtilityRecordPeriodStatusColumn();
+            // Initialize roles
+            Role adminRole = findOrCreateRole("ROLE_ADMIN");
+            Role studentRole = findOrCreateRole("ROLE_STUDENT");
+
+            // Initialize system users
+            initializeSystemUsers(adminRole, studentRole);
+
+            // Initialize building data
             initializeBuildingData();
             initializeRoomTypeData();
             initializeRoomData();
             initializeBedData();
-            initializeUtilityRecordsData();
 
-            Role adminRole = findOrCreateRole("ROLE_ADMIN");
-            Role studentRole = findOrCreateRole("ROLE_STUDENT");
-
-            if (!appUserRepository.existsByUsername("admin")) {
-                AppUser adminUser = AppUser.builder()
-                        .username("admin")
-                        .password(passwordEncoder.encode("admin123"))
-                        .fullName("System Administrator")
-                        .email("admin@dormitory.local")
-                        .enabled(true)
-                        .roles(Set.of(adminRole))
-                        .build();
-                appUserRepository.save(adminUser);
-            }
-
-            if (!appUserRepository.existsByUsername("student")) {
-                AppUser studentUser = AppUser.builder()
-                        .username("student")
-                        .password(passwordEncoder.encode("student123"))
-                        .fullName("Default Student")
-                        .email("student@dormitory.local")
-                        .enabled(true)
-                        .roles(Set.of(studentRole))
-                        .build();
-                appUserRepository.save(studentUser);
-            }
-
+            // Initialize mock students
             initializeMockStudents(studentRole);
         };
     }
 
-    private void ensureContractStatusConstraint() {
-        String sql = """
-                DECLARE @constraintName NVARCHAR(128);
-                SELECT TOP 1 @constraintName = cc.name
-                FROM sys.check_constraints cc
-                INNER JOIN sys.tables t ON cc.parent_object_id = t.object_id
-                INNER JOIN sys.columns c ON c.object_id = t.object_id AND c.column_id = cc.parent_column_id
-                WHERE t.name = 'contract' AND c.name = 'status';
-
-                IF @constraintName IS NOT NULL
-                    EXEC('ALTER TABLE dbo.[contract] DROP CONSTRAINT [' + @constraintName + ']');
-
-                ALTER TABLE dbo.[contract] WITH CHECK
-                ADD CONSTRAINT CK_contract_status
-                CHECK ([status] IN ('PENDING', 'ACTIVE', 'EXPIRED', 'CANCELLED'));
-                """;
-
-        try {
-            jdbcTemplate.execute(sql);
-        } catch (Exception ex) {
-            System.err.println("[WARN] Không thể cập nhật CHECK constraint cho contract.status: " + ex.getMessage());
+    private void initializeSystemUsers(Role adminRole, Role studentRole) {
+        if (!appUserRepository.existsByUsername("admin")) {
+            AppUser adminUser = AppUser.builder()
+                    .username("admin")
+                    .password(passwordEncoder.encode("admin123"))
+                    .fullName("System Administrator")
+                    .email("admin@dormitory.local")
+                    .enabled(true)
+                    .roles(Set.of(adminRole))
+                    .build();
+            appUserRepository.save(adminUser);
         }
-    }
 
-    private void ensureUtilityRecordPeriodStatusColumn() {
-        String sql = """
-                IF COL_LENGTH('dbo.utility_record', 'period_status') IS NULL
-                BEGIN
-                    ALTER TABLE dbo.utility_record
-                    ADD period_status NVARCHAR(20) NOT NULL
-                    CONSTRAINT DF_utility_record_period_status DEFAULT 'OPEN';
-                END;
-
-                UPDATE dbo.utility_record
-                SET period_status = 'OPEN'
-                WHERE period_status IS NULL;
-                """;
-
-        try {
-            jdbcTemplate.execute(sql);
-        } catch (Exception ex) {
-            System.err.println("[WARN] Không thể đảm bảo cột utility_record.period_status: " + ex.getMessage());
+        if (!appUserRepository.existsByUsername("student")) {
+            AppUser studentUser = AppUser.builder()
+                    .username("student")
+                    .password(passwordEncoder.encode("student123"))
+                    .fullName("Default Student")
+                    .email("student@dormitory.local")
+                    .enabled(true)
+                    .roles(Set.of(studentRole))
+                    .build();
+            appUserRepository.save(studentUser);
         }
     }
 
     private void initializeMockStudents(Role studentRole) {
         if (studentRepository.count() == 0) {
-            // Cập nhật: Truyền thêm đường dẫn ảnh mẫu cho một số Student
             List<Student> mockStudents = List.of(
                     createMockStudent("SV001", "Bùi Bình Nguyên", "2004-05-15", "Nam", "0987654321", "079004000001", "nguyen.bb@hutech.edu.vn", "/images/sv001.png"),
                     createMockStudent("SV002", "Nguyễn Minh Long", "2004-01-20", "Nam", "0912345678", "079004000002", "hai.nl@hutech.edu.vn", "/images/sv002.png"),
@@ -217,14 +173,6 @@ public class DataInitializer {
                 String roomGender = resolveRoomGenderByPolicy(building, floor);
 
                 if (roomRepository.existsByBuildingIdAndRoomNumberIgnoreCase(building.getId(), code)) {
-                    roomRepository.findByBuildingIdAndRoomNumberIgnoreCase(building.getId(), code)
-                            .ifPresent((existingRoom) -> {
-                                if (roomGender.equalsIgnoreCase(existingRoom.getGenderAllowed())) {
-                                    return;
-                                }
-                                existingRoom.setGenderAllowed(roomGender);
-                                roomRepository.save(existingRoom);
-                            });
                     continue;
                 }
 
@@ -278,7 +226,7 @@ public class DataInitializer {
 
     private void initializeBedData() {
         for (Room room : roomRepository.findAll()) {
-            int capacity = resolveRoomCapacity(room);
+            int capacity = room.getRoomType() != null ? room.getRoomType().getCapacity() : 0;
             var existingBeds = bedRepository.findByRoomIdOrderByBedNumberAsc(room.getId());
 
             for (int bedNumber = 1; bedNumber <= capacity; bedNumber++) {
@@ -291,8 +239,8 @@ public class DataInitializer {
                 Bed newBed = Bed.builder()
                         .bedNumber(bedNumber)
                         .isOccupied(false)
-                    .reservedUntil(null)
-                    .reservedContractId(null)
+                        .reservedUntil(null)
+                        .reservedContractId(null)
                         .room(room)
                         .student(null)
                         .build();
@@ -311,21 +259,6 @@ public class DataInitializer {
         }
     }
 
-    private void initializeUtilityRecordsData() {
-        // Initialize default utility records if needed (currently stub for core startup)
-    }
-
-    private int resolveRoomCapacity(Room room) {
-        if (room.getRoomType() == null || room.getRoomType().getId() == null) {
-            return 0;
-        }
-
-        return roomTypeRepository.findById(room.getRoomType().getId())
-                .map(RoomType::getCapacity)
-                .map((capacity) -> Math.min(capacity, 8))
-                .orElse(0);
-    }
-
     private void upsertRoomType(String name, int capacity, BigDecimal basePrice, String genderAllowed) {
         RoomType roomType = roomTypeRepository.findByNameIgnoreCase(name)
                 .orElseGet(RoomType::new);
@@ -340,10 +273,7 @@ public class DataInitializer {
     private void initializeBuildingData() {
         upsertBuilding("Tòa A", "Toa A", 5, "Khu tòa dành cho sinh viên nam", "Nam");
         upsertBuilding("Tòa B", "Toa B", 5, "Khu tòa dành cho sinh viên nữ", "Nữ");
-
-        // [Tòa dùng chung]: Phân loại là Nam/Nữ
         upsertBuilding("Tòa C", "Toa C", 7, "Khu tòa Mix nam nữ", "Nam/Nữ");
-
         upsertBuilding("Tòa D", "Toa D", 9, "Khu tòa mở rộng cho sinh viên mới", "Nam/Nữ");
     }
 

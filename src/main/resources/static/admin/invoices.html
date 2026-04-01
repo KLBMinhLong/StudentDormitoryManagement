@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KTX - Quản lý hóa đơn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="/ui/admin-sidebar.js" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        danger: '#DC2626',
+                        'danger-hover': '#B91C1C',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        success: '#16A34A',
+                        warning: '#D97706'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+    <div id="toast" class="fixed top-5 right-5 z-50 hidden">
+        <div id="toastBox" class="flex items-center gap-3 rounded-base px-4 py-3 shadow-soft text-sm font-medium">
+            <span id="toastMsg"></span>
+        </div>
+    </div>
+
+    <div id="adminLayout" class="max-w-[1200px] mx-auto p-4 md:p-6 min-h-screen">
+        <div class="admin-grid grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6 min-h-[calc(100vh-3rem)]">
+            <div id="adminSidebarMount"></div>
+
+            <main class="space-y-6">
+                <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
+                        <div>
+                            <h2 class="font-heading text-2xl">Vận hành hóa đơn theo kỳ</h2>
+                            <p class="text-sm text-text-muted mt-1">Sinh hóa đơn từ kỳ điện nước đã chốt và xử lý trạng thái quá hạn.</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 w-full lg:w-auto">
+                            <select id="genBuilding" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
+                                <option value="">Tất cả tòa nhà</option>
+                            </select>
+                            <select id="genMonth" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card"></select>
+                            <input id="genYear" type="number" min="2000" max="2099" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                            <div class="flex gap-2">
+                                <button id="btnGenerate" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-2 text-sm font-medium">Sinh hóa đơn</button>
+                                <button id="btnMarkOverdue" type="button" class="rounded-base border border-warning text-warning px-3 py-2 text-sm font-medium hover:bg-amber-50">Đánh dấu quá hạn</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                        <div>
+                            <h2 class="font-heading text-2xl">Danh sách điện nước theo kỳ đã chọn</h2>
+                            <p class="text-sm text-text-muted mt-1">Dùng để kiểm tra kỳ đã chốt trước khi sinh hóa đơn hàng loạt hoặc sinh riêng từng phòng.</p>
+                        </div>
+                        <button id="btnLoadUtility" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Tải danh sách kỳ</button>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-base border border-border">
+                        <table class="w-full min-w-[1180px] text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-border text-text-muted text-left text-xs uppercase tracking-wide font-medium">
+                                    <th class="px-4 py-3">Tòa / Phòng</th>
+                                    <th class="px-4 py-3">Kỳ</th>
+                                    <th class="px-4 py-3">Điện (cũ -> mới)</th>
+                                    <th class="px-4 py-3">Nước (cũ -> mới)</th>
+                                    <th class="px-4 py-3">Trạng thái chốt kỳ</th>
+                                    <th class="px-4 py-3 text-right">Sinh theo phòng</th>
+                                </tr>
+                            </thead>
+                            <tbody id="utilityTableBody" class="divide-y divide-border">
+                                <tr><td colspan="6" class="px-4 py-8 text-center text-text-muted">Chọn tòa, tháng, năm rồi bấm tải danh sách kỳ.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="font-heading text-2xl">Danh sách hóa đơn</h2>
+                            <p class="text-sm text-text-muted mt-1">Theo dõi trạng thái thanh toán cho Admin và duyệt thủ công khi cần.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+                        <select id="filterBuilding" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
+                            <option value="">Tất cả tòa nhà</option>
+                        </select>
+                        <select id="filterMonth" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
+                            <option value="">Tất cả tháng</option>
+                        </select>
+                        <input id="filterYear" type="number" min="2000" max="2099" placeholder="Năm" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                        <select id="filterStatus" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="UNPAID">UNPAID</option>
+                            <option value="PAID">PAID</option>
+                            <option value="OVERDUE">OVERDUE</option>
+                            <option value="CANCELLED">CANCELLED</option>
+                        </select>
+                        <input id="filterKeyword" type="text" placeholder="Mã hóa đơn / phòng / sinh viên" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                    </div>
+
+                    <div class="flex gap-2 mb-4">
+                        <button id="btnSearch" type="button" class="rounded-base bg-secondary hover:bg-blue-600 text-white px-4 py-2 text-sm font-medium">Tìm kiếm</button>
+                        <button id="btnReset" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Đặt lại</button>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-base border border-border">
+                        <table class="w-full min-w-[1280px] text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-border text-text-muted text-left text-xs uppercase tracking-wide font-medium">
+                                    <th class="px-4 py-3">Mã HĐ</th>
+                                    <th class="px-4 py-3">Sinh viên</th>
+                                    <th class="px-4 py-3">Phòng</th>
+                                    <th class="px-4 py-3">Kỳ</th>
+                                    <th class="px-4 py-3">Tổng tiền</th>
+                                    <th class="px-4 py-3">Hạn thanh toán</th>
+                                    <th class="px-4 py-3">Trạng thái</th>
+                                    <th class="px-4 py-3">Nguồn thanh toán</th>
+                                    <th class="px-4 py-3 text-right">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoiceTableBody" class="divide-y divide-border">
+                                <tr><td colspan="9" class="px-4 py-8 text-center text-text-muted">Đang tải dữ liệu...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="tablePagination" class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"></div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div id="manualModal" class="fixed inset-0 z-40 hidden">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="manualBackdrop"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="relative bg-bg-card rounded-base shadow-soft w-full max-w-lg p-6">
+                <h3 class="font-heading text-lg mb-3">Xác nhận thanh toán thủ công</h3>
+                <p id="manualInvoiceText" class="text-sm text-text-muted mb-3"></p>
+                <textarea id="manualNote" rows="4" maxlength="500" placeholder="Nhập lý do duyệt thủ công..." class="w-full rounded-base border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                <p id="manualErr" class="text-danger text-xs mt-1 hidden"></p>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button id="btnManualCancel" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Hủy</button>
+                    <button id="btnManualConfirm" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('dormitory_access_token');
+        const API_BASE = '/api/v1';
+        const ITEMS_PER_PAGE = 10;
+
+        let invoicesCache = [];
+        let currentPage = 0;
+        let totalPages = 0;
+        let totalElements = 0;
+        let manualTargetId = null;
+        let utilityRowsCache = [];
+
+        function initAdminSidebar() {
+            if (!window.AdminSidebar || typeof window.AdminSidebar.mount !== 'function') {
+                window.setTimeout(initAdminSidebar, 50);
+                return;
+            }
+            window.AdminSidebar.mount({ mountId: 'adminSidebarMount', active: 'invoices', caption: 'Quản trị hóa đơn' });
+        }
+
+        function authHeaders() {
+            return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+        }
+
+        function fmtCurrency(value) {
+            return `${Number(value || 0).toLocaleString('vi-VN')} đ`;
+        }
+
+        function fmtDate(value) {
+            if (!value) return '-';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '-';
+            return d.toLocaleString('vi-VN');
+        }
+
+        function escHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const box = document.getElementById('toastBox');
+            const msg = document.getElementById('toastMsg');
+            const colors = {
+                success: 'bg-green-50 text-success border border-green-200',
+                error: 'bg-red-50 text-danger border border-red-200',
+                info: 'bg-blue-50 text-secondary border border-blue-200'
+            };
+            box.className = `flex items-center gap-3 rounded-base px-4 py-3 shadow-soft text-sm font-medium ${colors[type] || colors.info}`;
+            msg.textContent = message;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        function statusChip(status) {
+            const s = String(status || '').toUpperCase();
+            if (s === 'PAID') return 'bg-emerald-50 text-success border border-emerald-200';
+            if (s === 'OVERDUE') return 'bg-amber-50 text-warning border border-amber-200';
+            if (s === 'CANCELLED') return 'bg-slate-100 text-text-muted border border-slate-200';
+            return 'bg-blue-50 text-secondary border border-blue-200';
+        }
+
+        function isClosedPeriod(status) {
+            return String(status || '').toUpperCase() === 'CLOSED';
+        }
+
+        function populateMonthSelect(id, includeBlank = true) {
+            const select = document.getElementById(id);
+            select.innerHTML = includeBlank ? '<option value="">Tất cả tháng</option>' : '';
+            for (let m = 1; m <= 12; m++) {
+                const opt = document.createElement('option');
+                opt.value = String(m);
+                opt.textContent = `Tháng ${m}`;
+                select.appendChild(opt);
+            }
+        }
+
+        async function ensureAdmin() {
+            const res = await fetch(`${API_BASE}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Phiên đăng nhập không hợp lệ');
+            const roles = Array.isArray(data.result?.roles) ? data.result.roles : [];
+            if (!roles.includes('ROLE_ADMIN')) {
+                window.location.href = '/home';
+            }
+        }
+
+        async function loadBuildings() {
+            const res = await fetch(`${API_BASE}/buildings?page=0&size=500`, { headers: authHeaders() });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Không tải được tòa nhà');
+
+            const buildings = Array.isArray(data.result?.content) ? data.result.content : [];
+            const targetIds = ['filterBuilding', 'genBuilding'];
+            targetIds.forEach((id) => {
+                const select = document.getElementById(id);
+                buildings.forEach((b) => {
+                    const opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.textContent = b.name;
+                    select.appendChild(opt);
+                });
+            });
+        }
+
+        function renderUtilityRows() {
+            const tbody = document.getElementById('utilityTableBody');
+            if (!utilityRowsCache.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-text-muted">Không có dữ liệu điện nước cho kỳ đã chọn.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = utilityRowsCache.map((row) => {
+                const closed = isClosedPeriod(row.periodStatus);
+                const hasInvoice = row.hasInvoice === true;
+                const canGenerateRoomInvoice = closed && !hasInvoice;
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3">${escHtml(row.buildingName || '-')} / ${escHtml(row.roomNumber || '-')}</td>
+                        <td class="px-4 py-3">${row.month}/${row.year}</td>
+                        <td class="px-4 py-3 text-xs text-text-muted">${Number(row.oldElectric || 0).toFixed(2)} -> ${Number(row.newElectric || 0).toFixed(2)}</td>
+                        <td class="px-4 py-3 text-xs text-text-muted">${Number(row.oldWater || 0).toFixed(2)} -> ${Number(row.newWater || 0).toFixed(2)}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex rounded-full px-2.5 py-1 text-xs ${closed ? 'bg-emerald-50 text-success border border-emerald-200' : 'bg-amber-50 text-warning border border-amber-200'}">
+                                ${closed ? 'Đã chốt' : 'Đang mở'}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <button data-action="generate-room" data-room-id="${row.roomId}" ${canGenerateRoomInvoice ? '' : 'disabled'} class="rounded-base border px-3 py-1.5 text-xs font-medium ${canGenerateRoomInvoice ? 'border-primary text-primary hover:bg-teal-50' : 'border-border text-text-muted opacity-50 cursor-not-allowed'}">${hasInvoice ? 'Đã có hóa đơn' : 'Sinh hóa đơn phòng'}</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            tbody.querySelectorAll('button[data-action="generate-room"]').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    try {
+                        await generateInvoiceForRoom(Number(btn.dataset.roomId));
+                    } catch (error) {
+                        showToast(error.message || 'Sinh hóa đơn phòng thất bại', 'error');
+                    }
+                });
+            });
+        }
+
+        async function loadUtilityRowsForPeriod() {
+            const month = Number(document.getElementById('genMonth').value || 0);
+            const year = Number(document.getElementById('genYear').value || 0);
+            const buildingId = document.getElementById('genBuilding').value;
+            if (!month || !year) {
+                showToast('Vui lòng chọn tháng và năm để tải danh sách điện nước.', 'error');
+                return;
+            }
+
+            const params = new URLSearchParams({ month: String(month), year: String(year) });
+            if (buildingId) params.set('buildingId', buildingId);
+
+            const res = await fetch(`${API_BASE}/invoices/admin/utility-records?${params.toString()}`, { headers: authHeaders() });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Không tải được danh sách điện nước');
+
+            utilityRowsCache = Array.isArray(data.result) ? data.result : [];
+            renderUtilityRows();
+        }
+
+        async function generateInvoiceForRoom(roomId) {
+            const month = Number(document.getElementById('genMonth').value || 0);
+            const year = Number(document.getElementById('genYear').value || 0);
+            if (!month || !year) {
+                showToast('Vui lòng chọn tháng và năm trước khi sinh hóa đơn phòng.', 'error');
+                return;
+            }
+
+            const res = await fetch(`${API_BASE}/invoices/admin/generate-room/${roomId}?month=${month}&year=${year}`, {
+                method: 'POST',
+                headers: authHeaders()
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Sinh hóa đơn phòng thất bại');
+
+            const created = Number(data.result || 0);
+            if (created <= 0) {
+                showToast('Phòng đã có hóa đơn kỳ này hoặc không có sinh viên hợp lệ để sinh thêm.', 'error');
+            } else {
+                showToast(`Sinh hóa đơn theo phòng thành công (${created} hóa đơn).`);
+            }
+            await Promise.all([loadInvoices(currentPage), loadUtilityRowsForPeriod()]);
+        }
+
+        function buildPageButtons(pageNo, totalPageCount) {
+            if (totalPageCount <= 0) return '';
+            const start = Math.max(0, pageNo - 2);
+            const end = Math.min(totalPageCount - 1, pageNo + 2);
+            let html = '';
+            for (let i = start; i <= end; i++) {
+                const active = i === pageNo;
+                html += `<button class="rounded-base border px-3 py-1.5 text-sm ${active ? 'border-primary bg-primary text-white' : 'border-border hover:bg-slate-50'}" data-page="${i}">${i + 1}</button>`;
+            }
+            return html;
+        }
+
+        function renderPagination() {
+            const container = document.getElementById('tablePagination');
+            if (!totalElements) {
+                container.innerHTML = '';
+                return;
+            }
+            const totalPageCount = Math.max(1, totalPages);
+            const startResult = currentPage * ITEMS_PER_PAGE + 1;
+            const endResult = Math.min((currentPage + 1) * ITEMS_PER_PAGE, totalElements);
+            container.innerHTML = `
+                <p class="text-sm text-text-muted">Hiển thị ${startResult}-${endResult} trên tổng số ${totalElements} kết quả</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button class="rounded-base border border-border px-3 py-1.5 text-sm ${currentPage === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${currentPage === 0 ? 'disabled' : ''} data-page="${currentPage - 1}">Trước</button>
+                    ${buildPageButtons(currentPage, totalPageCount)}
+                    <button class="rounded-base border border-border px-3 py-1.5 text-sm ${currentPage + 1 >= totalPageCount ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${currentPage + 1 >= totalPageCount ? 'disabled' : ''} data-page="${currentPage + 1}">Sau</button>
+                </div>
+            `;
+            container.querySelectorAll('button[data-page]').forEach((btn) => {
+                btn.addEventListener('click', () => loadInvoices(Number(btn.dataset.page)));
+            });
+        }
+
+        function renderRows() {
+            const tbody = document.getElementById('invoiceTableBody');
+            if (!invoicesCache.length) {
+                tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-text-muted">Không có hóa đơn phù hợp.</td></tr>';
+                document.getElementById('tablePagination').innerHTML = '';
+                return;
+            }
+
+            tbody.innerHTML = invoicesCache.map((item) => {
+                const canManual = item.status === 'UNPAID' || item.status === 'OVERDUE';
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3 font-mono text-xs">${escHtml(item.invoiceCode || '-')}</td>
+                        <td class="px-4 py-3">${escHtml(item.studentName || '-')}${item.studentCode ? `<p class="text-xs text-text-muted">${escHtml(item.studentCode)}</p>` : ''}</td>
+                        <td class="px-4 py-3">${escHtml(item.buildingName || '-')} / ${escHtml(item.roomNumber || '-')}</td>
+                        <td class="px-4 py-3">${item.month}/${item.year}</td>
+                        <td class="px-4 py-3 font-medium">${fmtCurrency(item.totalAmount)}</td>
+                        <td class="px-4 py-3 text-xs text-text-muted">${fmtDate(item.dueAt)}</td>
+                        <td class="px-4 py-3"><span class="inline-flex rounded-full px-2.5 py-1 text-xs ${statusChip(item.status)}">${escHtml(item.status || '-')}</span></td>
+                        <td class="px-4 py-3 text-xs text-text-muted">${escHtml(item.paymentProvider || 'NONE')}</td>
+                        <td class="px-4 py-3 text-right">
+                            <button ${canManual ? '' : 'disabled'} data-action="manual" data-id="${item.id}" class="rounded-base border px-3 py-1.5 text-xs font-medium ${canManual ? 'border-primary text-primary hover:bg-teal-50' : 'border-border text-text-muted opacity-50 cursor-not-allowed'}">Duyệt tay</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            tbody.querySelectorAll('button[data-action="manual"]').forEach((btn) => {
+                btn.addEventListener('click', () => openManualModal(Number(btn.dataset.id)));
+            });
+
+            renderPagination();
+        }
+
+        async function loadInvoices(page = 0) {
+            const params = new URLSearchParams({
+                page: String(page),
+                size: String(ITEMS_PER_PAGE),
+                sortBy: 'createdAt',
+                direction: 'desc'
+            });
+            const month = document.getElementById('filterMonth').value;
+            const year = document.getElementById('filterYear').value;
+            const status = document.getElementById('filterStatus').value;
+            const buildingId = document.getElementById('filterBuilding').value;
+            const keyword = document.getElementById('filterKeyword').value.trim();
+
+            if (month) params.set('month', month);
+            if (year) params.set('year', year);
+            if (status) params.set('status', status);
+            if (buildingId) params.set('buildingId', buildingId);
+            if (keyword) params.set('keyword', keyword);
+
+            const res = await fetch(`${API_BASE}/invoices/admin/list?${params.toString()}`, { headers: authHeaders() });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Không tải được hóa đơn');
+
+            const result = data.result || {};
+            invoicesCache = Array.isArray(result.content) ? result.content : [];
+            currentPage = result.pageNo ?? page;
+            totalPages = result.totalPages ?? 0;
+            totalElements = result.totalElements ?? 0;
+            renderRows();
+        }
+
+        async function generateMonthlyInvoices() {
+            const month = Number(document.getElementById('genMonth').value || 0);
+            const year = Number(document.getElementById('genYear').value || 0);
+            const buildingId = document.getElementById('genBuilding').value;
+            if (!month || !year) {
+                showToast('Vui lòng chọn tháng và năm để sinh hóa đơn.', 'error');
+                return;
+            }
+
+            const payload = { month, year, ...(buildingId ? { buildingId: Number(buildingId) } : {}) };
+            const res = await fetch(`${API_BASE}/invoices/generate-monthly`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Sinh hóa đơn thất bại');
+
+            showToast(`Đã sinh ${data.result || 0} hóa đơn.`);
+            await Promise.all([loadInvoices(currentPage), loadUtilityRowsForPeriod()]);
+        }
+
+        async function markOverdueInvoices() {
+            const res = await fetch(`${API_BASE}/invoices/admin/mark-overdue`, { method: 'POST', headers: authHeaders() });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Không thể đánh dấu quá hạn');
+            showToast(`Đã cập nhật ${data.result || 0} hóa đơn quá hạn.`);
+            await loadInvoices(currentPage);
+        }
+
+        function openManualModal(invoiceId) {
+            const invoice = invoicesCache.find((x) => x.id === invoiceId);
+            if (!invoice) return;
+            manualTargetId = invoiceId;
+            document.getElementById('manualInvoiceText').textContent = `Hóa đơn ${invoice.invoiceCode || '#'} - ${invoice.studentName || 'Sinh viên'} - ${invoice.month}/${invoice.year}`;
+            document.getElementById('manualNote').value = '';
+            document.getElementById('manualErr').classList.add('hidden');
+            document.getElementById('manualModal').classList.remove('hidden');
+        }
+
+        function closeManualModal() {
+            manualTargetId = null;
+            document.getElementById('manualModal').classList.add('hidden');
+        }
+
+        async function confirmManualApprove() {
+            if (!manualTargetId) return;
+            const note = document.getElementById('manualNote').value.trim();
+            if (!note) {
+                const err = document.getElementById('manualErr');
+                err.textContent = 'Vui lòng nhập ghi chú lý do duyệt tay.';
+                err.classList.remove('hidden');
+                return;
+            }
+
+            const res = await fetch(`${API_BASE}/invoices/${manualTargetId}/manual-approve`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ note })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Duyệt thủ công thất bại');
+
+            showToast('Xác nhận thủ công thành công.');
+            closeManualModal();
+            await loadInvoices(currentPage);
+        }
+
+        function setDefaultGeneratePeriod() {
+            const now = new Date();
+            let month = now.getMonth();
+            let year = now.getFullYear();
+            if (month === 0) {
+                month = 12;
+                year -= 1;
+            }
+            document.getElementById('genMonth').value = String(month);
+            document.getElementById('genYear').value = String(year);
+        }
+
+        (async () => {
+            try {
+                if (!token) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                initAdminSidebar();
+                populateMonthSelect('genMonth', false);
+                populateMonthSelect('filterMonth', true);
+                setDefaultGeneratePeriod();
+                await ensureAdmin();
+                await loadBuildings();
+                await loadUtilityRowsForPeriod();
+                await loadInvoices();
+            } catch (error) {
+                showToast(error.message || 'Không thể khởi tạo trang hóa đơn.', 'error');
+            }
+        })();
+
+        document.getElementById('btnSearch').addEventListener('click', () => loadInvoices(0));
+        document.getElementById('btnReset').addEventListener('click', () => {
+            document.getElementById('filterBuilding').value = '';
+            document.getElementById('filterMonth').value = '';
+            document.getElementById('filterYear').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterKeyword').value = '';
+            loadInvoices(0);
+        });
+        document.getElementById('btnGenerate').addEventListener('click', async () => {
+            try {
+                await generateMonthlyInvoices();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        });
+        document.getElementById('btnLoadUtility').addEventListener('click', async () => {
+            try {
+                await loadUtilityRowsForPeriod();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        });
+        document.getElementById('btnMarkOverdue').addEventListener('click', async () => {
+            try {
+                await markOverdueInvoices();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        });
+
+        document.getElementById('manualBackdrop').addEventListener('click', closeManualModal);
+        document.getElementById('btnManualCancel').addEventListener('click', closeManualModal);
+        document.getElementById('btnManualConfirm').addEventListener('click', async () => {
+            try {
+                await confirmManualApprove();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        });
+    </script>
+</body>
+
+</html>

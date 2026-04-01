@@ -34,6 +34,8 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     // Lấy danh sách hợp đồng theo phòng
     List<Contract> findByRoomId(Long roomId);
 
+    List<Contract> findByRoomIdAndStatus(Long roomId, ContractStatus status);
+
     // Lấy danh sách hợp đồng theo mã sinh viên
     List<Contract> findByStudentStudentCode(String studentCode);
 
