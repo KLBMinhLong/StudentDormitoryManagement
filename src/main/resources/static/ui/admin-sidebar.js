@@ -42,6 +42,11 @@
             label: 'Quản lý điện nước',
             icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2v20M6 6h12M6 10h12M6 14h12M6 18h12"/><circle cx="5" cy="4" r="1.5"/><circle cx="19" cy="4" r="1.5"/></svg>'
         },
+        invoices: {
+            href: '/admin/invoices.html',
+            label: 'Quản lý hóa đơn',
+            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg>'
+        },
         userHome: {
             href: '/home',
             label: 'Trang người dùng',
@@ -111,6 +116,7 @@
             renderMenuItem('contracts', active) +
             renderMenuItem('contractRegistration', active) +
             renderMenuItem('utilities', active) +
+            renderMenuItem('invoices', active) +
             renderMenuItem('userHome', active) +
             '  </nav>' +
             '  <button id="adminSidebarLogout" type="button" class="sidebar-logout mt-4 w-full rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-2 text-sm font-medium inline-flex items-center justify-center gap-2">' +

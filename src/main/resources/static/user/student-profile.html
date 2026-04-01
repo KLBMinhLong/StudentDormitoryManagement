@@ -4,12 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thông tin cá nhân - Ký Túc Xá</title>
+    <title>Thông tin cá nhân - Ký túc xá</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/ui/theme.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -41,20 +40,22 @@
 
 <body class="font-body text-text-main bg-bg-page min-h-screen">
 <header class="border-b border-border bg-bg-card">
-    <div class="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between gap-4">
+    <div class="max-w-[1200px] mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
             <p class="text-xs text-text-muted">Khu vực sinh viên</p>
             <h1 class="font-heading text-xl">Quản lý thông tin cá nhân</h1>
         </div>
-        <nav class="flex items-center gap-2">
-            <a href="/home.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Trở về Trang chủ</a>
+        <nav class="flex flex-wrap items-center gap-2">
+            <a href="/home.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Trang chủ</a>
             <a href="/user/contracts.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Hợp đồng của tôi</a>
+            <a href="/user/utility-dashboard.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Biểu đồ điện nước</a>
+            <a href="/user/my-invoices.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Hóa đơn của tôi</a>
             <button id="logoutBtn" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium transition-colors">Đăng xuất</button>
         </nav>
     </div>
 </header>
 
-<main class="max-w-[800px] mx-auto px-4 py-8">
+<main class="max-w-[900px] mx-auto px-4 py-8">
     <div id="message" class="hidden mb-6 rounded-base px-4 py-3 text-sm"></div>
 
     <section class="bg-bg-card rounded-base shadow-soft border border-border p-8">
@@ -66,7 +67,7 @@
         <form id="profileForm">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="col-span-1 flex flex-col items-center gap-4">
-                    <img id="profileAvatar" src="/ui/avatar-default.png" onerror="this.src='/ui/avatar-default.png'" alt="Avatar" class="w-40 h-40 rounded-full border-2 border-border object-cover bg-slate-100">
+                    <img id="profileAvatar" src="/ui/avatar-default.png" onerror="this.src='/ui/avatar-default.png'" alt="Ảnh đại diện" class="w-40 h-40 rounded-full border-2 border-border object-cover bg-slate-100">
                     <div class="flex flex-col items-center gap-2 w-full mt-2">
                         <input type="file" id="myAvatarInput" accept="image/*" class="text-xs w-full max-w-[200px] border border-border p-1 rounded-base">
                         <button type="button" onclick="uploadMyAvatar()" class="rounded-base bg-slate-100 hover:bg-slate-200 text-text-main border border-border px-3 py-1.5 text-xs font-medium w-full max-w-[200px]">Tải ảnh mới lên</button>
@@ -119,40 +120,6 @@
         </form>
     </section>
 
-    <section id="utilityChartSection" class="bg-bg-card rounded-base shadow-soft border border-border p-8 mt-6">
-        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-5">
-            <div>
-                <h2 class="font-heading text-2xl">Biểu đồ tiêu thụ điện nước</h2>
-                <p id="utilityChartSummary" class="text-sm text-text-muted mt-1">Theo phòng hiện tại hoặc phòng gần nhất của bạn.</p>
-            </div>
-            <div class="grid grid-cols-3 gap-2 w-full md:w-auto">
-                <input id="utilityFromYear" type="number" min="2000" max="2099" placeholder="Từ năm" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                <input id="utilityToYear" type="number" min="2000" max="2099" placeholder="Đến năm" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                <button id="utilityReloadBtn" type="button" class="rounded-base bg-secondary hover:bg-blue-600 text-white px-4 py-2 text-sm font-medium">Xem</button>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-            <div class="rounded-base border border-border p-3 bg-blue-50">
-                <p class="text-xs text-text-muted">Tổng điện tiêu thụ</p>
-                <p id="utilitySumElectric" class="font-heading text-xl text-secondary mt-1">0 kWh</p>
-            </div>
-            <div class="rounded-base border border-border p-3 bg-teal-50">
-                <p class="text-xs text-text-muted">Tổng nước tiêu thụ</p>
-                <p id="utilitySumWater" class="font-heading text-xl text-primary mt-1">0 m³</p>
-            </div>
-            <div class="rounded-base border border-border p-3 bg-slate-50">
-                <p class="text-xs text-text-muted">Số kỳ ghi nhận</p>
-                <p id="utilityPeriodCount" class="font-heading text-xl text-text-main mt-1">0 kỳ</p>
-            </div>
-        </div>
-
-        <div class="rounded-base border border-border p-4">
-            <canvas id="utilityChartCanvas" height="120"></canvas>
-            <p id="utilityChartEmpty" class="hidden text-sm text-text-muted text-center py-6">Chưa có dữ liệu điện nước để hiển thị.</p>
-        </div>
-    </section>
-
     <section id="residenceHistorySection" class="bg-bg-card rounded-base shadow-soft border border-border p-8 mt-6">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
             <div>
@@ -160,19 +127,8 @@
                 <p id="historySummary" class="text-sm text-text-muted mt-1">Đang tải lịch sử nội trú...</p>
             </div>
             <div class="w-full md:w-auto flex items-center gap-2">
-                <input
-                    id="historyKeyword"
-                    type="text"
-                    placeholder="Tìm theo tòa nhà hoặc phòng"
-                    class="w-full md:w-72 border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                >
-                <button
-                    id="historySearchBtn"
-                    type="button"
-                    class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium"
-                >
-                    Tìm
-                </button>
+                <input id="historyKeyword" type="text" placeholder="Tìm theo tòa nhà hoặc phòng" class="w-full md:w-72 border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                <button id="historySearchBtn" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium">Tìm</button>
             </div>
         </div>
 
@@ -181,21 +137,9 @@
         <div class="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-t border-border pt-4">
             <p id="historyPagingText" class="text-sm text-text-muted">Hiển thị 0-0 trên tổng số 0 kết quả</p>
             <div class="flex items-center gap-2">
-                <button
-                    id="historyPrevBtn"
-                    type="button"
-                    class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    Trước
-                </button>
+                <button id="historyPrevBtn" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">Trước</button>
                 <span id="historyPageInfo" class="text-sm text-text-muted min-w-[96px] text-center">Trang 1/1</span>
-                <button
-                    id="historyNextBtn"
-                    type="button"
-                    class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    Sau
-                </button>
+                <button id="historyNextBtn" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">Sau</button>
             </div>
         </div>
     </section>
@@ -233,7 +177,6 @@
     const profileForm = document.getElementById('profileForm');
     const passwordModal = document.getElementById('passwordModal');
     const passwordForm = document.getElementById('passwordForm');
-    const historySection = document.getElementById('residenceHistorySection');
     const historyTimeline = document.getElementById('historyTimeline');
     const historySummary = document.getElementById('historySummary');
     const historyKeywordInput = document.getElementById('historyKeyword');
@@ -242,12 +185,6 @@
     const historyPageInfo = document.getElementById('historyPageInfo');
     const historyPrevBtn = document.getElementById('historyPrevBtn');
     const historyNextBtn = document.getElementById('historyNextBtn');
-    const utilityChartSummary = document.getElementById('utilityChartSummary');
-    const utilityFromYearInput = document.getElementById('utilityFromYear');
-    const utilityToYearInput = document.getElementById('utilityToYear');
-    const utilityReloadBtn = document.getElementById('utilityReloadBtn');
-
-    let utilityChart = null;
 
     const historyState = {
         page: 0,
@@ -282,140 +219,15 @@
 
     function getStatusChip(status) {
         const normalized = (status || '').toUpperCase();
-        if (normalized === 'ACTIVE') {
-            return { label: 'Đang nội trú', classes: 'bg-green-50 text-success border border-green-100' };
-        }
-        if (normalized === 'EXPIRED') {
-            return { label: 'Đã kết thúc', classes: 'bg-slate-100 text-slate-700 border border-slate-200' };
-        }
-        if (normalized === 'CANCELLED') {
-            return { label: 'Đã hủy', classes: 'bg-red-50 text-danger border border-red-100' };
-        }
+        if (normalized === 'ACTIVE') return { label: 'Đang nội trú', classes: 'bg-green-50 text-success border border-green-100' };
+        if (normalized === 'EXPIRED') return { label: 'Đã kết thúc', classes: 'bg-slate-100 text-slate-700 border border-slate-200' };
+        if (normalized === 'CANCELLED') return { label: 'Đã hủy', classes: 'bg-red-50 text-danger border border-red-100' };
         return { label: status || 'Không xác định', classes: 'bg-amber-50 text-amber-700 border border-amber-100' };
-    }
-
-    function toFixed2(value) {
-        return Number(value || 0).toFixed(2);
-    }
-
-    function getDefaultUtilityYears() {
-        const year = new Date().getFullYear();
-        return { from: year - 1, to: year };
-    }
-
-    function renderUtilityChart(items) {
-        const chartEmpty = document.getElementById('utilityChartEmpty');
-        const canvas = document.getElementById('utilityChartCanvas');
-        const labels = items.map((it) => it.periodLabel || `${it.month}/${it.year}`);
-        const electricData = items.map((it) => Number(it.totalElectricConsumption || 0));
-        const waterData = items.map((it) => Number(it.totalWaterConsumption || 0));
-
-        if (utilityChart) {
-            utilityChart.destroy();
-            utilityChart = null;
-        }
-
-        if (!items.length) {
-            chartEmpty.classList.remove('hidden');
-            canvas.classList.add('hidden');
-            utilityChartSummary.textContent = 'Không có dữ liệu tiêu thụ cho phòng của bạn trong khoảng thời gian đã chọn.';
-            document.getElementById('utilitySumElectric').textContent = '0 kWh';
-            document.getElementById('utilitySumWater').textContent = '0 m³';
-            document.getElementById('utilityPeriodCount').textContent = '0 kỳ';
-            return;
-        }
-
-        chartEmpty.classList.add('hidden');
-        canvas.classList.remove('hidden');
-        utilityChartSummary.textContent = 'Biểu đồ tiêu thụ điện nước theo từng tháng của phòng bạn.';
-
-        const totalElectric = electricData.reduce((sum, v) => sum + v, 0);
-        const totalWater = waterData.reduce((sum, v) => sum + v, 0);
-        document.getElementById('utilitySumElectric').textContent = `${toFixed2(totalElectric)} kWh`;
-        document.getElementById('utilitySumWater').textContent = `${toFixed2(totalWater)} m³`;
-        document.getElementById('utilityPeriodCount').textContent = `${items.length} kỳ`;
-
-        utilityChart = new Chart(canvas, {
-            type: 'bar',
-            data: {
-                labels,
-                datasets: [
-                    {
-                        label: 'Điện tiêu thụ (kWh)',
-                        data: electricData,
-                        backgroundColor: 'rgba(59, 130, 246, 0.75)',
-                        borderColor: '#3B82F6',
-                        borderWidth: 1,
-                        yAxisID: 'yElectric'
-                    },
-                    {
-                        label: 'Nước tiêu thụ (m³)',
-                        data: waterData,
-                        type: 'line',
-                        borderColor: '#0EA5A5',
-                        backgroundColor: 'rgba(14, 165, 165, 0.2)',
-                        tension: 0.25,
-                        yAxisID: 'yWater'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    yElectric: {
-                        type: 'linear',
-                        position: 'left',
-                        beginAtZero: true,
-                        title: { display: true, text: 'kWh' }
-                    },
-                    yWater: {
-                        type: 'linear',
-                        position: 'right',
-                        beginAtZero: true,
-                        grid: { drawOnChartArea: false },
-                        title: { display: true, text: 'm³' }
-                    }
-                },
-                plugins: {
-                    legend: { position: 'top' }
-                }
-            }
-        });
-    }
-
-    async function loadMyUtilityTimeline() {
-        const fromYear = utilityFromYearInput.value || null;
-        const toYear = utilityToYearInput.value || null;
-        const params = new URLSearchParams({
-            ...(fromYear && { fromYear, fromMonth: '1' }),
-            ...(toYear && { toYear, toMonth: '12' })
-        });
-
-        try {
-            const response = await fetch(`/api/v1/utility-records/me/timeline?${params.toString()}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Không tải được biểu đồ tiêu thụ điện nước.');
-            }
-
-            const items = Array.isArray(data.result) ? data.result : [];
-            renderUtilityChart(items);
-        } catch (error) {
-            renderUtilityChart([]);
-            showMessage('error', error.message || 'Có lỗi khi tải biểu đồ tiêu thụ điện nước.');
-        }
     }
 
     function renderResidenceHistory(items) {
         if (!Array.isArray(items) || items.length === 0) {
-            historyTimeline.innerHTML = `
-                <li class="rounded-base border border-dashed border-border bg-slate-50 px-4 py-5 text-sm text-text-muted">
-                    Chưa có dữ liệu lịch sử cư trú phù hợp.
-                </li>
-            `;
+            historyTimeline.innerHTML = '<li class="rounded-base border border-dashed border-border bg-slate-50 px-4 py-5 text-sm text-text-muted">Chưa có dữ liệu lịch sử cư trú phù hợp.</li>';
             return;
         }
 
@@ -462,11 +274,7 @@
     }
 
     async function loadResidenceHistory() {
-        historyTimeline.innerHTML = `
-            <li class="rounded-base border border-dashed border-border bg-slate-50 px-4 py-5 text-sm text-text-muted">
-                Đang tải dữ liệu lịch sử nội trú...
-            </li>
-        `;
+        historyTimeline.innerHTML = '<li class="rounded-base border border-dashed border-border bg-slate-50 px-4 py-5 text-sm text-text-muted">Đang tải dữ liệu lịch sử nội trú...</li>';
 
         const params = new URLSearchParams({
             page: String(historyState.page),
@@ -475,9 +283,7 @@
             direction: historyState.direction
         });
 
-        if (historyState.keyword) {
-            params.set('keyword', historyState.keyword);
-        }
+        if (historyState.keyword) params.set('keyword', historyState.keyword);
 
         try {
             const response = await fetch(`/api/v1/students/me/residence-history?${params.toString()}`, {
@@ -498,44 +304,13 @@
             renderResidencePaging(result);
         } catch (error) {
             historySummary.textContent = 'Không tải được dữ liệu lịch sử nội trú.';
-            historyTimeline.innerHTML = `
-                <li class="rounded-base border border-dashed border-red-200 bg-red-50 px-4 py-5 text-sm text-danger">
-                    ${error.message || 'Có lỗi xảy ra khi tải lịch sử nội trú.'}
-                </li>
-            `;
+            historyTimeline.innerHTML = `<li class="rounded-base border border-dashed border-red-200 bg-red-50 px-4 py-5 text-sm text-danger">${error.message || 'Có lỗi khi tải lịch sử nội trú.'}</li>`;
             historyPagingText.textContent = 'Hiển thị 0-0 trên tổng số 0 kết quả';
             historyPageInfo.textContent = 'Trang 0/0';
             historyPrevBtn.disabled = true;
             historyNextBtn.disabled = true;
         }
     }
-
-    historySearchBtn.addEventListener('click', () => {
-        historyState.page = 0;
-        historyState.keyword = (historyKeywordInput.value || '').trim();
-        loadResidenceHistory();
-    });
-
-    historyKeywordInput.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter') return;
-        event.preventDefault();
-        historySearchBtn.click();
-    });
-
-    historyPrevBtn.addEventListener('click', () => {
-        if (historyState.page <= 0) return;
-        historyState.page -= 1;
-        loadResidenceHistory();
-    });
-
-    historyNextBtn.addEventListener('click', () => {
-        historyState.page += 1;
-        loadResidenceHistory();
-    });
-
-    utilityReloadBtn.addEventListener('click', () => {
-        loadMyUtilityTimeline();
-    });
 
     async function loadProfile() {
         try {
@@ -607,9 +382,7 @@
         try {
             const response = await fetch('/api/v1/students/me/avatar', {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
             });
 
@@ -670,16 +443,35 @@
         }
     });
 
+    historySearchBtn.addEventListener('click', () => {
+        historyState.page = 0;
+        historyState.keyword = (historyKeywordInput.value || '').trim();
+        loadResidenceHistory();
+    });
+
+    historyKeywordInput.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        historySearchBtn.click();
+    });
+
+    historyPrevBtn.addEventListener('click', () => {
+        if (historyState.page <= 0) return;
+        historyState.page -= 1;
+        loadResidenceHistory();
+    });
+
+    historyNextBtn.addEventListener('click', () => {
+        historyState.page += 1;
+        loadResidenceHistory();
+    });
+
     document.getElementById('logoutBtn').addEventListener('click', () => {
         localStorage.removeItem('dormitory_access_token');
         window.location.href = '/login.html';
     });
 
-    const utilityYears = getDefaultUtilityYears();
-    utilityFromYearInput.value = utilityYears.from;
-    utilityToYearInput.value = utilityYears.to;
-
-    Promise.all([loadProfile(), loadResidenceHistory(), loadMyUtilityTimeline()]);
+    Promise.all([loadProfile(), loadResidenceHistory()]);
 </script>
 </body>
 

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biểu đồ điện nước - Ký túc xá</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+<header class="border-b border-border bg-bg-card">
+    <div class="max-w-[1200px] mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <p class="text-xs text-text-muted">Khu vực sinh viên</p>
+            <h1 class="font-heading text-xl">Biểu đồ điện nước của tôi</h1>
+        </div>
+        <nav class="flex flex-wrap items-center gap-2">
+            <a href="/home.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Trang chủ</a>
+            <a href="/user/student-profile.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Hồ sơ</a>
+            <a href="/user/my-invoices.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Hóa đơn của tôi</a>
+            <button id="logoutBtn" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium">Đăng xuất</button>
+        </nav>
+    </div>
+</header>
+
+<main class="max-w-[1200px] mx-auto px-4 py-8">
+    <div id="message" class="hidden mb-6 rounded-base px-4 py-3 text-sm"></div>
+
+    <section class="bg-bg-card rounded-base shadow-soft border border-border p-6">
+        <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
+            <div>
+                <h2 class="font-heading text-2xl">Phân tích tiêu thụ điện nước</h2>
+                <p id="utilityChartSummary" class="text-sm text-text-muted mt-1">Theo phòng đang ở hoặc phòng gần nhất của bạn.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full lg:w-auto">
+                <input id="utilityFromYear" type="number" min="2000" max="2099" placeholder="Từ năm" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                <input id="utilityToYear" type="number" min="2000" max="2099" placeholder="Đến năm" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                <button id="utilityReloadBtn" type="button" class="rounded-base bg-secondary hover:bg-blue-600 text-white px-4 py-2 text-sm font-medium">Xem biểu đồ</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <div class="rounded-base border border-border p-3 bg-blue-50">
+                <p class="text-xs text-text-muted">Tổng điện tiêu thụ</p>
+                <p id="utilitySumElectric" class="font-heading text-xl text-secondary mt-1">0 kWh</p>
+            </div>
+            <div class="rounded-base border border-border p-3 bg-teal-50">
+                <p class="text-xs text-text-muted">Tổng nước tiêu thụ</p>
+                <p id="utilitySumWater" class="font-heading text-xl text-primary mt-1">0 m³</p>
+            </div>
+            <div class="rounded-base border border-border p-3 bg-slate-50">
+                <p class="text-xs text-text-muted">Số kỳ ghi nhận</p>
+                <p id="utilityPeriodCount" class="font-heading text-xl text-text-main mt-1">0 kỳ</p>
+            </div>
+        </div>
+
+        <div class="rounded-base border border-border p-4">
+            <div class="h-[320px]">
+                <canvas id="utilityChartCanvas"></canvas>
+            </div>
+            <p id="utilityChartEmpty" class="hidden text-sm text-text-muted text-center py-6">Chưa có dữ liệu điện nước để hiển thị.</p>
+        </div>
+    </section>
+</main>
+
+<script>
+    const token = localStorage.getItem('dormitory_access_token');
+    const message = document.getElementById('message');
+    const utilityChartSummary = document.getElementById('utilityChartSummary');
+    const utilityFromYearInput = document.getElementById('utilityFromYear');
+    const utilityToYearInput = document.getElementById('utilityToYear');
+    const utilityReloadBtn = document.getElementById('utilityReloadBtn');
+
+    let utilityChart = null;
+
+    if (!token) {
+        window.location.href = '/login.html';
+    }
+
+    function showMessage(type, text) {
+        message.className = 'mb-6 rounded-base px-4 py-3 text-sm block';
+        if (type === 'error') {
+            message.classList.add('bg-red-50', 'text-red-700', 'border', 'border-red-100');
+        } else {
+            message.classList.add('bg-green-50', 'text-green-700', 'border', 'border-green-100');
+        }
+        message.textContent = text;
+        setTimeout(() => { message.classList.add('hidden'); }, 2500);
+    }
+
+    function toFixed2(value) {
+        return Number(value || 0).toFixed(2);
+    }
+
+    function getDefaultYears() {
+        const year = new Date().getFullYear();
+        return { from: year - 1, to: year };
+    }
+
+    function renderUtilityChart(items) {
+        const chartEmpty = document.getElementById('utilityChartEmpty');
+        const canvas = document.getElementById('utilityChartCanvas');
+        const labels = items.map((it) => it.periodLabel || `${it.month}/${it.year}`);
+        const electricData = items.map((it) => Number(it.totalElectricConsumption || 0));
+        const waterData = items.map((it) => Number(it.totalWaterConsumption || 0));
+
+        if (utilityChart) {
+            utilityChart.destroy();
+            utilityChart = null;
+        }
+
+        if (!items.length) {
+            chartEmpty.classList.remove('hidden');
+            canvas.classList.add('hidden');
+            utilityChartSummary.textContent = 'Không có dữ liệu tiêu thụ trong khoảng thời gian đã chọn.';
+            document.getElementById('utilitySumElectric').textContent = '0 kWh';
+            document.getElementById('utilitySumWater').textContent = '0 m³';
+            document.getElementById('utilityPeriodCount').textContent = '0 kỳ';
+            return;
+        }
+
+        chartEmpty.classList.add('hidden');
+        canvas.classList.remove('hidden');
+        utilityChartSummary.textContent = 'Biểu đồ tiêu thụ điện nước theo từng tháng của bạn.';
+
+        const totalElectric = electricData.reduce((sum, v) => sum + v, 0);
+        const totalWater = waterData.reduce((sum, v) => sum + v, 0);
+        document.getElementById('utilitySumElectric').textContent = `${toFixed2(totalElectric)} kWh`;
+        document.getElementById('utilitySumWater').textContent = `${toFixed2(totalWater)} m³`;
+        document.getElementById('utilityPeriodCount').textContent = `${items.length} kỳ`;
+
+        utilityChart = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Điện tiêu thụ (kWh)',
+                        data: electricData,
+                        backgroundColor: 'rgba(59, 130, 246, 0.75)',
+                        borderColor: '#3B82F6',
+                        borderWidth: 1,
+                        yAxisID: 'yElectric'
+                    },
+                    {
+                        label: 'Nước tiêu thụ (m³)',
+                        data: waterData,
+                        type: 'line',
+                        borderColor: '#0EA5A5',
+                        backgroundColor: 'rgba(14, 165, 165, 0.2)',
+                        tension: 0.25,
+                        yAxisID: 'yWater'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    yElectric: {
+                        type: 'linear',
+                        position: 'left',
+                        beginAtZero: true,
+                        title: { display: true, text: 'kWh' }
+                    },
+                    yWater: {
+                        type: 'linear',
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: { drawOnChartArea: false },
+                        title: { display: true, text: 'm³' }
+                    }
+                },
+                plugins: { legend: { position: 'top' } }
+            }
+        });
+    }
+
+    async function loadMyUtilityTimeline() {
+        const fromYear = utilityFromYearInput.value || null;
+        const toYear = utilityToYearInput.value || null;
+        const params = new URLSearchParams({
+            ...(fromYear && { fromYear, fromMonth: '1' }),
+            ...(toYear && { toYear, toMonth: '12' })
+        });
+
+        try {
+            const response = await fetch(`/api/v1/utility-records/me/timeline?${params.toString()}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Không tải được biểu đồ tiêu thụ điện nước.');
+            }
+
+            const items = Array.isArray(data.result) ? data.result : [];
+            renderUtilityChart(items);
+        } catch (error) {
+            renderUtilityChart([]);
+            showMessage('error', error.message || 'Có lỗi khi tải biểu đồ tiêu thụ điện nước.');
+        }
+    }
+
+    utilityReloadBtn.addEventListener('click', loadMyUtilityTimeline);
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('dormitory_access_token');
+        window.location.href = '/login.html';
+    });
+
+    const years = getDefaultYears();
+    utilityFromYearInput.value = years.from;
+    utilityToYearInput.value = years.to;
+    loadMyUtilityTimeline();
+</script>
+</body>
+
+</html>
