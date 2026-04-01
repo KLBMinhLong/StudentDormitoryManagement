@@ -81,6 +81,12 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
             int year,
             InvoiceStatus status);
 
+    boolean existsByRoomIdAndMonthAndYearAndStatusNot(
+            Long roomId,
+            int month,
+            int year,
+            InvoiceStatus status);
+
     @Modifying
     @Query("""
             UPDATE Invoice i

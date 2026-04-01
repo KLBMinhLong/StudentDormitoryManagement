@@ -293,6 +293,8 @@
 
             tbody.innerHTML = utilityRowsCache.map((row) => {
                 const closed = isClosedPeriod(row.periodStatus);
+                const hasInvoice = row.hasInvoice === true;
+                const canGenerateRoomInvoice = closed && !hasInvoice;
                 return `
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="px-4 py-3">${escHtml(row.buildingName || '-')} / ${escHtml(row.roomNumber || '-')}</td>
@@ -305,7 +307,7 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <button data-action="generate-room" data-room-id="${row.roomId}" ${closed ? '' : 'disabled'} class="rounded-base border px-3 py-1.5 text-xs font-medium ${closed ? 'border-primary text-primary hover:bg-teal-50' : 'border-border text-text-muted opacity-50 cursor-not-allowed'}">Sinh hóa đơn phòng</button>
+                            <button data-action="generate-room" data-room-id="${row.roomId}" ${canGenerateRoomInvoice ? '' : 'disabled'} class="rounded-base border px-3 py-1.5 text-xs font-medium ${canGenerateRoomInvoice ? 'border-primary text-primary hover:bg-teal-50' : 'border-border text-text-muted opacity-50 cursor-not-allowed'}">${hasInvoice ? 'Đã có hóa đơn' : 'Sinh hóa đơn phòng'}</button>
                         </td>
                     </tr>
                 `;
@@ -357,7 +359,12 @@
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Sinh hóa đơn phòng thất bại');
 
-            showToast('Sinh hóa đơn theo phòng thành công.');
+            const created = Number(data.result || 0);
+            if (created <= 0) {
+                showToast('Phòng đã có hóa đơn kỳ này hoặc không có sinh viên hợp lệ để sinh thêm.', 'error');
+            } else {
+                showToast(`Sinh hóa đơn theo phòng thành công (${created} hóa đơn).`);
+            }
             await Promise.all([loadInvoices(currentPage), loadUtilityRowsForPeriod()]);
         }
 

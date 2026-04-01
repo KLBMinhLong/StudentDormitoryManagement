@@ -25,4 +25,5 @@ public class UtilityRecordResponseDTO {
     private Double oldWater;
     private Double newWater;
     private String periodStatus;
+    private Boolean hasInvoice;
 }

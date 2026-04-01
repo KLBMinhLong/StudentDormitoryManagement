@@ -23,11 +23,13 @@ import com.dormitory.management.entity.Room;
 import com.dormitory.management.entity.Student;
 import com.dormitory.management.entity.UtilityRecord;
 import com.dormitory.management.entity.enums.ContractStatus;
+import com.dormitory.management.entity.enums.InvoiceStatus;
 import com.dormitory.management.entity.enums.UtilityRecordStatus;
 import com.dormitory.management.exception.ResourceNotFoundException;
 import com.dormitory.management.repository.AppUserRepository;
 import com.dormitory.management.repository.BuildingRepository;
 import com.dormitory.management.repository.ContractRepository;
+import com.dormitory.management.repository.InvoiceRepository;
 import com.dormitory.management.repository.RoomRepository;
 import com.dormitory.management.repository.StudentRepository;
 import com.dormitory.management.repository.UtilityRecordRepository;
@@ -46,6 +48,7 @@ public class UtilityRecordServiceImpl implements UtilityRecordService {
     private final AppUserRepository appUserRepository;
     private final StudentRepository studentRepository;
     private final ContractRepository contractRepository;
+    private final InvoiceRepository invoiceRepository;
 
     @Override
     @Transactional
@@ -224,6 +227,16 @@ public class UtilityRecordServiceImpl implements UtilityRecordService {
 
         if (records.isEmpty()) {
             return 0;
+        }
+
+        boolean hasInvoicesInPeriod = records.stream().anyMatch(record ->
+                invoiceRepository.existsByRoomIdAndMonthAndYearAndStatusNot(
+                        record.getRoom() != null ? record.getRoom().getId() : null,
+                        record.getMonth(),
+                        record.getYear(),
+                        InvoiceStatus.CANCELLED));
+        if (hasInvoicesInPeriod) {
+            throw new IllegalArgumentException("Kỳ đã có hóa đơn, không thể mở khóa chỉ số điện nước");
         }
 
         records.forEach(record -> record.setPeriodStatus(UtilityRecordStatus.OPEN));

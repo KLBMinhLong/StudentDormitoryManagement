@@ -353,7 +353,6 @@
             <div class="rounded-base border border-border p-3">
                 <h4 class="font-semibold">Chi tiết tính tiền</h4>
                 <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
-                    <p class="text-text-muted">Tiền phòng</p><p class="text-right">${fmtCurrency(item.roomPrice)}</p>
                     <p class="text-text-muted">Điện tiêu thụ</p><p class="text-right">${Number(item.electricUsage || 0).toFixed(2)} kWh</p>
                     <p class="text-text-muted">Đơn giá điện</p><p class="text-right">${fmtCurrency(item.electricUnitPrice)}</p>
                     <p class="text-text-muted">Tiền điện</p><p class="text-right">${fmtCurrency(item.electricUsage * item.electricUnitPrice)}</p>

@@ -100,7 +100,7 @@
 
     document.getElementById('orderCode').textContent = readQueryParam(['orderCode', 'order_code', 'order_id']) || '-';
     document.getElementById('transactionId').textContent = readQueryParam(['id', 'paymentId', 'transactionId']) || '-';
-    document.getElementById('amount').textContent = formatMoney(readQueryParam(['amount', 'totalAmount']));
+    document.getElementById('amount').textContent = formatMoney(readQueryParam(['amount', 'amountVnd', 'totalAmount']));
     document.getElementById('returnedAt').textContent = new Date().toLocaleString('vi-VN');
 </script>
 </body>
