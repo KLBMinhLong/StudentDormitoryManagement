@@ -9,8 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/ui/theme.css">
-    <!-- Heroicons SVG Sprites -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/index.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -45,11 +44,8 @@
     <div class="w-full max-w-md">
         <!-- Logo/Header Section -->
         <div class="text-center mb-8">
-            <div class="inline-block mb-4 p-3 bg-primary/10 rounded-full">
-                <!-- Building2 Icon from Heroicons -->
-                <svg class="w-8 h-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 21H21M3 7v10a6 6 0 006 6h6a6 6 0 006-6V7M9 5a2 2 0 012-2h2a2 2 0 012 2v2H9V5z" />
-                </svg>
+            <div class="inline-block mb-4 p-3 bg-primary/10 rounded-full text-primary">
+                <i class="fas fa-building text-2xl"></i>
             </div>
             <h1 class="font-heading text-2xl font-bold text-text-main">Ký Túc Xá Sinh Viên</h1>
             <p class="text-text-muted text-sm mt-2">Hệ thống quản lý ký túc xá</p>
@@ -64,7 +60,7 @@
                 <!-- Username Field -->
                 <div>
                     <label for="username" class="block text-sm font-medium text-text-main mb-2">
-                        Tên đăng nhập, email hoặc mã sinh viên
+                        Tên đăng nhập
                         <span class="text-danger">*</span>
                     </label>
                     <input 
@@ -97,11 +93,7 @@
                             class="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-main transition-colors"
                             aria-label="Hiện/ẩn mật khẩu"
                         >
-                            <!-- Eye Icon from Heroicons (Eye outline) -->
-                            <svg id="eyeIcon" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
+                            <i id="eyeIcon" class="fas fa-eye-slash text-lg"></i>
                         </button>
                     </div>
                     <div id="passwordError" class="text-danger text-xs mt-1 hidden"></div>
@@ -157,13 +149,10 @@
                 <button 
                     type="button" 
                     id="closeForgotPasswordModal"
-                    class="text-text-muted hover:text-text-main transition-colors"
+                    class="text-text-muted hover:text-text-main transition-colors text-lg"
                     aria-label="Đóng"
                 >
-                    <!-- XMark Icon from Heroicons -->
-                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <i class="fas fa-times text-lg"></i>
                 </button>
             </div>
 
@@ -236,10 +225,8 @@
             e.preventDefault();
             const isPassword = passwordInput.type === 'password';
             passwordInput.type = isPassword ? 'text' : 'password';
-            // Toggle between Eye (show password is visible) and EyeSlash (show password is hidden)
-            eyeIcon.innerHTML = isPassword 
-                ? '<path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />'
-                : '<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />';
+            eyeIcon.classList.toggle('fa-eye');
+            eyeIcon.classList.toggle('fa-eye-slash');
         });
 
         // ============ LOGIN FORM ============

@@ -112,7 +112,7 @@ public class EmailServiceImpl implements EmailService {
                 + "            <div class=\"reset-link\">" + resetLink + "</div>\n"
                 + "            <div class=\"warning\">\n"
                 + "                <strong>⚠️ Lưu ý:</strong><br/>\n"
-                + "                • Liên kết sẽ hết hạn sau <strong>24 giờ</strong><br/>\n"
+                + "                • Liên kết sẽ hết hạn sau <strong>1 giờ</strong><br/>\n"
                 + "                • Không chia sẻ liên kết này với ai khác<br/>\n"
                 + "                • Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này\n"
                 + "            </div>\n"

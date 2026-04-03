@@ -51,6 +51,7 @@ public class SecurityConfig {
                                 "/login.html",
                                 "/register",
                                 "/register.html",
+                                "/reset-password.html",
                                 "/home",
                                 "/my-contracts",
                                 "/user/**",

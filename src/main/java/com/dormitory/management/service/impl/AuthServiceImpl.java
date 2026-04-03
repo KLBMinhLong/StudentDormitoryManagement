@@ -59,7 +59,6 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public CurrentUserResponseDTO registerStudent(RegisterStudentRequestDTO request) {
-        String username = request.getUsername() == null ? null : request.getUsername().trim();
         String fullName = request.getFullName() == null ? null : request.getFullName().trim();
         String studentCode = request.getStudentCode() == null ? null : request.getStudentCode().trim();
         String cccd = request.getCccd() == null ? null : request.getCccd().trim();
@@ -67,16 +66,18 @@ public class AuthServiceImpl implements AuthService {
         String phone = request.getPhone() == null ? null : request.getPhone().trim();
         String gender = request.getGender() == null ? null : request.getGender().trim();
 
-        if (!StringUtils.hasText(username) || !StringUtils.hasText(fullName) || !StringUtils.hasText(request.getPassword())) {
-            throw new IllegalArgumentException("Username, full name and password are required");
+        if (!StringUtils.hasText(fullName) || !StringUtils.hasText(request.getPassword())) {
+            throw new IllegalArgumentException("Full name and password are required");
         }
 
         if (!StringUtils.hasText(studentCode) || !StringUtils.hasText(cccd)) {
             throw new IllegalArgumentException("Student code and CCCD are required");
         }
 
+        String username = studentCode;
+
         if (appUserRepository.existsByUsername(username)) {
-            throw new IllegalArgumentException("Username already exists");
+            throw new IllegalArgumentException("Student code is already used as username");
         }
 
         if (StringUtils.hasText(email) && appUserRepository.existsByEmail(email)) {
