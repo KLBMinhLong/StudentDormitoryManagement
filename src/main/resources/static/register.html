@@ -56,23 +56,19 @@
 
             <form id="registerForm" class="mt-6 space-y-4" novalidate>
                 <div>
-                    <label for="fullName" class="block text-sm font-medium mb-2">Họ và tên</label>
+                    <label for="fullName" class="block text-sm font-medium mb-2">Họ và tên <span class="text-danger">*</span></label>
                     <input id="fullName" type="text" required class="w-full rounded-base border border-border px-4 py-3" placeholder="Nguyễn Văn A">
                 </div>
                 <div>
-                    <label for="studentCode" class="block text-sm font-medium mb-2">Mã sinh viên</label>
+                    <label for="studentCode" class="block text-sm font-medium mb-2">Mã số sinh viên<span class="text-danger">*</span></label>
                     <input id="studentCode" type="text" required class="w-full rounded-base border border-border px-4 py-3" placeholder="SV2026001">
                 </div>
                 <div>
-                    <label for="cccd" class="block text-sm font-medium mb-2">CCCD</label>
+                    <label for="cccd" class="block text-sm font-medium mb-2">CCCD <span class="text-danger">*</span></label>
                     <input id="cccd" type="text" required class="w-full rounded-base border border-border px-4 py-3" placeholder="079204000001">
                 </div>
                 <div>
-                    <label for="username" class="block text-sm font-medium mb-2">Tên đăng nhập</label>
-                    <input id="username" type="text" required class="w-full rounded-base border border-border px-4 py-3" placeholder="student_new">
-                </div>
-                <div>
-                    <label for="email" class="block text-sm font-medium mb-2">Email</label>
+                    <label for="email" class="block text-sm font-medium mb-2">Email <span class="text-danger">*</span></label>
                     <input id="email" type="email" class="w-full rounded-base border border-border px-4 py-3" placeholder="student@example.com">
                 </div>
                 <div>
@@ -92,11 +88,11 @@
                     <input id="dateOfBirth" type="date" class="w-full rounded-base border border-border px-4 py-3">
                 </div>
                 <div>
-                    <label for="password" class="block text-sm font-medium mb-2">Mật khẩu</label>
+                    <label for="password" class="block text-sm font-medium mb-2">Mật khẩu <span class="text-danger">*</span></label>
                     <input id="password" type="password" required class="w-full rounded-base border border-border px-4 py-3" placeholder="Nhập mật khẩu">
                 </div>
                 <div>
-                    <label for="confirmPassword" class="block text-sm font-medium mb-2">Nhập lại mật khẩu</label>
+                    <label for="confirmPassword" class="block text-sm font-medium mb-2">Nhập lại mật khẩu <span class="text-danger">*</span></label>
                     <input id="confirmPassword" type="password" required class="w-full rounded-base border border-border px-4 py-3" placeholder="Nhập lại mật khẩu">
                 </div>
                 <button type="submit" class="w-full rounded-base bg-primary hover:bg-primary-hover text-white py-3 font-medium transition-colors">Đăng ký</button>
@@ -129,8 +125,17 @@
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
 
+            const fullName = document.getElementById('fullName').value.trim();
+            const studentCode = document.getElementById('studentCode').value.trim();
+            const cccd = document.getElementById('cccd').value.trim();
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!fullName || !studentCode || !cccd || !password || !confirmPassword) {
+                showMessage('error', 'Vui lòng điền đầy đủ các trường bắt buộc.');
+                return;
+            }
+
             if (password !== confirmPassword) {
                 showMessage('error', 'Mật khẩu nhập lại không khớp.');
                 return;
@@ -139,10 +144,10 @@
             showMessage('success', 'Đang đăng ký...');
 
             const payload = {
-                fullName: document.getElementById('fullName').value.trim(),
-                studentCode: document.getElementById('studentCode').value.trim(),
-                cccd: document.getElementById('cccd').value.trim(),
-                username: document.getElementById('username').value.trim(),
+                fullName,
+                studentCode,
+                cccd,
+                username: studentCode,
                 email: document.getElementById('email').value.trim(),
                 phone: document.getElementById('phone').value.trim(),
                 gender: document.getElementById('gender').value,

@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/ui/theme.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -38,27 +39,20 @@
     </script>
 </head>
 <body class="font-body text-text-main bg-bg-page min-h-screen">
-<header class="border-b border-border bg-bg-card">
-    <div class="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between gap-4">
-        <div>
-            <p class="text-xs text-text-muted">Ký túc xá sinh viên</p>
-            <h1 class="font-heading text-xl">Báo hỏng cơ sở vật chất</h1>
-        </div>
-        <nav class="flex items-center gap-2">
-            <a href="/home.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium text-text-main hover:bg-slate-50">Trang chủ</a>
-            <a href="/user/student-profile.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium text-text-main hover:bg-slate-50">Hồ sơ</a>
-            <a href="/user/report-issue.html" class="rounded-base border border-border bg-primary text-white px-3 py-2 text-sm font-medium">Báo hỏng</a>
-            <button id="logoutBtn" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium transition-colors">Đăng xuất</button>
-        </nav>
-    </div>
-</header>
+<div id="userLayout" class="user-layout max-w-[1200px] mx-auto px-4 py-4 md:py-6">
+    <div id="userSidebarMount"></div>
 
-<main class="max-w-[1000px] mx-auto px-4 py-6">
+<main class="user-content min-w-0">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Form Section -->
         <section class="md:col-span-1">
             <div class="rounded-base bg-bg-card border border-border shadow-soft p-6 sticky top-6">
-                <h2 class="font-heading text-xl mb-4">Gửi yêu cầu mới</h2>
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50 text-primary">
+                        <i class="fa-solid fa-bullhorn"></i>
+                    </div>
+                    <h2 class="font-heading text-xl">Gửi yêu cầu mới</h2>
+                </div>
                 <form id="issueForm" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-text-muted mb-1">Mô tả vấn đề</label>
@@ -76,7 +70,8 @@
                         </select>
                     </div>
                     <button type="submit" id="submitBtn"
-                        class="w-full rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2.5 text-sm font-medium transition-colors shadow-sm">
+                        class="w-full rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2.5 text-sm font-medium transition-colors shadow-sm inline-flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i>
                         Gửi yêu cầu
                     </button>
                 </form>
@@ -86,7 +81,12 @@
         <!-- List Section -->
         <section class="md:col-span-2">
             <div class="rounded-base bg-bg-card border border-border shadow-soft p-6">
-                <h2 class="font-heading text-xl mb-4">Lịch sử yêu cầu</h2>
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-secondary">
+                        <i class="fa-regular fa-clock"></i>
+                    </div>
+                    <h2 class="font-heading text-xl">Lịch sử yêu cầu</h2>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
@@ -109,6 +109,9 @@
         </section>
     </div>
 </main>
+</div>
+
+<script src="/ui/user-sidebar.js"></script>
 
 <div id="toast" class="hidden fixed bottom-6 right-6 z-50 animate-bounce">
     <div id="toastContent" class="rounded-base shadow-lg px-6 py-3 text-white text-sm font-medium border border-transparent">
@@ -124,6 +127,10 @@
     const issueListBody = document.getElementById('issueListBody');
     const toast = document.getElementById('toast');
     const toastContent = document.getElementById('toastContent');
+
+    if (window.UserSidebar) {
+        window.UserSidebar.mount({ active: 'issues', authenticated: true, caption: 'Báo hỏng' });
+    }
 
     function showToast(message, type = 'success') {
         toastContent.textContent = message;
@@ -214,11 +221,6 @@
             submitBtn.disabled = false;
             submitBtn.textContent = 'Gửi yêu cầu';
         }
-    });
-
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('dormitory_access_token');
-        window.location.href = '/login.html';
     });
 
     loadIssues();

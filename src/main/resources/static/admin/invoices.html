@@ -57,18 +57,25 @@
                 <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
                     <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
                         <div>
-                            <h2 class="font-heading text-2xl">Vận hành hóa đơn theo kỳ</h2>
-                            <p class="text-sm text-text-muted mt-1">Sinh hóa đơn từ kỳ điện nước đã chốt và xử lý trạng thái quá hạn.</p>
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-secondary">
+                                    <i class="fa-solid fa-receipt"></i>
+                                </div>
+                                <div>
+                                    <h2 class="font-heading text-2xl">Vận hành hóa đơn theo kỳ</h2>
+                                    <p class="text-sm text-text-muted mt-1">Sinh hóa đơn từ kỳ điện nước đã chốt và xử lý trạng thái quá hạn.</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 w-full lg:w-auto">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(180px,1fr)_minmax(140px,160px)_minmax(140px,160px)] gap-2 w-full lg:w-auto">
                             <select id="genBuilding" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
                                 <option value="">Tất cả tòa nhà</option>
                             </select>
                             <select id="genMonth" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card"></select>
                             <input id="genYear" type="number" min="2000" max="2099" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-                            <div class="flex gap-2">
-                                <button id="btnGenerate" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-2 text-sm font-medium">Sinh hóa đơn</button>
-                                <button id="btnMarkOverdue" type="button" class="rounded-base border border-warning text-warning px-3 py-2 text-sm font-medium hover:bg-amber-50">Đánh dấu quá hạn</button>
+                            <div class="flex flex-col sm:flex-row gap-2 sm:col-span-2 xl:col-span-3">
+                                <button id="btnGenerate" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-2 text-sm font-medium inline-flex items-center justify-center gap-2 w-full sm:w-auto"><i class="fa-solid fa-plus"></i><span>Sinh hóa đơn</span></button>
+                                <button id="btnMarkOverdue" type="button" class="rounded-base border border-warning text-warning px-3 py-2 text-sm font-medium hover:bg-amber-50 inline-flex items-center justify-center gap-2 w-full sm:w-auto"><i class="fa-solid fa-triangle-exclamation"></i><span>Đánh dấu quá hạn</span></button>
                             </div>
                         </div>
                     </div>
@@ -77,22 +84,29 @@
                 <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                         <div>
-                            <h2 class="font-heading text-2xl">Danh sách điện nước theo kỳ đã chọn</h2>
-                            <p class="text-sm text-text-muted mt-1">Dùng để kiểm tra kỳ đã chốt trước khi sinh hóa đơn hàng loạt hoặc sinh riêng từng phòng.</p>
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-11 w-11 items-center justify-center rounded-full bg-teal-50 text-primary">
+                                    <i class="fa-solid fa-bolt"></i>
+                                </div>
+                                <div>
+                                    <h2 class="font-heading text-2xl">Danh sách điện nước theo kỳ đã chọn</h2>
+                                    <p class="text-sm text-text-muted mt-1">Dùng để kiểm tra kỳ đã chốt trước khi sinh hóa đơn hàng loạt hoặc sinh riêng từng phòng.</p>
+                                </div>
+                            </div>
                         </div>
-                        <button id="btnLoadUtility" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Tải danh sách kỳ</button>
+                        <button id="btnLoadUtility" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 inline-flex items-center gap-2"><i class="fa-solid fa-rotate"></i><span>Tải danh sách kỳ</span></button>
                     </div>
 
-                    <div class="overflow-x-auto rounded-base border border-border">
-                        <table class="w-full min-w-[1180px] text-sm">
+                    <div class="hidden xl:block overflow-x-auto rounded-base border border-border">
+                        <table class="w-full min-w-[1120px] text-sm">
                             <thead>
                                 <tr class="bg-slate-50 border-b border-border text-text-muted text-left text-xs uppercase tracking-wide font-medium">
-                                    <th class="px-4 py-3">Tòa / Phòng</th>
-                                    <th class="px-4 py-3">Kỳ</th>
-                                    <th class="px-4 py-3">Điện (cũ -> mới)</th>
-                                    <th class="px-4 py-3">Nước (cũ -> mới)</th>
-                                    <th class="px-4 py-3">Trạng thái chốt kỳ</th>
-                                    <th class="px-4 py-3 text-right">Sinh theo phòng</th>
+                                    <th class="px-4 py-3 w-[240px]">Tòa / Phòng</th>
+                                    <th class="px-4 py-3 w-24">Kỳ</th>
+                                    <th class="px-4 py-3 w-[190px]">Điện (cũ - mới)</th>
+                                    <th class="px-4 py-3 w-[190px]">Nước (cũ - mới)</th>
+                                    <th class="px-4 py-3 w-28">Trạng thái chốt kỳ</th>
+                                    <th class="px-4 py-3 w-[160px] text-right">Sinh theo phòng</th>
                                 </tr>
                             </thead>
                             <tbody id="utilityTableBody" class="divide-y divide-border">
@@ -100,17 +114,26 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <div id="utilityCards" class="mt-4 grid grid-cols-1 gap-3 xl:hidden"></div>
                 </section>
 
                 <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <h2 class="font-heading text-2xl">Danh sách hóa đơn</h2>
-                            <p class="text-sm text-text-muted mt-1">Theo dõi trạng thái thanh toán cho Admin và duyệt thủ công khi cần.</p>
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-warning">
+                                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                                </div>
+                                <div>
+                                    <h2 class="font-heading text-2xl">Danh sách hóa đơn</h2>
+                                    <p class="text-sm text-text-muted mt-1">Theo dõi trạng thái thanh toán cho Admin và duyệt thủ công khi cần.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(180px,1.2fr)_minmax(140px,0.8fr)_minmax(140px,0.8fr)_minmax(160px,0.9fr)_minmax(0,1.1fr)] gap-3 mb-4">
                         <select id="filterBuilding" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
                             <option value="">Tất cả tòa nhà</option>
                         </select>
@@ -128,40 +151,49 @@
                         <input id="filterKeyword" type="text" placeholder="Mã hóa đơn / phòng / sinh viên" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                     </div>
 
-                    <div class="flex gap-2 mb-4">
-                        <button id="btnSearch" type="button" class="rounded-base bg-secondary hover:bg-blue-600 text-white px-4 py-2 text-sm font-medium">Tìm kiếm</button>
-                        <button id="btnReset" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Đặt lại</button>
-                        <button id="btnExportInvoices" type="button" class="rounded-base border border-secondary text-secondary px-4 py-2 text-sm font-medium hover:bg-blue-50 inline-flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9m-6-6 6 6m-9 4 2 3 2-3m-4 6h4" />
-                            </svg>
+                    <div class="flex flex-col sm:flex-row flex-wrap gap-2 mb-4">
+                        <button id="btnSearch" type="button" class="rounded-base bg-secondary hover:bg-blue-600 text-white px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-2 w-full sm:w-auto"><i class="fa-solid fa-magnifying-glass"></i><span>Tìm kiếm</span></button>
+                        <button id="btnReset" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 inline-flex items-center justify-center gap-2 w-full sm:w-auto"><i class="fa-solid fa-rotate-left"></i><span>Đặt lại</span></button>
+                        <button id="btnExportInvoices" type="button" class="rounded-base border border-secondary text-secondary px-4 py-2 text-sm font-medium hover:bg-blue-50 inline-flex items-center justify-center gap-2 w-full sm:w-auto">
+                            <i class="fa-solid fa-file-arrow-down"></i>
                             <span>Xuất Excel</span>
                         </button>
                     </div>
 
-                    <div class="overflow-x-auto rounded-base border border-border">
-                        <table class="w-full min-w-[1280px] text-sm">
+                    <div class="hidden lg:block rounded-base border border-border">
+                        <table class="w-full text-sm table-fixed">
                             <thead>
                                 <tr class="bg-slate-50 border-b border-border text-text-muted text-left text-xs uppercase tracking-wide font-medium">
-                                    <th class="px-4 py-3">Mã HĐ</th>
-                                    <th class="px-4 py-3">Sinh viên</th>
-                                    <th class="px-4 py-3">Phòng</th>
-                                    <th class="px-4 py-3">Kỳ</th>
-                                    <th class="px-4 py-3">Tổng tiền</th>
-                                    <th class="px-4 py-3">Hạn thanh toán</th>
-                                    <th class="px-4 py-3">Trạng thái</th>
-                                    <th class="px-4 py-3">Nguồn thanh toán</th>
-                                    <th class="px-4 py-3 text-right">Thao tác</th>
+                                    <th class="px-4 py-3 w-[140px]">Mã HĐ</th>
+                                    <th class="px-4 py-3">Sinh viên / Phòng</th>
+                                    <th class="px-4 py-3 w-24">Kỳ</th>
+                                    <th class="px-4 py-3 w-[170px]">Tổng tiền</th>
+                                    <th class="px-4 py-3 w-28">Trạng thái</th>
+                                    <th class="px-4 py-3 w-[220px] text-right">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody id="invoiceTableBody" class="divide-y divide-border">
-                                <tr><td colspan="9" class="px-4 py-8 text-center text-text-muted">Đang tải dữ liệu...</td></tr>
+                                <tr><td colspan="6" class="px-4 py-8 text-center text-text-muted">Đang tải dữ liệu...</td></tr>
                             </tbody>
                         </table>
                     </div>
+                    <div id="invoiceCards" class="mt-4 grid grid-cols-1 gap-3 lg:hidden"></div>
                     <div id="tablePagination" class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"></div>
                 </section>
             </main>
+        </div>
+    </div>
+
+    <div id="invoiceDetailModal" class="fixed inset-0 z-40 hidden">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="invoiceDetailBackdrop"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="relative bg-bg-card rounded-base shadow-soft w-full max-w-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-heading text-lg">Chi tiết hóa đơn</h3>
+                    <button id="btnInvoiceDetailClose" type="button" class="rounded-base border border-border px-3 py-1.5 text-sm font-medium hover:bg-slate-50">Đóng</button>
+                </div>
+                <div id="invoiceDetailContent" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm"></div>
+            </div>
         </div>
     </div>
 
@@ -191,7 +223,18 @@
         let totalPages = 0;
         let totalElements = 0;
         let manualTargetId = null;
+        let detailTargetId = null;
         let utilityRowsCache = [];
+        const currentPeriod = (() => {
+            const now = new Date();
+            let month = now.getMonth();
+            let year = now.getFullYear();
+            if (month === 0) {
+                month = 12;
+                year -= 1;
+            }
+            return { month, year };
+        })();
 
         function initAdminSidebar() {
             if (!window.AdminSidebar || typeof window.AdminSidebar.mount !== 'function') {
@@ -248,6 +291,14 @@
             return 'bg-blue-50 text-secondary border border-blue-200';
         }
 
+        function invoiceStatusLabel(status) {
+            const s = String(status || '').toUpperCase();
+            if (s === 'PAID') return 'Đã thanh toán';
+            if (s === 'OVERDUE') return 'Quá hạn';
+            if (s === 'CANCELLED') return 'Đã hủy';
+            return 'Chưa thanh toán';
+        }
+
         function isClosedPeriod(status) {
             return String(status || '').toUpperCase() === 'CLOSED';
         }
@@ -293,8 +344,10 @@
 
         function renderUtilityRows() {
             const tbody = document.getElementById('utilityTableBody');
+            const cards = document.getElementById('utilityCards');
             if (!utilityRowsCache.length) {
                 tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-text-muted">Không có dữ liệu điện nước cho kỳ đã chọn.</td></tr>';
+                cards.innerHTML = '<div class="rounded-base border border-border bg-slate-50 px-4 py-6 text-center text-sm text-text-muted">Không có dữ liệu điện nước cho kỳ đã chọn.</div>';
                 return;
             }
 
@@ -320,7 +373,49 @@
                 `;
             }).join('');
 
+            cards.innerHTML = utilityRowsCache.map((row) => {
+                const closed = isClosedPeriod(row.periodStatus);
+                const hasInvoice = row.hasInvoice === true;
+                const canGenerateRoomInvoice = closed && !hasInvoice;
+                return `
+                    <article class="rounded-base border border-border bg-bg-card shadow-soft p-4 space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="font-semibold text-sm">${escHtml(row.buildingName || '-')} / ${escHtml(row.roomNumber || '-')}</p>
+                                <p class="text-xs text-text-muted mt-0.5">Kỳ ${row.month}/${row.year}</p>
+                            </div>
+                            <span class="inline-flex rounded-full px-2.5 py-1 text-xs ${closed ? 'bg-emerald-50 text-success border border-emerald-200' : 'bg-amber-50 text-warning border border-amber-200'}">
+                                ${closed ? 'Đã chốt' : 'Đang mở'}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div class="rounded-base bg-slate-50 border border-border p-2">
+                                <p class="text-xs text-text-muted">Điện cũ → mới</p>
+                                <p class="font-medium mt-0.5">${Number(row.oldElectric || 0).toFixed(2)} → ${Number(row.newElectric || 0).toFixed(2)}</p>
+                            </div>
+                            <div class="rounded-base bg-slate-50 border border-border p-2">
+                                <p class="text-xs text-text-muted">Nước cũ → mới</p>
+                                <p class="font-medium mt-0.5">${Number(row.oldWater || 0).toFixed(2)} → ${Number(row.newWater || 0).toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <button data-action="generate-room" data-room-id="${row.roomId}" ${canGenerateRoomInvoice ? '' : 'disabled'} class="w-full rounded-base border px-3 py-2 text-sm font-medium ${canGenerateRoomInvoice ? 'border-primary text-primary hover:bg-teal-50' : 'border-border text-text-muted opacity-50 cursor-not-allowed'}">
+                            ${hasInvoice ? 'Đã có hóa đơn' : 'Sinh hóa đơn phòng'}
+                        </button>
+                    </article>
+                `;
+            }).join('');
+
             tbody.querySelectorAll('button[data-action="generate-room"]').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    try {
+                        await generateInvoiceForRoom(Number(btn.dataset.roomId));
+                    } catch (error) {
+                        showToast(error.message || 'Sinh hóa đơn phòng thất bại', 'error');
+                    }
+                });
+            });
+
+            cards.querySelectorAll('button[data-action="generate-room"]').forEach((btn) => {
                 btn.addEventListener('click', async () => {
                     try {
                         await generateInvoiceForRoom(Number(btn.dataset.roomId));
@@ -411,8 +506,10 @@
 
         function renderRows() {
             const tbody = document.getElementById('invoiceTableBody');
+            const cards = document.getElementById('invoiceCards');
             if (!invoicesCache.length) {
-                tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-text-muted">Không có hóa đơn phù hợp.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-text-muted">Không có hóa đơn phù hợp.</td></tr>';
+                cards.innerHTML = '<div class="rounded-base border border-border bg-slate-50 px-4 py-6 text-center text-sm text-text-muted">Không có hóa đơn phù hợp.</div>';
                 document.getElementById('tablePagination').innerHTML = '';
                 return;
             }
@@ -422,21 +519,75 @@
                 return `
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="px-4 py-3 font-mono text-xs">${escHtml(item.invoiceCode || '-')}</td>
-                        <td class="px-4 py-3">${escHtml(item.studentName || '-')}${item.studentCode ? `<p class="text-xs text-text-muted">${escHtml(item.studentCode)}</p>` : ''}</td>
-                        <td class="px-4 py-3">${escHtml(item.buildingName || '-')} / ${escHtml(item.roomNumber || '-')}</td>
+                        <td class="px-4 py-3">
+                            <p class="font-medium truncate">${escHtml(item.studentName || '-')}</p>
+                            <p class="text-xs text-text-muted truncate">${escHtml(item.buildingName || '-')} / ${escHtml(item.roomNumber || '-')}</p>
+                        </td>
                         <td class="px-4 py-3">${item.month}/${item.year}</td>
                         <td class="px-4 py-3 font-medium">${fmtCurrency(item.totalAmount)}</td>
-                        <td class="px-4 py-3 text-xs text-text-muted">${fmtDate(item.dueAt)}</td>
-                        <td class="px-4 py-3"><span class="inline-flex rounded-full px-2.5 py-1 text-xs ${statusChip(item.status)}">${escHtml(item.status || '-')}</span></td>
-                        <td class="px-4 py-3 text-xs text-text-muted">${escHtml(item.paymentProvider || 'NONE')}</td>
+                        <td class="px-4 py-3"><span class="inline-flex rounded-full px-2.5 py-1 text-xs ${statusChip(item.status)}">${invoiceStatusLabel(item.status)}</span></td>
                         <td class="px-4 py-3 text-right">
-                            <button ${canManual ? '' : 'disabled'} data-action="manual" data-id="${item.id}" class="rounded-base border px-3 py-1.5 text-xs font-medium ${canManual ? 'border-primary text-primary hover:bg-teal-50' : 'border-border text-text-muted opacity-50 cursor-not-allowed'}">Duyệt tay</button>
+                            <div class="inline-flex flex-wrap justify-end gap-1.5">
+                                <button data-action="detail" data-id="${item.id}" class="rounded-base border border-border px-3 py-1.5 text-xs font-medium hover:bg-slate-50">Chi tiết</button>
+                                <button ${canManual ? '' : 'disabled'} data-action="manual" data-id="${item.id}" class="rounded-base border px-3 py-1.5 text-xs font-medium ${canManual ? 'border-primary text-primary hover:bg-teal-50' : 'border-border text-text-muted opacity-50 cursor-not-allowed'}">Duyệt tay</button>
+                            </div>
                         </td>
                     </tr>
                 `;
             }).join('');
 
+            cards.innerHTML = invoicesCache.map((item) => {
+                const canManual = item.status === 'UNPAID' || item.status === 'OVERDUE';
+                return `
+                    <article class="rounded-base border border-border bg-bg-card shadow-soft p-4 space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <p class="font-semibold text-sm truncate">${escHtml(item.invoiceCode || '-')}</p>
+                                    <span class="text-xs text-text-muted">${item.month}/${item.year}</span>
+                                </div>
+                                <p class="text-xs text-text-muted mt-0.5 truncate">${escHtml(item.studentName || '-')}</p>
+                                <p class="text-xs text-text-muted truncate">${escHtml(item.buildingName || '-')} / ${escHtml(item.roomNumber || '-')}</p>
+                            </div>
+                            <span class="inline-flex rounded-full px-2.5 py-1 text-xs ${statusChip(item.status)}">${invoiceStatusLabel(item.status)}</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div class="rounded-base bg-slate-50 border border-border p-2">
+                                <p class="text-xs text-text-muted">Tổng tiền</p>
+                                <p class="font-medium mt-0.5">${fmtCurrency(item.totalAmount)}</p>
+                            </div>
+                            <div class="rounded-base bg-slate-50 border border-border p-2">
+                                <p class="text-xs text-text-muted">Trạng thái</p>
+                                <p class="font-medium mt-0.5">${invoiceStatusLabel(item.status)}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button data-action="detail" data-id="${item.id}" class="w-full rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">
+                                Chi tiết
+                            </button>
+                            <button ${canManual ? '' : 'disabled'} data-action="manual" data-id="${item.id}" class="w-full rounded-base border px-3 py-2 text-sm font-medium ${canManual ? 'border-primary text-primary hover:bg-teal-50' : 'border-border text-text-muted opacity-50 cursor-not-allowed'}">
+                                Duyệt tay
+                            </button>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+
+            tbody.querySelectorAll('button[data-action="detail"]').forEach((btn) => {
+                btn.addEventListener('click', () => openInvoiceDetailModal(Number(btn.dataset.id)));
+            });
+
             tbody.querySelectorAll('button[data-action="manual"]').forEach((btn) => {
+                btn.addEventListener('click', () => openManualModal(Number(btn.dataset.id)));
+            });
+
+            cards.querySelectorAll('button[data-action="detail"]').forEach((btn) => {
+                btn.addEventListener('click', () => openInvoiceDetailModal(Number(btn.dataset.id)));
+            });
+
+            cards.querySelectorAll('button[data-action="manual"]').forEach((btn) => {
                 btn.addEventListener('click', () => openManualModal(Number(btn.dataset.id)));
             });
 
@@ -548,6 +699,28 @@
             document.getElementById('manualModal').classList.add('hidden');
         }
 
+        function openInvoiceDetailModal(invoiceId) {
+            const invoice = invoicesCache.find((x) => x.id === invoiceId);
+            if (!invoice) return;
+            detailTargetId = invoiceId;
+            document.getElementById('invoiceDetailContent').innerHTML = `
+                <div><p class="text-text-muted">Mã hóa đơn</p><p class="font-medium">${escHtml(invoice.invoiceCode || '-')}</p></div>
+                <div><p class="text-text-muted">Trạng thái</p><p class="font-medium">${invoiceStatusLabel(invoice.status)}</p></div>
+                <div><p class="text-text-muted">Sinh viên</p><p class="font-medium">${escHtml(invoice.studentName || '-')} (${escHtml(invoice.studentCode || '-')})</p></div>
+                <div><p class="text-text-muted">Phòng</p><p class="font-medium">${escHtml(invoice.buildingName || '-')} / ${escHtml(invoice.roomNumber || '-')}</p></div>
+                <div><p class="text-text-muted">Kỳ hóa đơn</p><p class="font-medium">${invoice.month}/${invoice.year}</p></div>
+                <div><p class="text-text-muted">Tổng tiền</p><p class="font-medium">${fmtCurrency(invoice.totalAmount)}</p></div>
+                <div><p class="text-text-muted">Hạn thanh toán</p><p class="font-medium">${fmtDate(invoice.dueAt)}</p></div>
+                <div><p class="text-text-muted">Nguồn thanh toán</p><p class="font-medium">${escHtml(invoice.paymentProvider || 'NONE')}</p></div>
+            `;
+            document.getElementById('invoiceDetailModal').classList.remove('hidden');
+        }
+
+        function closeInvoiceDetailModal() {
+            detailTargetId = null;
+            document.getElementById('invoiceDetailModal').classList.add('hidden');
+        }
+
         async function confirmManualApprove() {
             if (!manualTargetId) return;
             const note = document.getElementById('manualNote').value.trim();
@@ -572,15 +745,8 @@
         }
 
         function setDefaultGeneratePeriod() {
-            const now = new Date();
-            let month = now.getMonth();
-            let year = now.getFullYear();
-            if (month === 0) {
-                month = 12;
-                year -= 1;
-            }
-            document.getElementById('genMonth').value = String(month);
-            document.getElementById('genYear').value = String(year);
+            document.getElementById('genMonth').value = String(currentPeriod.month);
+            document.getElementById('genYear').value = String(currentPeriod.year);
         }
 
         (async () => {
@@ -593,6 +759,8 @@
                 populateMonthSelect('genMonth', false);
                 populateMonthSelect('filterMonth', true);
                 setDefaultGeneratePeriod();
+                document.getElementById('filterMonth').value = '';
+                document.getElementById('filterYear').value = '';
                 await ensureAdmin();
                 await loadBuildings();
                 await loadUtilityRowsForPeriod();
@@ -643,6 +811,8 @@
                 showToast(error.message, 'error');
             }
         });
+        document.getElementById('invoiceDetailBackdrop').addEventListener('click', closeInvoiceDetailModal);
+        document.getElementById('btnInvoiceDetailClose').addEventListener('click', closeInvoiceDetailModal);
     </script>
 </body>
 

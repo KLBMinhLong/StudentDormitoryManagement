@@ -148,12 +148,25 @@
                 .sort((a, b) => a.bedNumber - b.bedNumber);
         }
 
+        function hasStudent(bed) {
+            return Boolean(bed && String(bed.studentName || '').trim());
+        }
+
+        function isOccupied(bed) {
+            if (!bed) return false;
+            const status = String(bed.occupancyStatus || '').toUpperCase();
+            return status === 'OCCUPIED' || bed.isOccupied || hasStudent(bed);
+        }
+
         function isReserved(bed) {
             if (!bed) return false;
             if (String(bed.occupancyStatus || '').toUpperCase() === 'RESERVED') {
                 return true;
             }
-            if (!bed.isOccupied || bed.studentName) {
+            if (!isOccupied(bed)) {
+                return false;
+            }
+            if (hasStudent(bed)) {
                 return false;
             }
             if (!bed.reservedUntil) {
@@ -200,7 +213,7 @@
 
         function renderStats() {
             document.getElementById('totalBeds').textContent = String(draftBeds.length);
-            const freeCount = draftBeds.filter((bed) => !bed.isOccupied && !isReserved(bed)).length;
+            const freeCount = draftBeds.filter((bed) => !isOccupied(bed) && !isReserved(bed)).length;
             document.getElementById('freeBeds').textContent = String(freeCount);
         }
 
@@ -217,8 +230,8 @@
                     <td class="px-4 py-3 font-medium">Giường ${bed.bedNumber}</td>
                     <td class="px-4 py-3">${bed.studentName || '-'}</td>
                     <td class="px-4 py-3">
-                        <span class="px-2 py-1 rounded-full text-xs font-medium ${isReserved(bed) ? 'bg-amber-100 text-warning' : (bed.isOccupied ? 'bg-red-100 text-danger' : 'bg-green-100 text-success')}" title="${isReserved(bed) ? ('Giữ đến ' + new Date(bed.reservedUntil).toLocaleString('vi-VN')) : ''}">
-                            ${isReserved(bed) ? 'Đang giữ chỗ' : (bed.isOccupied ? 'Đã có sinh viên' : 'Trống')}
+                        <span class="inline-flex items-center justify-center whitespace-nowrap min-w-[112px] px-3 py-1.5 rounded-full text-xs font-medium ${isReserved(bed) ? 'bg-amber-100 text-warning' : (isOccupied(bed) ? 'bg-red-100 text-danger' : 'bg-green-100 text-success')}" title="${isReserved(bed) ? ('Giữ đến ' + new Date(bed.reservedUntil).toLocaleString('vi-VN')) : ''}">
+                            ${isReserved(bed) ? 'Đang giữ chỗ' : (isOccupied(bed) ? 'Đã có sinh viên' : 'Trống')}
                         </span>
                     </td>
                 </tr>
@@ -245,12 +258,16 @@
                     `;
                 } else {
                     const reserved = isReserved(bed);
-                    const statusLabel = reserved ? 'Đang giữ chỗ' : (bed.isOccupied ? 'Đang sử dụng' : 'Sẵn sàng di chuyển');
-                    const statusClass = reserved ? 'text-warning' : (bed.isOccupied ? 'text-danger' : 'text-success');
+                    const occupied = isOccupied(bed);
+                    const statusLabel = reserved ? 'Đang giữ chỗ' : (occupied ? 'Đã có sinh viên' : 'Trống');
+                    const statusClass = reserved ? 'text-warning' : (occupied ? 'text-danger' : 'text-success');
                     slot.innerHTML = `
                         <p class="text-xs text-text-muted">Vị trí ${position}</p>
                         <p class="text-sm font-medium mt-1">Giường ${position}</p>
-                        <p class="text-xs mt-2 ${statusClass}" title="${reserved && bed.reservedUntil ? ('Giữ đến ' + new Date(bed.reservedUntil).toLocaleString('vi-VN')) : ''}">${statusLabel}</p>
+                        <div class="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap ${reserved ? 'bg-amber-50' : (occupied ? 'bg-red-50' : 'bg-green-50')} ${statusClass}" title="${reserved && bed.reservedUntil ? ('Giữ đến ' + new Date(bed.reservedUntil).toLocaleString('vi-VN')) : ''}">
+                            <span class="h-1.5 w-1.5 rounded-full ${reserved ? 'bg-warning' : (occupied ? 'bg-danger' : 'bg-success')}"></span>
+                            <span>${statusLabel}</span>
+                        </div>
                     `;
                 }
 
@@ -302,7 +319,7 @@
                 return;
             }
 
-            if (bed.isOccupied || bed.studentName || isReserved(bed)) {
+            if (isOccupied(bed) || isReserved(bed)) {
                 alert('Không thể xóa giường đã có sinh viên đăng ký.');
                 return;
             }
@@ -329,7 +346,7 @@
                 return;
             }
 
-            if (selected.isOccupied || selected.studentName || isReserved(selected)) {
+            if (isOccupied(selected) || isReserved(selected)) {
                 alert('Không thể đổi vị trí giường đã có sinh viên đăng ký.');
                 return;
             }
@@ -351,7 +368,7 @@
                 return;
             }
 
-            if (clickedBed.isOccupied || clickedBed.studentName || isReserved(clickedBed)) {
+            if (isOccupied(clickedBed) || isReserved(clickedBed)) {
                 selectedPosition = null;
                 renderAll();
                 return;

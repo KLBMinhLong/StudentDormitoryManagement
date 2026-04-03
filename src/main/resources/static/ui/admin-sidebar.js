@@ -1,61 +1,70 @@
 (function () {
     const STORAGE_KEY = 'admin_sidebar_collapsed';
 
+    function ensureFontAwesome() {
+        if (document.getElementById('fontAwesomeCdn')) return;
+        const link = document.createElement('link');
+        link.id = 'fontAwesomeCdn';
+        link.rel = 'stylesheet';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+        document.head.appendChild(link);
+    }
+
     const MENU = {
         dashboard: {
             href: '/admin',
             label: 'Bảng điều khiển',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z"/></svg>'
+            icon: 'fa-solid fa-gauge-high'
         },
         buildings: {
             href: '/admin/buildings',
             label: 'Quản lý tòa nhà',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h8v18M14 7h6v14M8 7h2M8 11h2M8 15h2"/></svg>'
+            icon: 'fa-solid fa-building'
         },
         rooms: {
             href: '/admin/rooms',
             label: 'Quản lý phòng',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 20h18M5 20V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v13M9 10h6M9 14h6"/></svg>'
+            icon: 'fa-solid fa-door-open'
         },
         beds: {
             href: '/admin/beds',
             label: 'Quản lý giường',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 11h18v6H3zM6 11V7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4M3 17v2M21 17v2"/></svg>'
+            icon: 'fa-solid fa-bed'
         },
         students: {
             href: '/admin/student_management.html',
             label: 'Quản lý sinh viên',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+            icon: 'fa-solid fa-user-graduate'
         },
         contracts: {
             href: '/admin/contracts-management.html',
             label: 'Quản lý hợp đồng',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>'
+            icon: 'fa-solid fa-file-contract'
         },
         contractRegistration: {
             href: '/admin/contract_registration.html',
             label: 'Lập hợp đồng mới',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>'
+            icon: 'fa-solid fa-pen-to-square'
         },
         utilities: {
             href: '/admin/utility-records.html',
             label: 'Quản lý điện nước',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2v20M6 6h12M6 10h12M6 14h12M6 18h12"/><circle cx="5" cy="4" r="1.5"/><circle cx="19" cy="4" r="1.5"/></svg>'
+            icon: 'fa-solid fa-bolt'
         },
         invoices: {
             href: '/admin/invoices.html',
             label: 'Quản lý hóa đơn',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg>'
+            icon: 'fa-solid fa-receipt'
         },
         maintenance: {
             href: '/admin/maintenance-kanban.html',
             label: 'Sửa chữa vật dụng',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>'
+            icon: 'fa-solid fa-screwdriver-wrench'
         },
         userHome: {
-            href: '/home',
+            href: '/home.html',
             label: 'Trang người dùng',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5 10v10h14V10"/></svg>'
+            icon: 'fa-solid fa-house'
         }
     };
 
@@ -68,7 +77,7 @@
             : 'border-border text-text-main hover:bg-slate-50';
 
         return '<a href="' + item.href + '" class="sidebar-item rounded-base border px-3 py-2 text-sm font-medium ' + activeClass + '">' +
-            '<span class="sidebar-item-icon">' + item.icon + '</span>' +
+            '<span class="sidebar-item-icon"><i class="' + item.icon + '" aria-hidden="true"></i></span>' +
             '<span class="sidebar-item-label">' + item.label + '</span>' +
             '</a>';
     }
@@ -97,6 +106,8 @@
         const active = opts.active || 'dashboard';
         const caption = opts.caption || 'Tác vụ quản trị';
 
+        ensureFontAwesome();
+
         const mountPoint = document.getElementById(mountId);
         const layout = document.getElementById('adminLayout');
         if (!mountPoint || !layout) return;
@@ -109,7 +120,7 @@
             '      <h1 class="sidebar-app-title font-heading text-lg mt-1">' + caption + '</h1>' +
             '    </div>' +
             '    <button id="adminSidebarToggle" type="button" class="rounded-base border border-border px-2.5 py-2 text-text-main hover:bg-slate-50" aria-label="Thu gọn sidebar" title="Thu gọn / Mở rộng">' +
-            '      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>' +
+            '      <i class="fa-solid fa-angles-left" aria-hidden="true"></i>' +
             '    </button>' +
             '  </div>' +
             '  <nav class="mt-3 space-y-2 flex-1">' +
@@ -126,7 +137,7 @@
             renderMenuItem('userHome', active) +
             '  </nav>' +
             '  <button id="adminSidebarLogout" type="button" class="sidebar-logout mt-4 w-full rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-2 text-sm font-medium inline-flex items-center justify-center gap-2">' +
-            '    <span class="sidebar-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>' +
+            '    <span class="sidebar-item-icon"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i></span>' +
             '    <span class="sidebar-logout-label">Đăng xuất</span>' +
             '  </button>' +
             '</aside>';

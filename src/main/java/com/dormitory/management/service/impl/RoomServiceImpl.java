@@ -25,13 +25,16 @@ import com.dormitory.management.dto.room.BedOccupancyRequestDTO;
 import com.dormitory.management.dto.room.RoomDTO;
 import com.dormitory.management.dto.room.RoomRequestDTO;
 import com.dormitory.management.entity.Bed;
+import com.dormitory.management.entity.Contract;
 import com.dormitory.management.entity.Building;
 import com.dormitory.management.entity.Room;
 import com.dormitory.management.entity.RoomType;
 import com.dormitory.management.entity.enums.RoomStatus;
+import com.dormitory.management.entity.enums.ContractStatus;
 import com.dormitory.management.exception.ResourceNotFoundException;
 import com.dormitory.management.repository.BedRepository;
 import com.dormitory.management.repository.BuildingRepository;
+import com.dormitory.management.repository.ContractRepository;
 import com.dormitory.management.repository.RoomRepository;
 import com.dormitory.management.repository.RoomTypeRepository;
 import com.dormitory.management.service.RoomService;
@@ -45,6 +48,7 @@ public class RoomServiceImpl implements RoomService {
 
     private final RoomRepository roomRepository;
     private final BedRepository bedRepository;
+    private final ContractRepository contractRepository;
     private final BuildingRepository buildingRepository;
     private final RoomTypeRepository roomTypeRepository;
 
@@ -411,8 +415,12 @@ public class RoomServiceImpl implements RoomService {
 
     private BedDTO toBedDto(Bed bed) {
         LocalDateTime now = LocalDateTime.now();
-        boolean reserved = isReserved(bed, now);
-        boolean occupied = bed.getStudent() != null || (bed.isOccupied() && !reserved);
+        Contract currentContract = findCurrentBedContract(bed);
+        boolean reserved = isReserved(bed, currentContract, now);
+        boolean occupied = currentContract != null && currentContract.getStatus() == ContractStatus.ACTIVE;
+        String studentName = currentContract != null && currentContract.getStudent() != null
+                ? currentContract.getStudent().getFullName()
+                : null;
 
         String occupancyStatus = reserved
             ? "RESERVED"
@@ -422,19 +430,29 @@ public class RoomServiceImpl implements RoomService {
                 .id(bed.getId())
                 .bedNumber(bed.getBedNumber())
                 .isOccupied(occupied)
-                .studentName(bed.getStudent() != null ? bed.getStudent().getFullName() : null)
+                .studentName(studentName)
             .occupancyStatus(occupancyStatus)
             .reservedUntil(bed.getReservedUntil())
                 .build();
     }
 
-    private boolean isReserved(Bed bed, LocalDateTime now) {
-        return bed.getStudent() == null
+    private boolean isReserved(Bed bed, Contract currentContract, LocalDateTime now) {
+        return currentContract != null
+                && currentContract.getStatus() == ContractStatus.PENDING
                 && bed.getReservedUntil() != null
                 && bed.getReservedUntil().isAfter(now);
     }
 
     private boolean isOccupiedOrReserved(Bed bed, LocalDateTime now) {
-        return bed.getStudent() != null || bed.isOccupied() || isReserved(bed, now);
+        Contract currentContract = findCurrentBedContract(bed);
+        return currentContract != null
+                || (bed.getReservedUntil() != null && bed.getReservedUntil().isAfter(now));
+    }
+
+    private Contract findCurrentBedContract(Bed bed) {
+        return contractRepository.findFirstByBedIdAndStatusInOrderByCreatedAtDesc(
+                bed.getId(),
+                Set.of(ContractStatus.ACTIVE, ContractStatus.PENDING)
+        ).orElse(null);
     }
 }
