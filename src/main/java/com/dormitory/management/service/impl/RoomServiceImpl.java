@@ -1,6 +1,7 @@
 package com.dormitory.management.service.impl;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -66,7 +67,9 @@ public class RoomServiceImpl implements RoomService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
         String normalizedKeyword = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
         String normalizedGenderAllowed = (genderAllowed == null || genderAllowed.isBlank()) ? null : genderAllowed.trim();
-        Page<RoomDTO> result = roomRepository.findByFilters(normalizedGenderAllowed, buildingId, status, normalizedKeyword, pageable).map(this::toRoomDto);
+        Page<Room> roomPage = roomRepository.findByFilters(normalizedGenderAllowed, buildingId, status, normalizedKeyword, pageable);
+        Map<Long, int[]> roomStats = summarizeRoomOccupancy(roomPage.getContent());
+        Page<RoomDTO> result = roomPage.map((room) -> toRoomDto(room, roomStats.get(room.getId())));
         return PagedResponseDTO.fromPage(result);
     }
 
@@ -361,11 +364,38 @@ public class RoomServiceImpl implements RoomService {
         return roomNumber.trim();
     }
 
-    private RoomDTO toRoomDto(Room room) {
-        List<Bed> beds = bedRepository.findByRoomIdOrderByBedNumberAsc(room.getId());
-        int totalBeds = beds.size();
+    private Map<Long, int[]> summarizeRoomOccupancy(Collection<Room> rooms) {
+        Map<Long, int[]> stats = new HashMap<>();
+        if (rooms == null || rooms.isEmpty()) {
+            return stats;
+        }
+
+        List<Long> roomIds = rooms.stream().map(Room::getId).toList();
         LocalDateTime now = LocalDateTime.now();
-        int occupiedBeds = (int) beds.stream().filter((bed) -> isOccupiedOrReserved(bed, now)).count();
+        List<Object[]> rows = bedRepository.summarizeBedOccupancyByRoomIds(
+                roomIds,
+            now);
+
+        for (Object[] row : rows) {
+            Long roomId = row[0] == null ? null : ((Number) row[0]).longValue();
+            if (roomId == null) {
+                continue;
+            }
+            int totalBeds = row[1] == null ? 0 : ((Number) row[1]).intValue();
+            int occupiedBeds = row[2] == null ? 0 : ((Number) row[2]).intValue();
+            stats.put(roomId, new int[]{totalBeds, occupiedBeds});
+        }
+
+        return stats;
+    }
+
+    private RoomDTO toRoomDto(Room room) {
+        return toRoomDto(room, null);
+    }
+
+    private RoomDTO toRoomDto(Room room, int[] stat) {
+        int totalBeds = stat == null ? 0 : stat[0];
+        int occupiedBeds = stat == null ? 0 : stat[1];
 
         return RoomDTO.builder()
                 .id(room.getId())

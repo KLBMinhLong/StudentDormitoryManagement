@@ -37,6 +37,7 @@ import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -380,9 +381,14 @@ public class ContractServiceImpl implements ContractService {
         ContractStatus parsedStatus = parseStatus(status);
         Boolean hasStayed = parseHasStayed(occupancyType);
         Pageable pageable = buildContractPageable(page, size, sortBy, direction);
-        Page<ContractResponseDTO> dtoPage = contractRepository
-            .searchContractsForAdmin(parsedStatus, hasStayed, normalizeKeyword(keyword), pageable)
-            .map(this::toResponse);
+        String normalizedKeyword = normalizeKeyword(keyword);
+        Long explicitContractId = parseExplicitIdKeyword(normalizedKeyword);
+
+        Page<ContractResponseDTO> dtoPage = explicitContractId != null
+            ? findContractsForAdminById(explicitContractId, parsedStatus, hasStayed, pageable)
+            : contractRepository
+                .searchContractsForAdmin(parsedStatus, hasStayed, normalizedKeyword, pageable)
+                .map(this::toResponse);
         return PagedResponseDTO.fromPage(dtoPage);
     }
 
@@ -510,9 +516,13 @@ public class ContractServiceImpl implements ContractService {
         ContractChangeRequestStatus parsedStatus = parseRequestStatus(status);
         ContractChangeType parsedType = parseChangeType(changeType);
         Pageable pageable = buildChangeRequestPageable(page, size, sortBy, direction);
+        String normalizedKeyword = normalizeKeyword(keyword);
+        Long explicitRequestId = parseExplicitIdKeyword(normalizedKeyword);
 
-        Page<ContractChangeRequestResponseDTO> dtoPage = contractChangeRequestRepository
-                .searchForAdmin(parsedStatus, parsedType, normalizeKeyword(keyword), pageable)
+        Page<ContractChangeRequestResponseDTO> dtoPage = explicitRequestId != null
+            ? findChangeRequestsForAdminById(explicitRequestId, parsedStatus, parsedType, pageable)
+            : contractChangeRequestRepository
+                .searchForAdmin(parsedStatus, parsedType, normalizedKeyword, pageable)
                 .map(this::toChangeRequestResponse);
         return PagedResponseDTO.fromPage(dtoPage);
     }
@@ -717,6 +727,62 @@ public class ContractServiceImpl implements ContractService {
             return null;
         }
         return keyword.trim();
+    }
+
+    private Long parseExplicitIdKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+
+        String normalized = keyword.trim();
+        if (!normalized.startsWith("#")) {
+            return null;
+        }
+
+        String idPart = normalized.substring(1).trim();
+        if (idPart.isEmpty() || !idPart.chars().allMatch(Character::isDigit)) {
+            return null;
+        }
+
+        try {
+            return Long.parseLong(idPart);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private Page<ContractResponseDTO> findContractsForAdminById(
+            Long contractId,
+            ContractStatus status,
+            Boolean hasStayed,
+            Pageable pageable) {
+        if (pageable.getPageNumber() > 0) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+
+        return contractRepository.findById(contractId)
+            .filter(contract -> status == null || contract.getStatus() == status)
+            .filter(contract -> hasStayed == null || hasEverActivated(contract) == hasStayed)
+            .map(this::toResponse)
+            .map(dto -> new PageImpl<>(List.of(dto), pageable, 1))
+            .orElseGet(() -> new PageImpl<>(List.of(), pageable, 0));
+    }
+
+    private Page<ContractChangeRequestResponseDTO> findChangeRequestsForAdminById(
+            Long requestId,
+            ContractChangeRequestStatus status,
+            ContractChangeType changeType,
+            Pageable pageable) {
+        if (pageable.getPageNumber() > 0) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+
+        return contractChangeRequestRepository.findById(requestId)
+            .filter(request -> status == null || request.getStatus() == status)
+            .filter(request -> changeType == null || request.getChangeType() == changeType)
+            .map(this::toChangeRequestResponse)
+            .map(dto -> new PageImpl<>(List.of(dto), pageable, 1))
+            .orElseGet(() -> new PageImpl<>(List.of(), pageable, 0));
     }
 
     private Boolean parseHasStayed(String occupancyType) {

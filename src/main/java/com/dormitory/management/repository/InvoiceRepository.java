@@ -2,10 +2,12 @@ package com.dormitory.management.repository;
 
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -32,10 +34,17 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     Optional<Invoice> findByRoomIdAndMonthAndYear(Long roomId, int month, int year);
 
+        @EntityGraph(attributePaths = {"room", "room.building", "student"})
+        Optional<Invoice> findWithRelationsById(Long id);
+
+        @EntityGraph(attributePaths = {"room", "room.building", "student"})
+        Optional<Invoice> findFirstByInvoiceCodeIgnoreCase(String invoiceCode);
+
         Optional<Invoice> findByPaymentOrderCode(String paymentOrderCode);
 
         Optional<Invoice> findByIdAndStudentId(Long id, Long studentId);
 
+        @EntityGraph(attributePaths = {"room", "room.building", "student"})
     @Query("""
             SELECT i FROM Invoice i
             JOIN i.room r
@@ -61,6 +70,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
             @Param("keyword") String keyword,
             Pageable pageable);
 
+                @EntityGraph(attributePaths = {"room", "room.building", "student"})
     @Query("""
             SELECT i FROM Invoice i
             WHERE i.student.id = :studentId
@@ -87,6 +97,20 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
             int month,
             int year,
             InvoiceStatus status);
+
+    @Query("""
+            SELECT DISTINCT i.room.id
+            FROM Invoice i
+            WHERE i.room.id IN :roomIds
+              AND i.month = :month
+              AND i.year = :year
+              AND i.status <> :status
+            """)
+    java.util.List<Long> findRoomIdsWithInvoicesForPeriod(
+            @Param("roomIds") Collection<Long> roomIds,
+            @Param("month") int month,
+            @Param("year") int year,
+            @Param("status") InvoiceStatus status);
 
     @Modifying
     @Query("""
