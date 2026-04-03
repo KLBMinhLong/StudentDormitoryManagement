@@ -37,9 +37,11 @@
         };
     </script>
     <style>
-        .kanban-column { min-height: 500px; }
-        .issue-card { cursor: grab; }
+        .kanban-column { min-height: 500px; transition: background-color 0.2s ease, border-color 0.2s ease; }
+        .kanban-column.drop-target { background-color: rgba(14, 165, 165, 0.08); border-color: rgba(14, 165, 165, 0.45); }
+        .issue-card { cursor: grab; transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease; }
         .issue-card:active { cursor: grabbing; }
+        .issue-card.dragging { opacity: 0.45; transform: scale(0.98); }
     </style>
 </head>
 <body class="font-body text-text-main bg-bg-page min-h-screen">
@@ -54,6 +56,28 @@
                     <p class="text-text-muted mt-1">Theo dõi và cập nhật trạng thái các yêu cầu báo hỏng từ sinh viên.</p>
                 </div>
             </header>
+
+            <section class="rounded-base bg-bg-card border border-border shadow-soft p-4 md:p-5">
+                <div class="grid grid-cols-1 md:grid-cols-[minmax(200px,1fr)_minmax(160px,0.8fr)_minmax(0,1.2fr)_auto] gap-3 items-end">
+                    <div>
+                        <label for="filterBuilding" class="text-sm text-text-muted block mb-1">Tòa nhà</label>
+                        <select id="filterBuilding" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
+                            <option value="">Tất cả tòa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filterRoom" class="text-sm text-text-muted block mb-1">Phòng</label>
+                        <select id="filterRoom" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
+                            <option value="">Tất cả phòng</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filterKeyword" class="text-sm text-text-muted block mb-1">Tìm kiếm</label>
+                        <input id="filterKeyword" type="text" placeholder="Tìm theo tên sinh viên, mã sinh viên, nội dung..." class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <button id="resetFiltersBtn" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Đặt lại</button>
+                </div>
+            </section>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Column: PENDING -->
@@ -118,14 +142,6 @@
             <hr class="border-border">
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-text-muted mb-1">Trạng thái</label>
-                    <select id="updateStatus" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
-                        <option value="PENDING">Tiếp nhận</option>
-                        <option value="IN_PROGRESS">Đang sửa</option>
-                        <option value="RESOLVED">Hoàn thành</option>
-                    </select>
-                </div>
-                <div>
                     <label class="block text-sm font-medium text-text-muted mb-1">Độ ưu tiên</label>
                     <select id="updatePriority" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
                         <option value="LOW">Thấp</option>
@@ -143,6 +159,8 @@
 
 <script>
     const token = localStorage.getItem('dormitory_access_token');
+    const statusOrder = { PENDING: 0, IN_PROGRESS: 1, RESOLVED: 2 };
+    const statusLabel = { PENDING: 'Tiếp nhận', IN_PROGRESS: 'Đang sửa', RESOLVED: 'Hoàn thành' };
     const columns = {
         PENDING: document.getElementById('col-PENDING'),
         IN_PROGRESS: document.getElementById('col-IN_PROGRESS'),
@@ -155,7 +173,13 @@
     };
 
     let allIssues = [];
+    let filteredIssues = [];
     let currentIssueId = null;
+    let draggingIssueId = null;
+
+    const filterBuilding = document.getElementById('filterBuilding');
+    const filterRoom = document.getElementById('filterRoom');
+    const filterKeyword = document.getElementById('filterKeyword');
 
     function initAdminSidebar() {
         if (!window.AdminSidebar) {
@@ -172,15 +196,110 @@
         return 'bg-slate-100 text-slate-600 border-slate-200';
     }
 
+    function getIssueById(issueId) {
+        return allIssues.find((item) => Number(item.id) === Number(issueId));
+    }
+
+    function normalizeText(value) {
+        return String(value || '').toLowerCase().trim();
+    }
+
+    function applyFilters() {
+        const building = filterBuilding.value;
+        const room = filterRoom.value;
+        const keyword = normalizeText(filterKeyword.value);
+
+        filteredIssues = allIssues.filter((issue) => {
+            const matchBuilding = !building || String(issue.buildingName || '') === building;
+            const matchRoom = !room || String(issue.roomNumber || '') === room;
+
+            if (!matchBuilding || !matchRoom) {
+                return false;
+            }
+
+            if (!keyword) {
+                return true;
+            }
+
+            const combined = normalizeText([
+                issue.studentName,
+                issue.studentCode,
+                issue.description,
+                issue.buildingName,
+                issue.roomNumber
+            ].join(' '));
+            return combined.includes(keyword);
+        });
+
+        renderCards();
+    }
+
+    function populateBuildingOptions() {
+        const selected = filterBuilding.value;
+        const buildingNames = [...new Set(allIssues.map((issue) => String(issue.buildingName || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'));
+        filterBuilding.innerHTML = '<option value="">Tất cả tòa</option>';
+        buildingNames.forEach((name) => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            filterBuilding.appendChild(option);
+        });
+        if (buildingNames.includes(selected)) {
+            filterBuilding.value = selected;
+        }
+    }
+
+    function populateRoomOptions() {
+        const selectedBuilding = filterBuilding.value;
+        const selectedRoom = filterRoom.value;
+        const roomNumbers = [...new Set(
+            allIssues
+                .filter((issue) => !selectedBuilding || String(issue.buildingName || '') === selectedBuilding)
+                .map((issue) => String(issue.roomNumber || '').trim())
+                .filter(Boolean)
+        )].sort((a, b) => a.localeCompare(b, 'vi', { numeric: true }));
+
+        filterRoom.innerHTML = '<option value="">Tất cả phòng</option>';
+        roomNumbers.forEach((room) => {
+            const option = document.createElement('option');
+            option.value = room;
+            option.textContent = room;
+            filterRoom.appendChild(option);
+        });
+
+        if (roomNumbers.includes(selectedRoom)) {
+            filterRoom.value = selectedRoom;
+        }
+    }
+
+    function renderEmptyColumn(targetColumn, message) {
+        const empty = document.createElement('div');
+        empty.className = 'rounded-base border border-dashed border-border bg-white/70 p-3 text-center text-xs text-text-muted';
+        empty.textContent = message;
+        targetColumn.appendChild(empty);
+    }
+
     function renderCards() {
         Object.values(columns).forEach(col => col.innerHTML = '');
         const currentCounts = { PENDING: 0, IN_PROGRESS: 0, RESOLVED: 0 };
 
-        allIssues.forEach(issue => {
+        filteredIssues.forEach(issue => {
             currentCounts[issue.status]++;
             const card = document.createElement('div');
-            card.className = 'issue-card bg-white rounded-base border border-border shadow-sm p-4 hover:shadow-md transition-shadow';
-            card.onclick = () => openEditModal(issue);
+            card.className = 'issue-card bg-white rounded-base border border-border shadow-sm p-4 hover:shadow-md';
+            card.draggable = true;
+            card.dataset.issueId = String(issue.id);
+            card.addEventListener('dragstart', (event) => {
+                draggingIssueId = issue.id;
+                card.classList.add('dragging');
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', String(issue.id));
+            });
+            card.addEventListener('dragend', () => {
+                draggingIssueId = null;
+                card.classList.remove('dragging');
+                Object.values(columns).forEach((col) => col.classList.remove('drop-target'));
+            });
             card.innerHTML = `
                 <div class="flex items-start justify-between mb-2">
                     <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border ${getPriorityClass(issue.priority)}">
@@ -198,11 +317,98 @@
                         <p class="text-[10px] text-text-muted mt-1 uppercase">${issue.buildingName} - Phòng ${issue.roomNumber}</p>
                     </div>
                 </div>
+                <div class="pt-3 mt-3 border-t border-slate-100 flex justify-end">
+                    <button type="button" data-action="edit" data-id="${issue.id}" class="text-xs rounded-base border border-border px-2.5 py-1 hover:bg-slate-50">Chi tiết</button>
+                </div>
             `;
             columns[issue.status].appendChild(card);
         });
 
+        Object.entries(columns).forEach(([status, column]) => {
+            if (!column.children.length) {
+                renderEmptyColumn(column, `Không có yêu cầu ở trạng thái ${statusLabel[status].toLowerCase()}.`);
+            }
+        });
+
+        document.querySelectorAll('button[data-action="edit"]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const issue = getIssueById(Number(button.dataset.id));
+                if (issue) {
+                    openEditModal(issue);
+                }
+            });
+        });
+
         Object.keys(counts).forEach(status => counts[status].textContent = currentCounts[status]);
+    }
+
+    async function updateIssueStatus(issue, nextStatus) {
+        const payload = {
+            status: nextStatus,
+            priority: issue.priority
+        };
+
+        const res = await fetch(`/api/v1/issues/${issue.id}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            throw new Error('Không thể cập nhật trạng thái yêu cầu.');
+        }
+
+        issue.status = nextStatus;
+    }
+
+    function registerColumnDropEvents() {
+        Object.entries(columns).forEach(([targetStatus, targetColumn]) => {
+            targetColumn.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                targetColumn.classList.add('drop-target');
+            });
+
+            targetColumn.addEventListener('dragleave', () => {
+                targetColumn.classList.remove('drop-target');
+            });
+
+            targetColumn.addEventListener('drop', async (event) => {
+                event.preventDefault();
+                targetColumn.classList.remove('drop-target');
+                const droppedIssueId = Number(event.dataTransfer.getData('text/plain') || draggingIssueId || 0);
+                if (!droppedIssueId) {
+                    return;
+                }
+
+                const issue = getIssueById(droppedIssueId);
+                if (!issue || issue.status === targetStatus) {
+                    return;
+                }
+
+                const isBackward = statusOrder[targetStatus] < statusOrder[issue.status];
+                if (isBackward) {
+                    const confirmed = window.confirm(`Yêu cầu đang ở trạng thái ${statusLabel[issue.status].toLowerCase()}. Bạn có chắc muốn chuyển ngược về ${statusLabel[targetStatus].toLowerCase()}?`);
+                    if (!confirmed) {
+                        return;
+                    }
+                }
+
+                const previousStatus = issue.status;
+                issue.status = targetStatus;
+                applyFilters();
+
+                try {
+                    await updateIssueStatus(issue, targetStatus);
+                } catch (error) {
+                    issue.status = previousStatus;
+                    applyFilters();
+                    window.alert(error.message || 'Cập nhật trạng thái thất bại.');
+                }
+            });
+        });
     }
 
     async function fetchIssues() {
@@ -212,8 +418,10 @@
             });
             const data = await res.json();
             if (res.ok) {
-                allIssues = data.result;
-                renderCards();
+                allIssues = Array.isArray(data.result) ? data.result : [];
+                populateBuildingOptions();
+                populateRoomOptions();
+                applyFilters();
             }
         } catch (e) { console.error(e); }
     }
@@ -224,9 +432,9 @@
         modalInfo.innerHTML = `
             <p><strong>Người gửi:</strong> ${issue.studentName} (${issue.studentCode})</p>
             <p><strong>Vị trí:</strong> ${issue.buildingName} - Phòng ${issue.roomNumber}</p>
+            <p><strong>Trạng thái hiện tại:</strong> ${statusLabel[issue.status] || issue.status}</p>
             <p><strong>Nội dung:</strong> ${issue.description}</p>
         `;
-        document.getElementById('updateStatus').value = issue.status;
         document.getElementById('updatePriority').value = issue.priority;
         document.getElementById('updateModal').classList.remove('hidden');
     }
@@ -241,8 +449,15 @@
         btn.disabled = true;
         btn.textContent = 'Đang lưu...';
 
+        const issue = getIssueById(currentIssueId);
+        if (!issue) {
+            btn.disabled = false;
+            btn.textContent = 'Lưu thay đổi';
+            return;
+        }
+
         const payload = {
-            status: document.getElementById('updateStatus').value,
+            status: issue.status,
             priority: document.getElementById('updatePriority').value
         };
 
@@ -256,8 +471,9 @@
                 body: JSON.stringify(payload)
             });
             if (res.ok) {
+                issue.priority = payload.priority;
                 closeModal();
-                fetchIssues();
+                applyFilters();
             }
         } catch (e) {
             console.error(e);
@@ -266,6 +482,24 @@
             btn.textContent = 'Lưu thay đổi';
         }
     }
+
+    filterBuilding.addEventListener('change', () => {
+        populateRoomOptions();
+        applyFilters();
+    });
+
+    filterRoom.addEventListener('change', applyFilters);
+    filterKeyword.addEventListener('input', applyFilters);
+
+    document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+        filterBuilding.value = '';
+        populateRoomOptions();
+        filterRoom.value = '';
+        filterKeyword.value = '';
+        applyFilters();
+    });
+
+    registerColumnDropEvents();
 
     fetchIssues();
 </script>
