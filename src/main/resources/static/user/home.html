@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 
 <head>
@@ -53,6 +53,7 @@
             <a href="/user/contracts.html" id="contractBtn" class="hidden rounded-base border border-border px-3 py-2 text-sm font-medium text-text-main hover:bg-slate-50">Hợp đồng của tôi</a>
             <a href="/user/utility-dashboard.html" id="utilityBtn" class="hidden rounded-base border border-border px-3 py-2 text-sm font-medium text-text-main hover:bg-slate-50">Biểu đồ điện nước</a>
             <a href="/user/my-invoices.html" id="invoiceBtn" class="hidden rounded-base border border-border px-3 py-2 text-sm font-medium text-text-main hover:bg-slate-50">Hóa đơn của tôi</a>
+            <a href="/user/report-issue.html" id="issueBtn" class="hidden rounded-base border border-border px-3 py-2 text-sm font-medium text-text-main hover:bg-slate-50">Báo hỏng vật dụng</a>
 
             <a href="/admin.html" id="adminBtn" class="hidden rounded-base border border-border px-3 py-2 text-sm font-medium text-text-main hover:bg-slate-50">Trang admin</a>
 
@@ -85,6 +86,11 @@
             <a href="/user/my-invoices.html" id="studentInvoiceBox" class="hidden rounded-base border-2 border-secondary p-4 bg-blue-50 hover:bg-blue-100 transition-colors block">
                 <p class="text-xs text-text-muted">Dành cho sinh viên</p>
                 <p class="mt-1 font-medium text-secondary">Quản lý hóa đơn và xem chi tiết</p>
+            </a>
+
+            <a href="/user/report-issue.html" id="studentIssueBox" class="hidden rounded-base border-2 border-primary p-4 bg-teal-50 hover:bg-teal-100 transition-colors block">
+                <p class="text-xs text-text-muted">Dành cho sinh viên</p>
+                <p class="mt-1 font-medium text-primary">Báo hỏng cơ sở vật chất</p>
             </a>
 
             <div class="rounded-base border border-border p-4">
@@ -199,6 +205,8 @@
     const studentContractBox = document.getElementById('studentContractBox');
     const studentUtilityBox = document.getElementById('studentUtilityBox');
     const studentInvoiceBox = document.getElementById('studentInvoiceBox');
+    const issueBtn = document.getElementById('issueBtn');
+    const studentIssueBox = document.getElementById('studentIssueBox');
     const roomBody = document.getElementById('roomBody');
     const message = document.getElementById('message');
     const roomPagination = document.getElementById('roomPagination');
@@ -524,6 +532,8 @@
                 studentContractBox.classList.remove('hidden');
                 studentUtilityBox.classList.remove('hidden');
                 studentInvoiceBox.classList.remove('hidden');
+                issueBtn.classList.remove('hidden');
+                studentIssueBox.classList.remove('hidden');
             }
 
             if (payload.result?.fullName) {
