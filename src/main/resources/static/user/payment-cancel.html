@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/ui/theme.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -38,20 +39,13 @@
 </head>
 
 <body class="font-body text-text-main bg-bg-page min-h-screen">
-<header class="border-b border-border bg-bg-card">
-    <div class="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between gap-3">
-        <div>
-            <p class="text-xs text-text-muted">Khu vực sinh viên</p>
-            <h1 class="font-heading text-xl">Kết quả thanh toán</h1>
-        </div>
-        <a href="/user/my-invoices.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Về danh sách hóa đơn</a>
-    </div>
-</header>
+<div id="userLayout" class="user-layout max-w-[1200px] mx-auto px-4 py-4 md:py-6">
+    <div id="userSidebarMount"></div>
 
-<main class="max-w-[1200px] mx-auto px-4 py-8">
+<main class="user-content min-w-0 py-2">
     <section class="mx-auto max-w-2xl bg-bg-card rounded-base border border-border shadow-soft p-6 sm:p-8">
-        <div class="w-16 h-16 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto">
-            <span class="text-3xl text-warning">!</span>
+        <div class="w-16 h-16 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-warning">
+            <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
         </div>
         <h2 class="font-heading text-2xl text-center mt-4">Bạn đã hủy thanh toán</h2>
         <p class="text-sm text-text-muted text-center mt-2">Không có khoản tiền nào bị trừ. Bạn có thể quay lại danh sách hóa đơn để thực hiện thanh toán lại khi sẵn sàng.</p>
@@ -76,13 +70,18 @@
         </div>
 
         <div class="mt-6 flex flex-wrap justify-center gap-2">
-            <a href="/user/my-invoices.html" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium">Quay lại thanh toán</a>
-            <a href="/user/home.html" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Trang sinh viên</a>
+            <a href="/user/my-invoices.html" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium inline-flex items-center gap-2"><i class="fa-solid fa-receipt"></i><span>Quay lại thanh toán</span></a>
+            <a href="/user/home.html" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 inline-flex items-center gap-2"><i class="fa-solid fa-house"></i><span>Trang sinh viên</span></a>
         </div>
     </section>
 </main>
+</div>
+
+<script src="/ui/user-sidebar.js"></script>
 
 <script>
+    const token = localStorage.getItem('dormitory_access_token');
+
     function readQueryParam(keys) {
         const params = new URLSearchParams(window.location.search);
         for (const key of keys) {
@@ -96,6 +95,10 @@
     document.getElementById('reference').textContent = readQueryParam(['id', 'reference', 'paymentId']) || '-';
     document.getElementById('reason').textContent = readQueryParam(['reason', 'cancelReason']) || 'Người dùng hủy giao dịch';
     document.getElementById('returnedAt').textContent = new Date().toLocaleString('vi-VN');
+
+    if (window.UserSidebar) {
+        window.UserSidebar.mount({ active: 'invoices', authenticated: Boolean(token), caption: 'Kết quả thanh toán' });
+    }
 </script>
 </body>
 

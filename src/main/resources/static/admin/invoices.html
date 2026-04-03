@@ -57,8 +57,15 @@
                 <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
                     <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
                         <div>
-                            <h2 class="font-heading text-2xl">Vận hành hóa đơn theo kỳ</h2>
-                            <p class="text-sm text-text-muted mt-1">Sinh hóa đơn từ kỳ điện nước đã chốt và xử lý trạng thái quá hạn.</p>
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-secondary">
+                                    <i class="fa-solid fa-receipt"></i>
+                                </div>
+                                <div>
+                                    <h2 class="font-heading text-2xl">Vận hành hóa đơn theo kỳ</h2>
+                                    <p class="text-sm text-text-muted mt-1">Sinh hóa đơn từ kỳ điện nước đã chốt và xử lý trạng thái quá hạn.</p>
+                                </div>
+                            </div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-2 w-full lg:w-auto">
                             <select id="genBuilding" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
@@ -67,8 +74,8 @@
                             <select id="genMonth" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card"></select>
                             <input id="genYear" type="number" min="2000" max="2099" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                             <div class="flex gap-2">
-                                <button id="btnGenerate" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-2 text-sm font-medium">Sinh hóa đơn</button>
-                                <button id="btnMarkOverdue" type="button" class="rounded-base border border-warning text-warning px-3 py-2 text-sm font-medium hover:bg-amber-50">Đánh dấu quá hạn</button>
+                                <button id="btnGenerate" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-2 text-sm font-medium inline-flex items-center gap-2"><i class="fa-solid fa-plus"></i><span>Sinh hóa đơn</span></button>
+                                <button id="btnMarkOverdue" type="button" class="rounded-base border border-warning text-warning px-3 py-2 text-sm font-medium hover:bg-amber-50 inline-flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i><span>Đánh dấu quá hạn</span></button>
                             </div>
                         </div>
                     </div>
@@ -77,10 +84,17 @@
                 <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                         <div>
-                            <h2 class="font-heading text-2xl">Danh sách điện nước theo kỳ đã chọn</h2>
-                            <p class="text-sm text-text-muted mt-1">Dùng để kiểm tra kỳ đã chốt trước khi sinh hóa đơn hàng loạt hoặc sinh riêng từng phòng.</p>
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-11 w-11 items-center justify-center rounded-full bg-teal-50 text-primary">
+                                    <i class="fa-solid fa-bolt"></i>
+                                </div>
+                                <div>
+                                    <h2 class="font-heading text-2xl">Danh sách điện nước theo kỳ đã chọn</h2>
+                                    <p class="text-sm text-text-muted mt-1">Dùng để kiểm tra kỳ đã chốt trước khi sinh hóa đơn hàng loạt hoặc sinh riêng từng phòng.</p>
+                                </div>
+                            </div>
                         </div>
-                        <button id="btnLoadUtility" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Tải danh sách kỳ</button>
+                        <button id="btnLoadUtility" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 inline-flex items-center gap-2"><i class="fa-solid fa-rotate"></i><span>Tải danh sách kỳ</span></button>
                     </div>
 
                     <div class="overflow-x-auto rounded-base border border-border">
@@ -105,8 +119,15 @@
                 <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <h2 class="font-heading text-2xl">Danh sách hóa đơn</h2>
-                            <p class="text-sm text-text-muted mt-1">Theo dõi trạng thái thanh toán cho Admin và duyệt thủ công khi cần.</p>
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-warning">
+                                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                                </div>
+                                <div>
+                                    <h2 class="font-heading text-2xl">Danh sách hóa đơn</h2>
+                                    <p class="text-sm text-text-muted mt-1">Theo dõi trạng thái thanh toán cho Admin và duyệt thủ công khi cần.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -129,12 +150,10 @@
                     </div>
 
                     <div class="flex gap-2 mb-4">
-                        <button id="btnSearch" type="button" class="rounded-base bg-secondary hover:bg-blue-600 text-white px-4 py-2 text-sm font-medium">Tìm kiếm</button>
-                        <button id="btnReset" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Đặt lại</button>
+                        <button id="btnSearch" type="button" class="rounded-base bg-secondary hover:bg-blue-600 text-white px-4 py-2 text-sm font-medium inline-flex items-center gap-2"><i class="fa-solid fa-magnifying-glass"></i><span>Tìm kiếm</span></button>
+                        <button id="btnReset" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 inline-flex items-center gap-2"><i class="fa-solid fa-rotate-left"></i><span>Đặt lại</span></button>
                         <button id="btnExportInvoices" type="button" class="rounded-base border border-secondary text-secondary px-4 py-2 text-sm font-medium hover:bg-blue-50 inline-flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9m-6-6 6 6m-9 4 2 3 2-3m-4 6h4" />
-                            </svg>
+                            <i class="fa-solid fa-file-arrow-down"></i>
                             <span>Xuất Excel</span>
                         </button>
                     </div>

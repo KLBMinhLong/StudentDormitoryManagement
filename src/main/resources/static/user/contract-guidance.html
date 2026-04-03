@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/ui/theme.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -38,9 +39,17 @@
     </script>
 </head>
 <body class="font-body text-text-main bg-bg-page min-h-screen">
-<main class="max-w-3xl mx-auto px-4 py-8">
+<div id="userLayout" class="user-layout max-w-[1200px] mx-auto px-4 py-4 md:py-6">
+    <div id="userSidebarMount"></div>
+
+<main class="user-content min-w-0 py-2">
     <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
-        <h1 class="font-heading text-2xl">Nộp hồ sơ online thành công</h1>
+        <div class="flex items-center gap-3">
+            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-secondary">
+                <i class="fa-solid fa-file-circle-check"></i>
+            </div>
+            <h1 class="font-heading text-2xl">Nộp hồ sơ online thành công</h1>
+        </div>
         <p class="text-text-muted mt-2">Yêu cầu hợp đồng của bạn đã được gửi đến ban quản lý và đang chờ duyệt.</p>
 
         <div class="mt-6 rounded-base border border-warning bg-amber-50 p-4">
@@ -66,14 +75,21 @@
         </div>
 
         <div class="mt-6 flex flex-wrap gap-3">
-            <a href="/home.html" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Về trang chủ</a>
-            <a href="/user/student-profile.html" class="rounded-base bg-primary text-white px-4 py-2 text-sm font-medium hover:bg-primary-hover">Xem hồ sơ của tôi</a>
+            <a href="/home.html" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50 inline-flex items-center gap-2"><i class="fa-solid fa-house"></i><span>Về trang chủ</span></a>
+            <a href="/user/student-profile.html" class="rounded-base bg-primary text-white px-4 py-2 text-sm font-medium hover:bg-primary-hover inline-flex items-center gap-2"><i class="fa-regular fa-user"></i><span>Xem hồ sơ của tôi</span></a>
         </div>
     </section>
 </main>
+</div>
+
+<script src="/ui/user-sidebar.js"></script>
 
 <script>
+    const token = localStorage.getItem('dormitory_access_token');
     const contractId = new URLSearchParams(window.location.search).get('contractId');
+    if (window.UserSidebar) {
+        window.UserSidebar.mount({ active: 'contracts', authenticated: Boolean(token), caption: 'Nộp hồ sơ hợp đồng' });
+    }
     document.getElementById('contractCode').textContent = contractId ? `HD-${contractId}` : 'Chưa xác định';
 </script>
 </body>

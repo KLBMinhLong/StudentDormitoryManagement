@@ -56,29 +56,29 @@
                         <p class="text-text-muted text-sm mt-1">Theo dõi doanh thu thanh toán và tỷ lệ lấp đầy phòng theo thời gian thực.</p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <a href="/admin/invoices.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Quản lý hóa đơn</a>
-                        <a href="/admin/rooms.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Quản lý phòng</a>
-                        <button id="btnReload" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-2 text-sm font-medium">Làm mới số liệu</button>
+                        <a href="/admin/invoices.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50 inline-flex items-center gap-2"><i class="fa-solid fa-receipt"></i><span>Quản lý hóa đơn</span></a>
+                        <a href="/admin/rooms.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50 inline-flex items-center gap-2"><i class="fa-solid fa-door-open"></i><span>Quản lý phòng</span></a>
+                        <button id="btnReload" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-2 text-sm font-medium inline-flex items-center gap-2"><i class="fa-solid fa-rotate"></i><span>Làm mới số liệu</span></button>
                     </div>
                 </div>
             </section>
 
             <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                 <article class="rounded-base bg-bg-card border border-border shadow-soft p-4">
-                    <p class="text-xs text-text-muted uppercase tracking-wide">Tổng doanh thu đã thu</p>
+                    <p class="text-xs text-text-muted uppercase tracking-wide inline-flex items-center gap-1"><i class="fa-solid fa-sack-dollar"></i> Tổng doanh thu đã thu</p>
                     <p id="kpiTotalRevenue" class="mt-2 font-heading text-2xl text-primary">0 đ</p>
                 </article>
                 <article class="rounded-base bg-bg-card border border-border shadow-soft p-4">
-                    <p class="text-xs text-text-muted uppercase tracking-wide">Doanh thu tháng này</p>
+                    <p class="text-xs text-text-muted uppercase tracking-wide inline-flex items-center gap-1"><i class="fa-solid fa-chart-line"></i> Doanh thu tháng này</p>
                     <p id="kpiMonthRevenue" class="mt-2 font-heading text-2xl text-secondary">0 đ</p>
                 </article>
                 <article class="rounded-base bg-bg-card border border-border shadow-soft p-4">
-                    <p class="text-xs text-text-muted uppercase tracking-wide">Tỷ lệ lấp đầy giường</p>
+                    <p class="text-xs text-text-muted uppercase tracking-wide inline-flex items-center gap-1"><i class="fa-solid fa-bed"></i> Tỷ lệ lấp đầy giường</p>
                     <p id="kpiBedOccupancy" class="mt-2 font-heading text-2xl text-success">0%</p>
                     <p id="kpiBedOccupancyDetail" class="text-xs text-text-muted mt-1">0 / 0 giường</p>
                 </article>
                 <article class="rounded-base bg-bg-card border border-border shadow-soft p-4">
-                    <p class="text-xs text-text-muted uppercase tracking-wide">Tỷ lệ lấp đầy phòng</p>
+                    <p class="text-xs text-text-muted uppercase tracking-wide inline-flex items-center gap-1"><i class="fa-solid fa-building"></i> Tỷ lệ lấp đầy phòng</p>
                     <p id="kpiRoomOccupancy" class="mt-2 font-heading text-2xl text-warning">0%</p>
                     <p id="kpiRoomOccupancyDetail" class="text-xs text-text-muted mt-1">0 / 0 phòng</p>
                 </article>
