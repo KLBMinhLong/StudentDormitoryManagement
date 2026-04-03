@@ -49,7 +49,7 @@
         <main class="space-y-6">
             <div id="message" class="hidden rounded-base px-4 py-3 text-sm"></div>
 
-            <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+            <section id="requestSection" class="rounded-base bg-bg-card border border-border shadow-soft p-6">
                 <div class="flex items-start justify-between gap-3 flex-wrap">
                     <div>
                         <h2 class="font-heading text-2xl">Quản lý hợp đồng nội trú</h2>
@@ -70,7 +70,7 @@
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
                     <div class="md:col-span-2">
                         <label class="text-sm text-text-muted block mb-1">Từ khóa</label>
-                        <input id="keywordInput" type="text" placeholder="Tìm theo tên, mã sinh viên, phòng..." class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                        <input id="keywordInput" type="text" placeholder="Tìm theo tên, mã sinh viên, phòng hoặc #mã hợp đồng..." class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                     </div>
                     <div>
                         <label class="text-sm text-text-muted block mb-1">Trạng thái</label>
@@ -148,13 +148,15 @@
                         </thead>
                         <tbody id="requestBody">
                         <tr>
-                            <td colspan="7" class="px-4 py-6 text-center text-text-muted">Đang tải danh sách yêu cầu...</td>
+                            <td colspan="7" class="px-4 py-6 text-center text-text-muted">Danh sách yêu cầu sẽ được tải khi bạn cuộn đến khu vực này.</td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <div id="requestCards" class="mt-4 grid grid-cols-1 gap-3 2xl:hidden"></div>
+                <div id="requestCards" class="mt-4 grid grid-cols-1 gap-3 2xl:hidden">
+                    <div class="rounded-base border border-border bg-slate-50 px-4 py-6 text-center text-sm text-text-muted">Danh sách yêu cầu sẽ được tải khi bạn cuộn đến khu vực này.</div>
+                </div>
 
                 <div id="requestPagination" class="mt-4 flex items-center justify-between gap-2 flex-wrap"></div>
             </section>
@@ -237,6 +239,7 @@
     const statusSelect = document.getElementById('statusSelect');
     const occupancySelect = document.getElementById('occupancySelect');
     const sortSelect = document.getElementById('sortSelect');
+    const requestSection = document.getElementById('requestSection');
     const requestBody = document.getElementById('requestBody');
     const requestCards = document.getElementById('requestCards');
     const requestPagination = document.getElementById('requestPagination');
@@ -254,6 +257,11 @@
     let resolveActionModal = null;
     let deepLinkContractId = null;
     let latestRequestRows = [];
+    let requestSectionObserver = null;
+    let hasLoadedChangeRequests = false;
+    let isLoadingChangeRequests = false;
+    let contractsAbortController = null;
+    let changeRequestsAbortController = null;
 
     const requestState = {
         page: 0,
@@ -292,6 +300,16 @@
 
     function formatCurrency(value) {
         return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + ' đ';
+    }
+
+    function debounce(fn, delay = 400) {
+        let timer = null;
+        return (...args) => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+            timer = setTimeout(() => fn(...args), delay);
+        };
     }
 
     function statusBadge(status) {
@@ -560,6 +578,12 @@
         body.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-text-muted">Đang tải dữ liệu...</td></tr>';
         contractCards.innerHTML = '<div class="rounded-base border border-border bg-slate-50 px-4 py-6 text-center text-sm text-text-muted">Đang tải dữ liệu...</div>';
 
+        if (contractsAbortController) {
+            contractsAbortController.abort();
+        }
+        contractsAbortController = new AbortController();
+        const currentSignal = contractsAbortController.signal;
+
         const params = new URLSearchParams({
             page: String(state.page),
             size: String(state.size),
@@ -572,7 +596,7 @@
         if (state.occupancyType) params.set('occupancyType', state.occupancyType);
 
         try {
-            const result = await fetchAPI(`/api/v1/contracts/admin/management?${params.toString()}`);
+            const result = await fetchAPI(`/api/v1/contracts/admin/management?${params.toString()}`, { signal: currentSignal });
             const rows = Array.isArray(result.content) ? result.content : [];
 
             if (rows.length === 0) {
@@ -606,8 +630,15 @@
 
             renderPagination(result);
         } catch (error) {
+            if (error && error.name === 'AbortError') {
+                return;
+            }
             body.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-danger">${error.message || 'Không thể tải danh sách hợp đồng.'}</td></tr>`;
             contractCards.innerHTML = `<div class="rounded-base border border-red-100 bg-red-50 px-4 py-6 text-center text-sm text-danger">${error.message || 'Không thể tải danh sách hợp đồng.'}</div>`;
+        } finally {
+            if (contractsAbortController && contractsAbortController.signal === currentSignal) {
+                contractsAbortController = null;
+            }
         }
     }
 
@@ -647,8 +678,19 @@
     }
 
     async function loadChangeRequests() {
+        if (isLoadingChangeRequests) {
+            return;
+        }
+
+        isLoadingChangeRequests = true;
         requestBody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-text-muted">Đang tải danh sách yêu cầu...</td></tr>';
         requestCards.innerHTML = '<div class="rounded-base border border-border bg-slate-50 px-4 py-6 text-center text-sm text-text-muted">Đang tải danh sách yêu cầu...</div>';
+
+        if (changeRequestsAbortController) {
+            changeRequestsAbortController.abort();
+        }
+        changeRequestsAbortController = new AbortController();
+        const currentSignal = changeRequestsAbortController.signal;
 
         const params = new URLSearchParams({
             page: String(requestState.page),
@@ -662,9 +704,10 @@
         if (requestState.keyword) params.set('keyword', requestState.keyword);
 
         try {
-            const result = await fetchAPI(`/api/v1/contracts/admin/change-requests?${params.toString()}`);
+            const result = await fetchAPI(`/api/v1/contracts/admin/change-requests?${params.toString()}`, { signal: currentSignal });
             const rows = Array.isArray(result.content) ? result.content : [];
             latestRequestRows = rows;
+            hasLoadedChangeRequests = true;
 
             if (rows.length === 0) {
                 requestBody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-text-muted">Không có yêu cầu thay đổi nào.</td></tr>';
@@ -695,9 +738,58 @@
 
             renderRequestPagination(result);
         } catch (error) {
+            if (error && error.name === 'AbortError') {
+                return;
+            }
             requestBody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-danger">${error.message || 'Không thể tải danh sách yêu cầu.'}</td></tr>`;
             requestCards.innerHTML = `<div class="rounded-base border border-red-100 bg-red-50 px-4 py-6 text-center text-sm text-danger">${error.message || 'Không thể tải danh sách yêu cầu.'}</div>`;
+        } finally {
+            isLoadingChangeRequests = false;
+            if (changeRequestsAbortController && changeRequestsAbortController.signal === currentSignal) {
+                changeRequestsAbortController = null;
+            }
         }
+    }
+
+    function scheduleInitialChangeRequestLoad() {
+        const runLoad = () => {
+            if (!hasLoadedChangeRequests) {
+                loadChangeRequests();
+            }
+        };
+
+        if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(runLoad, { timeout: 1500 });
+        } else {
+            window.setTimeout(runLoad, 900);
+        }
+    }
+
+    function setupRequestSectionLazyLoad() {
+        if (!requestSection || typeof window.IntersectionObserver !== 'function') {
+            scheduleInitialChangeRequestLoad();
+            return;
+        }
+
+        requestSectionObserver = new IntersectionObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.isIntersecting) {
+                    loadChangeRequests();
+                    requestSectionObserver.disconnect();
+                    requestSectionObserver = null;
+                    break;
+                }
+            }
+        }, {
+            root: null,
+            rootMargin: '120px 0px',
+            threshold: 0.05
+        });
+
+        requestSectionObserver.observe(requestSection);
+
+        // Fallback to avoid stale placeholder if user never scrolls to this section.
+        scheduleInitialChangeRequestLoad();
     }
 
     async function handleRequestAction(requestId, action) {
@@ -925,11 +1017,13 @@
         }
     });
 
-    keywordInput.addEventListener('input', () => {
+    const onKeywordInput = debounce(() => {
         state.keyword = keywordInput.value.trim();
         state.page = 0;
         loadContracts();
-    });
+    }, 450);
+
+    keywordInput.addEventListener('input', onKeywordInput);
 
     statusSelect.addEventListener('change', () => {
         state.status = statusSelect.value;
@@ -966,7 +1060,7 @@
     })();
 
     loadContracts();
-    loadChangeRequests();
+    setupRequestSectionLazyLoad();
 
     if (deepLinkContractId) {
         openDetail(deepLinkContractId);

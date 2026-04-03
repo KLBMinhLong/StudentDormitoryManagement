@@ -157,6 +157,7 @@
 
 <script>
     const ITEMS_PER_PAGE = 10;
+    const HOME_ROOM_FETCH_SIZE = 120;
     const token = localStorage.getItem('dormitory_access_token');
     const availableRoomCount = document.getElementById('availableRoomCount');
     const authState = document.getElementById('authState');
@@ -187,6 +188,7 @@
     let currentModalRoom = null;
     let currentModalBeds = [];
     let selectedBedId = null;
+    let backgroundRoomSyncRunning = false;
 
     if (window.UserSidebar) {
         window.UserSidebar.mount({ active: 'home', authenticated: Boolean(token), caption: 'Trang thông tin' });
@@ -482,21 +484,63 @@
         }
     }
 
-    async function loadData() {
-        try {
-            const roomResponse = await fetch('/api/v1/rooms?page=0&size=500&status=AVAILABLE&sortBy=id&direction=desc');
-            const roomPayload = await roomResponse.json();
+    async function fetchAvailableRoomsPage(page) {
+        const response = await fetch(`/api/v1/rooms?page=${page}&size=${HOME_ROOM_FETCH_SIZE}&status=AVAILABLE&sortBy=id&direction=desc`);
+        const payload = await response.json();
 
-            if (!roomResponse.ok) {
-                throw new Error(roomPayload.message || 'Không tải được danh sách phòng');
+        if (!response.ok) {
+            throw new Error(payload.message || 'Không tải được danh sách phòng');
+        }
+
+        return payload.result || {};
+    }
+
+    async function syncRemainingRoomsInBackground(startPage, totalPages) {
+        if (backgroundRoomSyncRunning) {
+            return;
+        }
+
+        backgroundRoomSyncRunning = true;
+        try {
+            for (let page = startPage; page < totalPages; page += 1) {
+                const result = await fetchAvailableRoomsPage(page);
+                const rows = Array.isArray(result.content) ? result.content : [];
+                if (!rows.length) {
+                    break;
+                }
+
+                const seenIds = new Set(allAvailableRooms.map((room) => String(room.id)));
+                rows.forEach((room) => {
+                    if (!seenIds.has(String(room.id))) {
+                        allAvailableRooms.push(room);
+                    }
+                });
             }
 
-            allAvailableRooms = Array.isArray(roomPayload.result?.content) ? roomPayload.result.content : [];
+            applyRoomFilters();
+        } catch {
+            // Keep already loaded rooms to preserve interactive behavior.
+        } finally {
+            backgroundRoomSyncRunning = false;
+        }
+    }
+
+    async function loadData() {
+        try {
+            const firstPageResult = await fetchAvailableRoomsPage(0);
+            const firstRows = Array.isArray(firstPageResult.content) ? firstPageResult.content : [];
+            const totalPages = Number(firstPageResult.totalPages || 0);
+
+            allAvailableRooms = firstRows;
             filteredRooms = [...allAvailableRooms];
 
             renderFilterOptions();
             availableRoomCount.textContent = String(filteredRooms.length);
             renderRoomList(1);
+
+            if (totalPages > 1) {
+                syncRemainingRoomsInBackground(1, totalPages);
+            }
         } catch (error) {
             showMessage('error', error.message || 'Có lỗi xảy ra khi tải dữ liệu.');
         }

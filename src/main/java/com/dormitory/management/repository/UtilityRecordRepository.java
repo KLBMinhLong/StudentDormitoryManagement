@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +28,7 @@ public interface UtilityRecordRepository extends JpaRepository<UtilityRecord, Lo
             @Param("year") Integer year,
             Pageable pageable);
 
+        @EntityGraph(attributePaths = {"room", "room.building"})
     @Query("""
             select ur from UtilityRecord ur
             where (:roomId is null or ur.room.id = :roomId)
@@ -69,6 +71,7 @@ public interface UtilityRecordRepository extends JpaRepository<UtilityRecord, Lo
             @Param("toYear") Integer toYear,
             @Param("toMonth") Integer toMonth);
 
+        @EntityGraph(attributePaths = {"room", "room.building"})
     @Query("""
             select ur from UtilityRecord ur
             where ur.month = :month

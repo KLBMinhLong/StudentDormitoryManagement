@@ -1,8 +1,12 @@
 package com.dormitory.management.service.impl;
 
+import static com.dormitory.management.config.CacheConfig.PRICING_LATEST_CACHE;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +25,7 @@ public class PricingPolicyServiceImpl implements PricingPolicyService {
     private final PricingPolicyRepository pricingPolicyRepository;
 
     @Override
+    @Cacheable(cacheNames = PRICING_LATEST_CACHE)
     public PricingPolicyResponseDTO getLatestPolicy() {
         PricingPolicy policy = pricingPolicyRepository.getLatestPolicy()
                 .orElseGet(() -> {
@@ -39,6 +44,7 @@ public class PricingPolicyServiceImpl implements PricingPolicyService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = PRICING_LATEST_CACHE, allEntries = true)
     public PricingPolicyResponseDTO updatePolicy(PricingPolicyUpdateRequestDTO request) {
         PricingPolicy policy = PricingPolicy.builder()
                 .electricUnitPrice(request.getElectricUnitPrice())

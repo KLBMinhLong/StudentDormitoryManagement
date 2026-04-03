@@ -1,5 +1,8 @@
 package com.dormitory.management.service.impl;
 
+import static com.dormitory.management.config.CacheConfig.ROOM_TYPES_LIST_CACHE;
+
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +26,7 @@ public class RoomTypeServiceImpl implements RoomTypeService {
     private final RoomTypeRepository roomTypeRepository;
 
     @Override
+    @Cacheable(cacheNames = ROOM_TYPES_LIST_CACHE)
     public PagedResponseDTO<RoomTypeDTO> getAllRoomTypes(int page, int size, String sortBy, String direction) {
         Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));

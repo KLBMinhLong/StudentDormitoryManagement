@@ -148,7 +148,7 @@
                             <option value="OVERDUE">OVERDUE</option>
                             <option value="CANCELLED">CANCELLED</option>
                         </select>
-                        <input id="filterKeyword" type="text" placeholder="Mã hóa đơn / phòng / sinh viên" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                        <input id="filterKeyword" type="text" placeholder="Mã hóa đơn / phòng / sinh viên (hỗ trợ #ID, INV-...)" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                     </div>
 
                     <div class="flex flex-col sm:flex-row flex-wrap gap-2 mb-4">
@@ -225,6 +225,8 @@
         let manualTargetId = null;
         let detailTargetId = null;
         let utilityRowsCache = [];
+        let invoicesAbortController = null;
+        let utilityRowsAbortController = null;
         const currentPeriod = (() => {
             const now = new Date();
             let month = now.getMonth();
@@ -266,6 +268,16 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
+        }
+
+        function debounce(fn, delay = 400) {
+            let timer = null;
+            return (...args) => {
+                if (timer) {
+                    clearTimeout(timer);
+                }
+                timer = setTimeout(() => fn(...args), delay);
+            };
         }
 
         function showToast(message, type = 'success') {
@@ -427,6 +439,17 @@
         }
 
         async function loadUtilityRowsForPeriod() {
+            const tbody = document.getElementById('utilityTableBody');
+            const cards = document.getElementById('utilityCards');
+            tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-text-muted">Đang tải dữ liệu điện nước...</td></tr>';
+            cards.innerHTML = '<div class="rounded-base border border-border bg-slate-50 px-4 py-6 text-center text-sm text-text-muted">Đang tải dữ liệu điện nước...</div>';
+
+            if (utilityRowsAbortController) {
+                utilityRowsAbortController.abort();
+            }
+            utilityRowsAbortController = new AbortController();
+            const currentSignal = utilityRowsAbortController.signal;
+
             const month = Number(document.getElementById('genMonth').value || 0);
             const year = Number(document.getElementById('genYear').value || 0);
             const buildingId = document.getElementById('genBuilding').value;
@@ -438,12 +461,26 @@
             const params = new URLSearchParams({ month: String(month), year: String(year) });
             if (buildingId) params.set('buildingId', buildingId);
 
-            const res = await fetch(`${API_BASE}/invoices/admin/utility-records?${params.toString()}`, { headers: authHeaders() });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Không tải được danh sách điện nước');
+            try {
+                const res = await fetch(`${API_BASE}/invoices/admin/utility-records?${params.toString()}`, {
+                    headers: authHeaders(),
+                    signal: currentSignal
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Không tải được danh sách điện nước');
 
-            utilityRowsCache = Array.isArray(data.result) ? data.result : [];
-            renderUtilityRows();
+                utilityRowsCache = Array.isArray(data.result) ? data.result : [];
+                renderUtilityRows();
+            } catch (error) {
+                if (error && error.name === 'AbortError') {
+                    return;
+                }
+                throw error;
+            } finally {
+                if (utilityRowsAbortController && utilityRowsAbortController.signal === currentSignal) {
+                    utilityRowsAbortController = null;
+                }
+            }
         }
 
         async function generateInvoiceForRoom(roomId) {
@@ -595,6 +632,17 @@
         }
 
         async function loadInvoices(page = 0) {
+            const tbody = document.getElementById('invoiceTableBody');
+            const cards = document.getElementById('invoiceCards');
+            tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-text-muted">Đang tải danh sách hóa đơn...</td></tr>';
+            cards.innerHTML = '<div class="rounded-base border border-border bg-slate-50 px-4 py-6 text-center text-sm text-text-muted">Đang tải danh sách hóa đơn...</div>';
+
+            if (invoicesAbortController) {
+                invoicesAbortController.abort();
+            }
+            invoicesAbortController = new AbortController();
+            const currentSignal = invoicesAbortController.signal;
+
             const params = new URLSearchParams({
                 page: String(page),
                 size: String(ITEMS_PER_PAGE),
@@ -613,16 +661,30 @@
             if (buildingId) params.set('buildingId', buildingId);
             if (keyword) params.set('keyword', keyword);
 
-            const res = await fetch(`${API_BASE}/invoices/admin/list?${params.toString()}`, { headers: authHeaders() });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Không tải được hóa đơn');
+            try {
+                const res = await fetch(`${API_BASE}/invoices/admin/list?${params.toString()}`, {
+                    headers: authHeaders(),
+                    signal: currentSignal
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Không tải được hóa đơn');
 
-            const result = data.result || {};
-            invoicesCache = Array.isArray(result.content) ? result.content : [];
-            currentPage = result.pageNo ?? page;
-            totalPages = result.totalPages ?? 0;
-            totalElements = result.totalElements ?? 0;
-            renderRows();
+                const result = data.result || {};
+                invoicesCache = Array.isArray(result.content) ? result.content : [];
+                currentPage = result.pageNo ?? page;
+                totalPages = result.totalPages ?? 0;
+                totalElements = result.totalElements ?? 0;
+                renderRows();
+            } catch (error) {
+                if (error && error.name === 'AbortError') {
+                    return;
+                }
+                throw error;
+            } finally {
+                if (invoicesAbortController && invoicesAbortController.signal === currentSignal) {
+                    invoicesAbortController = null;
+                }
+            }
         }
 
         async function exportInvoicesExcel() {
@@ -769,6 +831,23 @@
                 showToast(error.message || 'Không thể khởi tạo trang hóa đơn.', 'error');
             }
         })();
+
+        const onInvoiceKeywordInput = debounce(() => {
+            loadInvoices(0).catch((error) => {
+                showToast(error.message || 'Không tải được hóa đơn', 'error');
+            });
+        }, 450);
+
+        const onUtilityPeriodChange = debounce(() => {
+            loadUtilityRowsForPeriod().catch((error) => {
+                showToast(error.message || 'Không tải được danh sách điện nước', 'error');
+            });
+        }, 300);
+
+        document.getElementById('filterKeyword').addEventListener('input', onInvoiceKeywordInput);
+        document.getElementById('genBuilding').addEventListener('change', onUtilityPeriodChange);
+        document.getElementById('genMonth').addEventListener('change', onUtilityPeriodChange);
+        document.getElementById('genYear').addEventListener('input', onUtilityPeriodChange);
 
         document.getElementById('btnSearch').addEventListener('click', () => loadInvoices(0));
         document.getElementById('btnReset').addEventListener('click', () => {
