@@ -9,6 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/ui/theme.css">
+    <!-- Heroicons SVG Sprites -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/index.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -38,47 +40,215 @@
     </script>
 </head>
 
-<body class="font-body text-text-main bg-bg-page min-h-screen">
-    <header class="bg-bg-card border-b border-border">
-        <div class="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between">
-            <h1 class="font-heading text-lg">Ký Túc Xá Sinh Viên</h1>
-            <nav class="flex items-center gap-2">
-                <a href="/login" class="px-3 py-2 rounded-base border border-border text-sm bg-primary text-white">Đăng nhập</a>
-                <a href="/register" class="px-3 py-2 rounded-base border border-border text-sm text-text-main hover:bg-slate-50">Đăng ký</a>
-            </nav>
+<body class="font-body text-text-main bg-bg-page min-h-screen flex items-center justify-center px-4">
+    <!-- Main Container -->
+    <div class="w-full max-w-md">
+        <!-- Logo/Header Section -->
+        <div class="text-center mb-8">
+            <div class="inline-block mb-4 p-3 bg-primary/10 rounded-full">
+                <!-- Building2 Icon from Heroicons -->
+                <svg class="w-8 h-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 21H21M3 7v10a6 6 0 006 6h6a6 6 0 006-6V7M9 5a2 2 0 012-2h2a2 2 0 012 2v2H9V5z" />
+                </svg>
+            </div>
+            <h1 class="font-heading text-2xl font-bold text-text-main">Ký Túc Xá Sinh Viên</h1>
+            <p class="text-text-muted text-sm mt-2">Hệ thống quản lý ký túc xá</p>
         </div>
-    </header>
 
-    <main class="max-w-[1200px] mx-auto px-4 py-8">
-        <section class="max-w-md mx-auto rounded-base border border-border bg-bg-card shadow-soft p-6">
-            <h2 class="font-heading text-2xl">Đăng nhập</h2>
-            <p class="text-text-muted mt-2 text-sm">Vui lòng nhập tài khoản để tiếp tục.</p>
+        <!-- Login Card -->
+        <div class="bg-bg-card rounded-base border border-border shadow-soft p-8 mb-6">
+            <h2 class="font-heading text-xl font-bold text-text-main mb-2">Đăng nhập</h2>
+            <p class="text-text-muted text-sm mb-6">Vui lòng nhập thông tin để tiếp tục</p>
 
-            <form id="loginForm" class="mt-6 space-y-4" novalidate>
+            <form id="loginForm" class="space-y-4" novalidate>
+                <!-- Username Field -->
                 <div>
-                    <label for="username" class="block text-sm font-medium mb-2">Tên đăng nhập</label>
-                    <input id="username" type="text" required class="w-full rounded-base border border-border px-4 py-3" placeholder="admin">
+                    <label for="username" class="block text-sm font-medium text-text-main mb-2">
+                        Tên đăng nhập, email hoặc mã sinh viên
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input 
+                        id="username" 
+                        type="text" 
+                        required 
+                        placeholder="Nhập tên đăng nhập, email hoặc mã sinh viên"
+                        class="w-full px-4 py-3 rounded-base border border-border text-text-main placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                    />
+                    <div id="usernameError" class="text-danger text-xs mt-1 hidden"></div>
                 </div>
+
+                <!-- Password Field -->
                 <div>
-                    <label for="password" class="block text-sm font-medium mb-2">Mật khẩu</label>
-                    <input id="password" type="password" required class="w-full rounded-base border border-border px-4 py-3" placeholder="Nhập mật khẩu">
+                    <label for="password" class="block text-sm font-medium text-text-main mb-2">
+                        Mật khẩu
+                        <span class="text-danger">*</span>
+                    </label>
+                    <div class="relative">
+                        <input 
+                            id="password" 
+                            type="password" 
+                            required 
+                            placeholder="Nhập mật khẩu"
+                            class="w-full px-4 py-3 pr-12 rounded-base border border-border text-text-main placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                        />
+                        <button 
+                            type="button" 
+                            id="togglePassword"
+                            class="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-main transition-colors"
+                            aria-label="Hiện/ẩn mật khẩu"
+                        >
+                            <!-- Eye Icon from Heroicons (Eye outline) -->
+                            <svg id="eyeIcon" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="passwordError" class="text-danger text-xs mt-1 hidden"></div>
                 </div>
-                <button type="submit" class="w-full rounded-base bg-primary hover:bg-primary-hover text-white py-3 font-medium transition-colors">Đăng nhập</button>
+
+                <!-- Submit Button -->
+                <button 
+                    type="submit" 
+                    id="submitBtn"
+                    class="w-full px-4 py-3 mt-6 rounded-base bg-primary hover:bg-primary-hover text-white font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                >
+                    <span id="submitText">Đăng nhập</span>
+                    <span id="spinner" class="hidden">
+                        <!-- Loading spinner -->
+                        <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </span>
+                </button>
+
+                <!-- Message Alert -->
+                <div id="message" class="hidden mt-4 rounded-base px-4 py-3 text-sm border"></div>
             </form>
 
-            <p class="text-sm text-text-muted mt-4">Chưa có tài khoản? <a href="/register" class="text-secondary font-medium">Đăng ký ngay</a></p>
-            <div id="message" class="hidden mt-4 rounded-base px-4 py-3 text-sm"></div>
-        </section>
-    </main>
+            <!-- Forgot Password Link -->
+            <p class="text-center text-text-muted text-sm mt-6">
+                <button 
+                    type="button" 
+                    id="forgotPasswordBtn"
+                    class="text-primary hover:text-primary-hover font-medium transition-colors underline"
+                >
+                    Quên mật khẩu?
+                </button>
+            </p>
+        </div>
+
+        <!-- Register Link -->
+        <p class="text-center text-text-muted text-sm">
+            Chưa có tài khoản? 
+            <a href="/register" class="text-secondary hover:text-secondary font-medium transition-colors">
+                Đăng ký ngay
+            </a>
+        </p>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-bg-card rounded-base border border-border shadow-soft max-w-sm w-full p-8 animate-in">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="font-heading text-lg font-bold text-text-main">Quên mật khẩu</h3>
+                <button 
+                    type="button" 
+                    id="closeForgotPasswordModal"
+                    class="text-text-muted hover:text-text-main transition-colors"
+                    aria-label="Đóng"
+                >
+                    <!-- XMark Icon from Heroicons -->
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Description -->
+            <p class="text-text-muted text-sm mb-6">
+                Nhập email đăng ký của bạn, chúng tôi sẽ gửi hướng dẫn đặt lại mật khẩu qua email.
+            </p>
+
+            <!-- Forgot Password Form -->
+            <form id="forgotPasswordForm" class="space-y-4">
+                <div>
+                    <label for="forgotEmail" class="block text-sm font-medium text-text-main mb-2">
+                        Email
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input 
+                        id="forgotEmail" 
+                        type="email" 
+                        required 
+                        placeholder="Nhập email của bạn"
+                        class="w-full px-4 py-3 rounded-base border border-border text-text-main placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                    />
+                    <div id="forgotEmailError" class="text-danger text-xs mt-1 hidden"></div>
+                </div>
+
+                <!-- Modal Message -->
+                <div id="forgotPasswordMessage" class="hidden mt-4 rounded-base px-4 py-3 text-sm border"></div>
+
+                <!-- Modal Buttons -->
+                <div class="flex gap-3 mt-6">
+                    <button 
+                        type="button" 
+                        id="cancelForgotPasswordBtn"
+                        class="flex-1 px-4 py-2 rounded-base border border-border text-text-main hover:bg-bg-page transition-colors font-medium"
+                    >
+                        Hủy
+                    </button>
+                    <button 
+                        type="submit"
+                        id="submitForgotPasswordBtn"
+                        class="flex-1 px-4 py-2 rounded-base bg-primary hover:bg-primary-hover text-white font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                        <span id="forgotButtonText">Gửi</span>
+                        <span id="forgotSpinner" class="hidden">
+                            <!-- Loading spinner -->
+                            <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script>
+        // Redirect if already logged in
         const token = localStorage.getItem('dormitory_access_token');
         if (token) {
             window.location.href = '/home';
         }
 
+        // ============ PASSWORD TOGGLE ============
+        const passwordInput = document.getElementById('password');
+        const togglePasswordBtn = document.getElementById('togglePassword');
+        const eyeIcon = document.getElementById('eyeIcon');
+
+        togglePasswordBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+            // Toggle between Eye (show password is visible) and EyeSlash (show password is hidden)
+            eyeIcon.innerHTML = isPassword 
+                ? '<path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />'
+                : '<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />';
+        });
+
+        // ============ LOGIN FORM ============
         const form = document.getElementById('loginForm');
         const message = document.getElementById('message');
+        const submitBtn = document.getElementById('submitBtn');
+        const usernameInput = document.getElementById('username');
+        const usernameError = document.getElementById('usernameError');
+        const passwordError = document.getElementById('passwordError');
 
         function showMessage(type, text) {
             message.className = 'mt-4 rounded-base px-4 py-3 text-sm';
@@ -88,15 +258,51 @@
                 message.classList.add('bg-green-50', 'text-success', 'border', 'border-green-100');
             }
             message.textContent = text;
+            message.classList.remove('hidden');
+        }
+
+        function hideErrors() {
+            usernameError.classList.add('hidden');
+            passwordError.classList.add('hidden');
+        }
+
+        function setLoading(isLoading) {
+            submitBtn.disabled = isLoading;
+            document.getElementById('submitText').classList.toggle('hidden', isLoading);
+            document.getElementById('spinner').classList.toggle('hidden', !isLoading);
         }
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
-            showMessage('success', 'Đang đăng nhập...');
+            hideErrors();
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            // Validation
+            if (!username) {
+                usernameError.textContent = 'Tên đăng nhập không được để trống';
+                usernameError.classList.remove('hidden');
+                return;
+            }
+
+            if (!password) {
+                passwordError.textContent = 'Mật khẩu không được để trống';
+                passwordError.classList.remove('hidden');
+                return;
+            }
+
+            if (password.length < 6) {
+                passwordError.textContent = 'Mật khẩu phải có ít nhất 6 ký tự';
+                passwordError.classList.remove('hidden');
+                return;
+            }
+
+            setLoading(true);
 
             const payload = {
-                username: document.getElementById('username').value.trim(),
-                password: document.getElementById('password').value
+                username: username,
+                password: password
             };
 
             try {
@@ -105,6 +311,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
                 const data = await response.json();
 
                 if (!response.ok) {
@@ -119,9 +326,110 @@
                 showMessage('success', 'Đăng nhập thành công, đang chuyển trang...');
                 setTimeout(() => {
                     window.location.href = isAdmin ? '/admin' : '/home';
-                }, 350);
+                }, 400);
             } catch (error) {
+                setLoading(false);
                 showMessage('error', error.message || 'Có lỗi xảy ra');
+            }
+        });
+
+        // ============ FORGOT PASSWORD MODAL ============
+        const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
+        const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+        const closeForgotPasswordModal = document.getElementById('closeForgotPasswordModal');
+        const cancelForgotPasswordBtn = document.getElementById('cancelForgotPasswordBtn');
+        const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+        const forgotPasswordMessage = document.getElementById('forgotPasswordMessage');
+        const forgotEmailInput = document.getElementById('forgotEmail');
+        const forgotEmailError = document.getElementById('forgotEmailError');
+        const submitForgotPasswordBtn = document.getElementById('submitForgotPasswordBtn');
+
+        function openForgotPasswordModal() {
+            forgotPasswordModal.classList.remove('hidden');
+            forgotPasswordForm.reset();
+            forgotEmailError.classList.add('hidden');
+            forgotPasswordMessage.classList.add('hidden');
+        }
+
+        function closeForgotModal() {
+            forgotPasswordModal.classList.add('hidden');
+        }
+
+        function showForgotMessage(type, text) {
+            forgotPasswordMessage.className = 'mt-4 rounded-base px-4 py-3 text-sm border';
+            if (type === 'error') {
+                forgotPasswordMessage.classList.add('bg-red-50', 'text-danger', 'border-red-100');
+            } else {
+                forgotPasswordMessage.classList.add('bg-green-50', 'text-success', 'border-green-100');
+            }
+            forgotPasswordMessage.textContent = text;
+            forgotPasswordMessage.classList.remove('hidden');
+        }
+
+        function setForgotLoading(isLoading) {
+            submitForgotPasswordBtn.disabled = isLoading;
+            document.getElementById('forgotButtonText').classList.toggle('hidden', isLoading);
+            document.getElementById('forgotSpinner').classList.toggle('hidden', !isLoading);
+        }
+
+        forgotPasswordBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openForgotPasswordModal();
+        });
+
+        closeForgotPasswordModal.addEventListener('click', closeForgotModal);
+        cancelForgotPasswordBtn.addEventListener('click', closeForgotModal);
+
+        // Close modal when clicking outside
+        forgotPasswordModal.addEventListener('click', (e) => {
+            if (e.target === forgotPasswordModal) {
+                closeForgotModal();
+            }
+        });
+
+        forgotPasswordForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            forgotEmailError.classList.add('hidden');
+
+            const email = forgotEmailInput.value.trim();
+
+            // Validation
+            if (!email) {
+                forgotEmailError.textContent = 'Email không được để trống';
+                forgotEmailError.classList.remove('hidden');
+                return;
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                forgotEmailError.textContent = 'Email không hợp lệ';
+                forgotEmailError.classList.remove('hidden');
+                return;
+            }
+
+            setForgotLoading(true);
+
+            try {
+                const response = await fetch('/api/v1/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Không thể gửi yêu cầu đặt lại mật khẩu');
+                }
+
+                showForgotMessage('success', 'Hướng dẫn đặt lại mật khẩu đã được gửi về email của bạn. Vui lòng kiểm tra email trong vài phút.');
+                
+                setTimeout(() => {
+                    closeForgotModal();
+                }, 2000);
+            } catch (error) {
+                setForgotLoading(false);
+                showForgotMessage('error', error.message || 'Có lỗi xảy ra');
             }
         });
     </script>

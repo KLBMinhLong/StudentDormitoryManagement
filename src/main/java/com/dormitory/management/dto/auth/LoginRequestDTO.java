@@ -13,8 +13,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LoginRequestDTO {
 
-    @NotBlank(message = "Username is required")
-    @Size(max = 50, message = "Username must not exceed 50 characters")
+    @NotBlank(message = "Username, email, or student code is required")
+    @Size(max = 50, message = "Username, email, or student code must not exceed 50 characters")
     private String username;
 
     @NotBlank(message = "Password is required")

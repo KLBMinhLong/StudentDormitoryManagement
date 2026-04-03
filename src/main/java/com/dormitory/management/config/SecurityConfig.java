@@ -45,6 +45,8 @@ public class SecurityConfig {
                                 "/index.html",
                                 "/api/v1/auth/register/student",
                                 "/api/v1/auth/login",
+                                "/api/v1/auth/forgot-password",
+                                "/api/v1/auth/reset-password",
                                 "/login",
                                 "/login.html",
                                 "/register",
