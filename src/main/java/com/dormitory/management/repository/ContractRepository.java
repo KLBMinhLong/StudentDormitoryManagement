@@ -23,6 +23,8 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
 
     Optional<Contract> findFirstByStudentIdAndStatusOrderByCreatedAtDesc(Long studentId, ContractStatus status);
 
+    Optional<Contract> findFirstByBedIdAndStatusInOrderByCreatedAtDesc(Long bedId, Set<ContractStatus> statuses);
+
     boolean existsByStudentIdAndStatusIn(Long studentId, Set<ContractStatus> statuses);
 
     List<Contract> findByStatusAndHoldExpiresAtBefore(ContractStatus status, LocalDateTime time);
