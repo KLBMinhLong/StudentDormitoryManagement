@@ -581,7 +581,12 @@
                 bindEvents();
                 await ensureAdmin();
                 await loadMetadata();
-                await loadRooms();
+                const params = new URLSearchParams(window.location.search);
+                const keywordParam = params.get('keyword');
+                if (keywordParam) {
+                    document.getElementById('filterKeyword').value = keywordParam;
+                }
+                await loadRooms(0);
             } catch (error) {
                 showToast(error.message || 'Có lỗi xảy ra khi tải trang quản lý phòng.', 'error');
                 setTimeout(() => {

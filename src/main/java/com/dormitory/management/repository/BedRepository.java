@@ -24,4 +24,13 @@ public interface BedRepository extends JpaRepository<Bed, Long> {
     void deleteByRoomId(Long roomId);
 
     boolean existsByRoomIdAndIsOccupiedFalse(Long roomId);
+
+    long countByIsOccupiedTrue();
+
+    @Query("""
+            SELECT COUNT(DISTINCT b.room.id)
+            FROM Bed b
+            WHERE b.isOccupied = true
+            """)
+    long countDistinctOccupiedRooms();
 }

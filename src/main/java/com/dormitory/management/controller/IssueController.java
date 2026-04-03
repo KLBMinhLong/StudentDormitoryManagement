@@ -46,6 +46,13 @@ public class IssueController {
     }
 
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/student/{studentId}")
+    public ResponseEntity<ApiResponse<List<IssueResponseDTO>>> getIssuesByStudentId(@PathVariable Long studentId) {
+        List<IssueResponseDTO> result = issueService.getIssuesByStudentId(studentId);
+        return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), "Lấy danh sách yêu cầu theo sinh viên thành công", result));
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PutMapping("/{id}/status")
     public ResponseEntity<ApiResponse<IssueResponseDTO>> updateIssueStatus(@PathVariable Long id, @RequestBody IssueStatusUpdateDTO request) {
         IssueResponseDTO result = issueService.updateIssueStatus(id, request);

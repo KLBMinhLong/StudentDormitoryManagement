@@ -874,7 +874,13 @@ public class ContractServiceImpl implements ContractService {
                 .studentId(contract.getStudent() == null ? null : contract.getStudent().getId())
             .studentCode(contract.getStudent() == null ? null : contract.getStudent().getStudentCode())
                 .studentName(contract.getStudent() == null ? null : contract.getStudent().getFullName())
+                .studentPhone(contract.getStudent() == null ? null : contract.getStudent().getPhone())
+                .studentEmail(contract.getStudent() == null ? null : contract.getStudent().getEmail())
+                .studentCccd(contract.getStudent() == null ? null : contract.getStudent().getCccd())
                 .roomId(contract.getRoom() == null ? null : contract.getRoom().getId())
+                .buildingName(contract.getRoom() == null || contract.getRoom().getBuilding() == null
+                        ? null
+                        : contract.getRoom().getBuilding().getName())
                 .roomNumber(contract.getRoom() == null ? null : contract.getRoom().getRoomNumber())
                 .bedId(contract.getBed() == null ? null : contract.getBed().getId())
                 .bedNumber(contract.getBed() == null ? 0 : contract.getBed().getBedNumber())

@@ -1,6 +1,7 @@
 package com.dormitory.management.repository;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -97,4 +98,39 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
               AND i.dueAt < :now
             """)
     int markOverdueInvoices(@Param("now") LocalDateTime now, @Param("markedAt") LocalDateTime markedAt);
+
+    long countByStatus(InvoiceStatus status);
+
+    @Query("""
+            SELECT COALESCE(SUM(i.totalAmount), 0)
+            FROM Invoice i
+            WHERE i.status = :status
+            """)
+    BigDecimal sumTotalAmountByStatus(@Param("status") InvoiceStatus status);
+
+    @Query("""
+            SELECT COALESCE(SUM(i.totalAmount), 0)
+            FROM Invoice i
+            WHERE i.status = :status
+              AND i.paidAt >= :fromTime
+              AND i.paidAt < :toTime
+            """)
+    BigDecimal sumRevenueByPaidAtRange(
+            @Param("status") InvoiceStatus status,
+            @Param("fromTime") LocalDateTime fromTime,
+            @Param("toTime") LocalDateTime toTime);
+
+    @Query("""
+            SELECT YEAR(i.paidAt), MONTH(i.paidAt), COALESCE(SUM(i.totalAmount), 0)
+            FROM Invoice i
+            WHERE i.status = :status
+              AND i.paidAt >= :fromTime
+              AND i.paidAt < :toTime
+            GROUP BY YEAR(i.paidAt), MONTH(i.paidAt)
+            ORDER BY YEAR(i.paidAt), MONTH(i.paidAt)
+            """)
+    java.util.List<Object[]> aggregateRevenueByPaidMonth(
+            @Param("status") InvoiceStatus status,
+            @Param("fromTime") LocalDateTime fromTime,
+            @Param("toTime") LocalDateTime toTime);
 }

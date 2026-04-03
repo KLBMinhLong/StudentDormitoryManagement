@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/ui/theme.css">
 
     <script src="/ui/admin-sidebar.js" defer></script>
+    <script src="/ui/admin-export.js" defer></script>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -61,9 +62,19 @@
                     </button>
                 </div>
 
-                <div class="mt-6 flex gap-2">
+                <div class="mt-6 flex flex-wrap gap-2">
+                    <select id="studentScope" class="border border-border rounded-base px-3 py-2 text-sm w-full md:w-[210px] focus:outline-none focus:border-primary">
+                        <option value="ALL">Tất cả sinh viên</option>
+                        <option value="RESIDENT">Sinh viên nội trú</option>
+                    </select>
                     <input type="text" id="searchInput" placeholder="Tìm theo mã SV, họ tên..." class="border border-border rounded-base px-4 py-2 text-sm w-full md:w-[350px] focus:outline-none focus:border-primary">
                     <button onclick="loadStudents()" class="rounded-base bg-slate-100 hover:bg-slate-200 text-text-main border border-border px-4 py-2 text-sm font-medium">Tìm</button>
+                    <button id="btnExportStudents" type="button" class="rounded-base border border-secondary text-secondary hover:bg-blue-50 px-4 py-2 text-sm font-medium inline-flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9m-6-6 6 6m-9 4 2 3 2-3m-4 6h4" />
+                        </svg>
+                        <span>Xuất Excel</span>
+                    </button>
                 </div>
 
                 <div class="mt-6 overflow-x-auto border border-border rounded-base">
@@ -145,12 +156,12 @@
 </div>
 
 <div id="studentDetailModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-    <div class="bg-bg-card rounded-base w-full max-w-xl p-6 shadow-soft mx-4 max-h-[90vh] overflow-y-auto">
+    <div class="bg-bg-card rounded-base w-full max-w-5xl p-6 shadow-soft mx-4 max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between gap-3 mb-4">
             <h3 class="font-heading text-xl">Chi tiết sinh viên</h3>
             <button type="button" onclick="closeDetailModal()" class="rounded-base border border-border px-3 py-1.5 text-sm hover:bg-slate-50">Đóng</button>
         </div>
-        <div id="studentDetailContent" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"></div>
+        <div id="studentDetailContent" class="text-sm"></div>
     </div>
 </div>
 
@@ -171,6 +182,7 @@
     const token = localStorage.getItem('dormitory_access_token');
     const studentBody = document.getElementById('studentBody');
     const searchInput = document.getElementById('searchInput');
+    const studentScope = document.getElementById('studentScope');
     const message = document.getElementById('message');
     const studentPagination = document.getElementById('studentPagination');
     const studentModal = document.getElementById('studentModal');
@@ -182,6 +194,7 @@
     let debounceTimer;
     let currentPage = 0;
     let currentKeyword = '';
+    let deepLinkStudentId = null;
     const pageSize = 10;
 
     function debounceSearch() {
@@ -221,7 +234,8 @@
                 return;
             }
 
-            loadStudents();
+            await loadStudents();
+            applyStudentDeepLink();
         } catch (error) {
             localStorage.removeItem('dormitory_access_token');
             window.location.href = '/login.html';
@@ -240,12 +254,112 @@
     }
 
     function escHtml(str) {
-        return String(str)
+        return String(str ?? '')
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
+    }
+
+    function formatDate(value) {
+        if (!value) return '-';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '-';
+        return date.toLocaleDateString('vi-VN');
+    }
+
+    function formatDateTime(value) {
+        if (!value) return '-';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '-';
+        return date.toLocaleString('vi-VN');
+    }
+
+    function contractStatusText(status) {
+        const normalized = String(status || '').toUpperCase();
+        if (normalized === 'ACTIVE') return 'Đang hiệu lực';
+        if (normalized === 'PENDING') return 'Chờ duyệt';
+        if (normalized === 'EXPIRED') return 'Hết hạn';
+        if (normalized === 'CANCELLED') return 'Đã hủy';
+        return normalized || '-';
+    }
+
+    function changeRequestStatusText(status) {
+        const normalized = String(status || '').toUpperCase();
+        if (normalized === 'PENDING') return 'Chờ duyệt';
+        if (normalized === 'APPROVED') return 'Đã duyệt';
+        if (normalized === 'REJECTED') return 'Từ chối';
+        return normalized || '-';
+    }
+
+    function issueStatusText(status) {
+        const normalized = String(status || '').toUpperCase();
+        if (normalized === 'PENDING') return 'Chờ xử lý';
+        if (normalized === 'IN_PROGRESS') return 'Đang xử lý';
+        if (normalized === 'RESOLVED') return 'Đã xử lý';
+        return normalized || '-';
+    }
+
+    function buildContractsRows(contracts) {
+        if (!contracts.length) {
+            return '<tr><td colspan="5" class="px-3 py-4 text-center text-text-muted">Chưa có hợp đồng.</td></tr>';
+        }
+
+        return contracts.map((contract) => {
+            const roomKeyword = contract.roomNumber ? encodeURIComponent(contract.roomNumber) : '';
+            return `
+                <tr class="border-t border-border">
+                    <td class="px-3 py-2">#${contract.id || '-'}</td>
+                    <td class="px-3 py-2">${escHtml(contract.buildingName || '-')} / ${escHtml(contract.roomNumber || '-')} - Giường ${contract.bedNumber || '-'}</td>
+                    <td class="px-3 py-2">${formatDate(contract.startDate)} - ${formatDate(contract.endDate)}</td>
+                    <td class="px-3 py-2">${contractStatusText(contract.status)}</td>
+                    <td class="px-3 py-2 text-right">
+                        <a href="/admin/contracts-management.html?contractId=${contract.id}" class="text-secondary hover:underline mr-3">Mở hợp đồng</a>
+                        <a href="/admin/rooms.html${roomKeyword ? `?keyword=${roomKeyword}` : ''}" class="text-primary hover:underline">Mở phòng</a>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function buildChangeRequestRows(requests) {
+        if (!requests.length) {
+            return '<tr><td colspan="5" class="px-3 py-4 text-center text-text-muted">Chưa có yêu cầu thay đổi hợp đồng.</td></tr>';
+        }
+
+        return requests.map((request) => `
+            <tr class="border-t border-border">
+                <td class="px-3 py-2">#${request.id || '-'}</td>
+                <td class="px-3 py-2">#${request.contractId || '-'} (${request.changeType === 'EXTEND' ? 'Gia hạn' : 'Hủy'})</td>
+                <td class="px-3 py-2">${escHtml(request.reason || '-')}</td>
+                <td class="px-3 py-2">${changeRequestStatusText(request.status)}</td>
+                <td class="px-3 py-2 text-right">
+                    <a href="/admin/contracts-management.html?contractId=${request.contractId}" class="text-secondary hover:underline">Mở hợp đồng</a>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function buildIssueRows(issues) {
+        if (!issues.length) {
+            return '<tr><td colspan="5" class="px-3 py-4 text-center text-text-muted">Chưa có yêu cầu sửa chữa.</td></tr>';
+        }
+
+        return issues.map((issue) => {
+            const roomKeyword = issue.roomNumber ? encodeURIComponent(issue.roomNumber) : '';
+            return `
+                <tr class="border-t border-border">
+                    <td class="px-3 py-2">#${issue.id || '-'}</td>
+                    <td class="px-3 py-2">${escHtml(issue.description || '-')}</td>
+                    <td class="px-3 py-2">${issue.priority || '-'}</td>
+                    <td class="px-3 py-2">${issueStatusText(issue.status)}</td>
+                    <td class="px-3 py-2 text-right">
+                        <a href="/admin/rooms.html${roomKeyword ? `?keyword=${roomKeyword}` : ''}" class="text-primary hover:underline">Mở phòng</a>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     async function fetchAPI(url, options = {}) {
@@ -312,12 +426,14 @@
         try {
             currentKeyword = searchInput.value.trim();
             const keywordQuery = currentKeyword ? `&keyword=${encodeURIComponent(currentKeyword)}` : '';
-            const url = `/api/v1/students?page=${currentPage}&size=${pageSize}&sortBy=id&direction=desc${keywordQuery}`;
+            const isResidentScope = studentScope.value === 'RESIDENT';
+            const apiPath = isResidentScope ? '/api/v1/students/residents' : '/api/v1/students';
+            const url = `${apiPath}?page=${currentPage}&size=${pageSize}&sortBy=id&direction=desc${keywordQuery}`;
             const pageData = await fetchAPI(url);
             const students = Array.isArray(pageData?.content) ? pageData.content : [];
 
             if (!students.length) {
-                studentBody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-text-muted">Không có dữ liệu sinh viên.</td></tr>';
+                studentBody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-text-muted">${isResidentScope ? 'Không có dữ liệu sinh viên nội trú.' : 'Không có dữ liệu sinh viên.'}</td></tr>`;
                 renderStudentPagination(pageData);
                 return;
             }
@@ -350,22 +466,144 @@
         }
     }
 
+    async function exportStudentsExcel() {
+        const params = new URLSearchParams({
+            sortBy: 'id',
+            direction: 'desc',
+            residentOnly: String(studentScope.value === 'RESIDENT')
+        });
+        const keyword = searchInput.value.trim();
+        if (keyword) {
+            params.set('keyword', keyword);
+        }
+
+        window.AdminExport.downloadExcel({
+            url: `/api/v1/reports/admin/students/excel?${params.toString()}`,
+            token,
+            button: document.getElementById('btnExportStudents'),
+            defaultFilename: 'danh-sach-sinh-vien.xlsx',
+            loadingText: 'Đang xuất Excel...',
+            fallbackError: 'Xuất Excel sinh viên thất bại.',
+            onSuccess: () => showMessage('success', 'Đã xuất báo cáo Excel sinh viên.'),
+            onError: (error) => showMessage('error', error.message || 'Xuất Excel sinh viên thất bại.')
+        });
+    }
+
     async function viewStudent(id) {
         try {
-            const st = await fetchAPI(`/api/v1/students/${id}`);
-            studentDetailContent.innerHTML = `
-                <div><p class="text-text-muted">Mã sinh viên</p><p class="font-medium mt-1">${escHtml(st.studentCode || '-')}</p></div>
-                <div><p class="text-text-muted">Họ và tên</p><p class="font-medium mt-1">${escHtml(st.fullName || '-')}</p></div>
-                <div><p class="text-text-muted">Ngày sinh</p><p class="font-medium mt-1">${escHtml(st.dateOfBirth || '-')}</p></div>
-                <div><p class="text-text-muted">Giới tính</p><p class="font-medium mt-1">${escHtml(st.gender || '-')}</p></div>
-                <div><p class="text-text-muted">Số điện thoại</p><p class="font-medium mt-1">${escHtml(st.phone || '-')}</p></div>
-                <div><p class="text-text-muted">Email</p><p class="font-medium mt-1">${escHtml(st.email || '-')}</p></div>
-                <div class="md:col-span-2"><p class="text-text-muted">CCCD</p><p class="font-medium mt-1">${escHtml(st.cccd || '-')}</p></div>
-            `;
+            studentDetailContent.innerHTML = '<div class="py-10 text-center text-text-muted">Đang tải hồ sơ nội trú...</div>';
             studentDetailModal.classList.remove('hidden');
+
+            const st = await fetchAPI(`/api/v1/students/${id}`);
+            const [contractsPage, changeRequestPage, issues] = await Promise.all([
+                fetchAPI(`/api/v1/contracts/admin/management?page=0&size=6&sortBy=createdAt&direction=desc&keyword=${encodeURIComponent(st.studentCode || '')}`),
+                fetchAPI(`/api/v1/contracts/admin/change-requests?page=0&size=6&sortBy=createdAt&direction=desc&keyword=${encodeURIComponent(st.studentCode || '')}`),
+                fetchAPI(`/api/v1/issues/student/${id}`)
+            ]);
+
+            const contracts = Array.isArray(contractsPage?.content) ? contractsPage.content : [];
+            const requests = Array.isArray(changeRequestPage?.content) ? changeRequestPage.content : [];
+            const issueRows = Array.isArray(issues) ? issues : [];
+            const activeContract = contracts.find((item) => String(item.status || '').toUpperCase() === 'ACTIVE');
+
+            studentDetailContent.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <section class="lg:col-span-1 rounded-base border border-border p-4 bg-slate-50">
+                        <h4 class="font-heading text-lg mb-3">Thông tin sinh viên</h4>
+                        <div class="space-y-2">
+                            <p><span class="text-text-muted">Mã SV:</span> <span class="font-medium">${escHtml(st.studentCode || '-')}</span></p>
+                            <p><span class="text-text-muted">Họ tên:</span> <span class="font-medium">${escHtml(st.fullName || '-')}</span></p>
+                            <p><span class="text-text-muted">Ngày sinh:</span> <span class="font-medium">${formatDate(st.dateOfBirth)}</span></p>
+                            <p><span class="text-text-muted">Giới tính:</span> <span class="font-medium">${escHtml(st.gender || '-')}</span></p>
+                            <p><span class="text-text-muted">SĐT:</span> <span class="font-medium">${escHtml(st.phone || '-')}</span></p>
+                            <p><span class="text-text-muted">Email:</span> <span class="font-medium">${escHtml(st.email || '-')}</span></p>
+                            <p><span class="text-text-muted">CCCD:</span> <span class="font-medium">${escHtml(st.cccd || '-')}</span></p>
+                        </div>
+                    </section>
+                    <section class="lg:col-span-2 rounded-base border border-border p-4">
+                        <h4 class="font-heading text-lg mb-3">Nơi ở hiện tại</h4>
+                        ${activeContract ? `
+                            <div class="space-y-2">
+                                <p><span class="text-text-muted">Tòa / Phòng / Giường:</span> <span class="font-medium">${escHtml(activeContract.buildingName || '-')} / ${escHtml(activeContract.roomNumber || '-')} / ${activeContract.bedNumber || '-'}</span></p>
+                                <p><span class="text-text-muted">Hợp đồng:</span> <span class="font-medium">#${activeContract.id} (${contractStatusText(activeContract.status)})</span></p>
+                                <p><span class="text-text-muted">Thời hạn:</span> <span class="font-medium">${formatDate(activeContract.startDate)} - ${formatDate(activeContract.endDate)}</span></p>
+                                <div class="pt-2">
+                                    <a href="/admin/contracts-management.html?contractId=${activeContract.id}" class="text-secondary hover:underline mr-4">Mở hợp đồng hiện tại</a>
+                                    <a href="/admin/rooms.html?keyword=${encodeURIComponent(activeContract.roomNumber || '')}" class="text-primary hover:underline">Mở trang phòng</a>
+                                </div>
+                            </div>
+                        ` : '<p class="text-text-muted">Sinh viên hiện chưa có hợp đồng đang hiệu lực.</p>'}
+                    </section>
+                </div>
+
+                <section class="mt-6">
+                    <h4 class="font-heading text-lg mb-3">Hợp đồng gần đây</h4>
+                    <div class="overflow-x-auto rounded-base border border-border">
+                        <table class="w-full min-w-[760px] text-sm">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-text-muted">Mã HĐ</th>
+                                    <th class="px-3 py-2 text-left text-text-muted">Phòng/Giường</th>
+                                    <th class="px-3 py-2 text-left text-text-muted">Thời hạn</th>
+                                    <th class="px-3 py-2 text-left text-text-muted">Trạng thái</th>
+                                    <th class="px-3 py-2 text-right text-text-muted">Điều hướng</th>
+                                </tr>
+                            </thead>
+                            <tbody>${buildContractsRows(contracts)}</tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="mt-6">
+                    <h4 class="font-heading text-lg mb-3">Yêu cầu thay đổi hợp đồng</h4>
+                    <div class="overflow-x-auto rounded-base border border-border">
+                        <table class="w-full min-w-[760px] text-sm">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-text-muted">Mã YC</th>
+                                    <th class="px-3 py-2 text-left text-text-muted">Loại</th>
+                                    <th class="px-3 py-2 text-left text-text-muted">Lý do</th>
+                                    <th class="px-3 py-2 text-left text-text-muted">Trạng thái</th>
+                                    <th class="px-3 py-2 text-right text-text-muted">Điều hướng</th>
+                                </tr>
+                            </thead>
+                            <tbody>${buildChangeRequestRows(requests)}</tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="mt-6">
+                    <h4 class="font-heading text-lg mb-3">Yêu cầu sửa chữa</h4>
+                    <div class="overflow-x-auto rounded-base border border-border">
+                        <table class="w-full min-w-[760px] text-sm">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-text-muted">Mã YC</th>
+                                    <th class="px-3 py-2 text-left text-text-muted">Mô tả</th>
+                                    <th class="px-3 py-2 text-left text-text-muted">Ưu tiên</th>
+                                    <th class="px-3 py-2 text-left text-text-muted">Trạng thái</th>
+                                    <th class="px-3 py-2 text-right text-text-muted">Điều hướng</th>
+                                </tr>
+                            </thead>
+                            <tbody>${buildIssueRows(issueRows)}</tbody>
+                        </table>
+                    </div>
+                </section>
+            `;
         } catch (error) {
             showMessage('error', error.message);
+            closeDetailModal();
         }
+    }
+
+    function applyStudentDeepLink() {
+        if (!deepLinkStudentId) return;
+        const targetId = deepLinkStudentId;
+        deepLinkStudentId = null;
+        viewStudent(targetId);
+        const url = new URL(window.location.href);
+        url.searchParams.delete('studentId');
+        window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : ''));
     }
 
     function closeDetailModal() {
@@ -495,6 +733,29 @@
             closeDetailModal();
         }
     });
+
+    studentScope.addEventListener('change', () => {
+        currentPage = 0;
+        loadStudents();
+    });
+
+    document.getElementById('btnExportStudents').addEventListener('click', exportStudentsExcel);
+
+    (() => {
+        const params = new URLSearchParams(window.location.search);
+        const scope = params.get('scope');
+        if (scope === 'RESIDENT') {
+            studentScope.value = 'RESIDENT';
+        }
+        const keywordParam = params.get('keyword');
+        if (keywordParam) {
+            searchInput.value = keywordParam;
+        }
+        const studentIdParam = Number(params.get('studentId') || 0);
+        if (studentIdParam > 0) {
+            deepLinkStudentId = studentIdParam;
+        }
+    })();
 
     if (token) {
         checkAuthorizationAndLoad();

@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/ui/theme.css">
     <script src="/ui/admin-sidebar.js" defer></script>
+    <script src="/ui/admin-export.js" defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -57,6 +58,12 @@
                     <div class="flex items-center gap-2">
                         <a href="/admin/contract_registration.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Lập hợp đồng mới</a>
                         <button id="refreshBtn" type="button" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Làm mới</button>
+                        <button id="btnExportContracts" type="button" class="rounded-base border border-secondary text-secondary px-3 py-2 text-sm font-medium hover:bg-blue-50 inline-flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9m-6-6 6 6m-9 4 2 3 2-3m-4 6h4" />
+                            </svg>
+                            <span>Xuất Excel</span>
+                        </button>
                     </div>
                 </div>
 
@@ -227,6 +234,7 @@
     const actionModalCancel = document.getElementById('actionModalCancel');
     const actionModalConfirm = document.getElementById('actionModalConfirm');
     let resolveActionModal = null;
+    let deepLinkContractId = null;
 
     const requestState = {
         page: 0,
@@ -497,6 +505,27 @@
         }
     }
 
+    async function exportContractsExcel() {
+        const params = new URLSearchParams({
+            sortBy: state.sortBy,
+            direction: state.direction
+        });
+        if (state.keyword) params.set('keyword', state.keyword);
+        if (state.status) params.set('status', state.status);
+        if (state.occupancyType) params.set('occupancyType', state.occupancyType);
+
+        window.AdminExport.downloadExcel({
+            url: `/api/v1/reports/admin/contracts/excel?${params.toString()}`,
+            token,
+            button: document.getElementById('btnExportContracts'),
+            defaultFilename: 'danh-sach-hop-dong.xlsx',
+            loadingText: 'Đang xuất Excel...',
+            fallbackError: 'Xuất Excel hợp đồng thất bại.',
+            onSuccess: () => showMessage('success', 'Đã xuất báo cáo Excel hợp đồng.'),
+            onError: (error) => showMessage('error', error.message || 'Xuất Excel hợp đồng thất bại.')
+        });
+    }
+
     function requestActionButtons(item) {
         const status = String(item.status || '').toUpperCase();
         let actions = '';
@@ -609,11 +638,14 @@
     async function openDetail(contractId) {
         try {
             const detail = await fetchAPI(`/api/v1/contracts/admin/${contractId}`);
+            const roomKeyword = encodeURIComponent(detail.roomNumber || '');
             detailContent.innerHTML = `
                 <div><p class="text-text-muted">Mã hợp đồng</p><p class="font-medium">#${detail.id}</p></div>
                 <div><p class="text-text-muted">Trạng thái</p><p>${statusBadge(detail.status)}</p></div>
                 <div><p class="text-text-muted">Sinh viên</p><p class="font-medium">${detail.studentName || '-'} (${detail.studentCode || '-'})</p></div>
-                <div><p class="text-text-muted">Phòng/Giường</p><p class="font-medium">Phòng ${detail.roomNumber || '-'} - Giường ${detail.bedNumber || '-'}</p></div>
+                <div><p class="text-text-muted">Liên hệ sinh viên</p><p class="font-medium">${detail.studentPhone || '-'} / ${detail.studentEmail || '-'}</p></div>
+                <div><p class="text-text-muted">CCCD sinh viên</p><p class="font-medium">${detail.studentCccd || '-'}</p></div>
+                <div><p class="text-text-muted">Tòa/Phòng/Giường</p><p class="font-medium">${detail.buildingName || '-'} / ${detail.roomNumber || '-'} / ${detail.bedNumber || '-'}</p></div>
                 <div><p class="text-text-muted">Thời gian ở</p><p class="font-medium">${formatDate(detail.startDate)} - ${formatDate(detail.endDate)}</p></div>
                 <div><p class="text-text-muted">Tiền phòng/tháng</p><p class="font-medium">${formatCurrency(detail.monthlyRoomPrice)}</p></div>
                 <div><p class="text-text-muted">Tiền cọc</p><p class="font-medium">${formatCurrency(detail.depositAmount)}</p></div>
@@ -622,7 +654,13 @@
                 <div><p class="text-text-muted">Thực tế ở</p><p class="font-medium">${detail.everActivated ? 'Đã từng ở thực tế' : 'Chưa từng ở thực tế'}</p></div>
                 <div><p class="text-text-muted">Kích hoạt hợp đồng</p><p class="font-medium">${formatDateTime(detail.activatedAt)}</p></div>
                 <div><p class="text-text-muted">Thời điểm tạo</p><p class="font-medium">${formatDateTime(detail.createdAt)}</p></div>
-                <div class="md:col-span-2"><p class="text-text-muted">Ghi chú</p><p class="font-medium">${detail.studentNote || '-'}</p></div>
+                <div><p class="text-text-muted">Liên hệ khẩn cấp</p><p class="font-medium">${detail.emergencyContactName || '-'} / ${detail.emergencyContactPhone || '-'}</p></div>
+                <div><p class="text-text-muted">Người bảo hộ</p><p class="font-medium">${detail.guardianName || '-'} / ${detail.guardianPhone || '-'}</p></div>
+                <div class="md:col-span-2"><p class="text-text-muted">Ghi chú sinh viên</p><p class="font-medium">${detail.studentNote || '-'}</p></div>
+                <div class="md:col-span-2 pt-1">
+                    <a href="/admin/student_management.html?studentId=${detail.studentId}&scope=ALL&keyword=${encodeURIComponent(detail.studentCode || '')}" class="text-secondary hover:underline mr-4">Mở hồ sơ sinh viên</a>
+                    <a href="/admin/rooms.html?keyword=${roomKeyword}" class="text-primary hover:underline">Mở trang phòng</a>
+                </div>
             `;
             detailModal.classList.remove('hidden');
         } catch (error) {
@@ -767,9 +805,25 @@
         loadContracts();
         loadChangeRequests();
     });
+    document.getElementById('btnExportContracts').addEventListener('click', exportContractsExcel);
+
+    (() => {
+        const params = new URLSearchParams(window.location.search);
+        const contractIdParam = Number(params.get('contractId') || 0);
+        if (contractIdParam > 0) {
+            deepLinkContractId = contractIdParam;
+        }
+    })();
 
     loadContracts();
     loadChangeRequests();
+
+    if (deepLinkContractId) {
+        openDetail(deepLinkContractId);
+        const url = new URL(window.location.href);
+        url.searchParams.delete('contractId');
+        window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : ''));
+    }
 </script>
 </body>
 
