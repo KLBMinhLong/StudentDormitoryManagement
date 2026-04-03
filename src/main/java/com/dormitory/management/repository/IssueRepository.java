@@ -10,5 +10,5 @@ import java.util.List;
 @Repository
 public interface IssueRepository extends JpaRepository<Issue, Long> {
     List<Issue> findByStudent(Student student);
-    List<Issue> findByStudent_AppUser_Username(String username);
+    List<Issue> findByStudent_Id(Long studentId);
 }

@@ -55,7 +55,8 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     public List<IssueResponseDTO> getMyIssues(String username) {
-        return issueRepository.findByStudent_AppUser_Username(username)
+        Student student = resolveStudentByUsername(username);
+        return issueRepository.findByStudent_Id(student.getId())
                 .stream()
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
@@ -104,10 +105,10 @@ public class IssueServiceImpl implements IssueService {
                 .priority(issue.getPriority())
                 .status(issue.getStatus())
                 .createdAt(issue.getCreatedAt())
-                .studentName(issue.getStudent().getFullName())
-                .studentCode(issue.getStudent().getStudentCode())
-                .roomNumber(issue.getRoom().getRoomNumber())
-                .buildingName(issue.getRoom().getBuilding().getName())
+                .studentName(issue.getStudent() != null ? issue.getStudent().getFullName() : null)
+                .studentCode(issue.getStudent() != null ? issue.getStudent().getStudentCode() : null)
+                .roomNumber(issue.getRoom() != null ? issue.getRoom().getRoomNumber() : null)
+                .buildingName(issue.getRoom() != null && issue.getRoom().getBuilding() != null ? issue.getRoom().getBuilding().getName() : null)
                 .build();
     }
 }
