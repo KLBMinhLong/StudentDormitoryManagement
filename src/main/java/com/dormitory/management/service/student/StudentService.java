@@ -11,6 +11,7 @@ import java.io.IOException;
 public interface StudentService {
     // Do admin qản lý
     PagedResponseDTO<StudentListItemDTO> searchStudents(String keyword, int page, int size, String sortBy, String direction);
+    PagedResponseDTO<StudentListItemDTO> searchResidentStudents(String keyword, int page, int size, String sortBy, String direction);
     StudentDTO getStudentById(Long id);
     StudentDTO createStudent(StudentDTO dto);
     StudentDTO updateStudent(Long id, StudentDTO dto);

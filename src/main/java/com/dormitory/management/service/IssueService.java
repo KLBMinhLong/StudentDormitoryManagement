@@ -10,5 +10,6 @@ public interface IssueService {
     IssueResponseDTO createIssue(String username, IssueRequestDTO request);
     List<IssueResponseDTO> getMyIssues(String username);
     List<IssueResponseDTO> getAllIssues();
+    List<IssueResponseDTO> getIssuesByStudentId(Long studentId);
     IssueResponseDTO updateIssueStatus(Long id, IssueStatusUpdateDTO request);
 }

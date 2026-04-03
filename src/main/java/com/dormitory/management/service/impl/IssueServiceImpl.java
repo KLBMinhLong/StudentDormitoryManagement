@@ -70,6 +70,17 @@ public class IssueServiceImpl implements IssueService {
                 .collect(Collectors.toList());
     }
 
+        @Override
+        public List<IssueResponseDTO> getIssuesByStudentId(Long studentId) {
+        studentRepository.findById(studentId)
+            .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy sinh viên"));
+
+        return issueRepository.findByStudent_Id(studentId)
+            .stream()
+            .map(this::toResponseDTO)
+            .collect(Collectors.toList());
+        }
+
     @Override
     @Transactional
     public IssueResponseDTO updateIssueStatus(Long id, IssueStatusUpdateDTO request) {

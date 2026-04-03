@@ -18,7 +18,11 @@ public class ContractResponseDTO {
     private Long studentId;
     private String studentCode;
     private String studentName;
+    private String studentPhone;
+    private String studentEmail;
+    private String studentCccd;
     private Long roomId;
+    private String buildingName;
     private String roomNumber;
     private Long bedId;
     private int bedNumber;

@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/ui/theme.css">
     <script src="/ui/admin-sidebar.js" defer></script>
+    <script src="/ui/admin-export.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -222,6 +223,12 @@
                             <button type="button" id="btnSearch" class="flex-1 rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-2 text-xs md:text-sm font-medium transition-colors">Tìm kiếm</button>
                             <button type="button" id="btnClosePeriod" class="hidden rounded-base border border-warning text-warning px-3 py-2 text-xs md:text-sm font-medium hover:bg-amber-50 transition-colors">Chốt kỳ</button>
                             <button type="button" id="btnReopenPeriod" class="hidden rounded-base border border-secondary text-secondary px-3 py-2 text-xs md:text-sm font-medium hover:bg-blue-50 transition-colors">Mở khóa kỳ</button>
+                            <button type="button" id="btnExportUtility" class="rounded-base border border-secondary text-secondary px-3 py-2 text-xs md:text-sm font-medium hover:bg-blue-50 transition-colors inline-flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9m-6-6 6 6m-9 4 2 3 2-3m-4 6h4" />
+                                </svg>
+                                <span>Xuất Excel</span>
+                            </button>
                             <button type="button" id="btnReset" class="rounded-base border border-border px-3 py-2 text-xs md:text-sm font-medium hover:bg-slate-50 text-text-muted transition-colors">Đặt lại</button>
                         </div>
                     </div>
@@ -823,6 +830,42 @@
             }
         }
 
+        async function exportUtilityRecordsExcel() {
+            const params = new URLSearchParams({
+                sortBy: 'year',
+                direction: 'desc'
+            });
+
+            const buildingId = document.getElementById('filterBuilding').value;
+            const month = document.getElementById('filterMonth').value;
+            const year = document.getElementById('filterYear').value;
+            const fromYear = document.getElementById('chartFromYear').value;
+            const toYear = document.getElementById('chartToYear').value;
+
+            if (buildingId) params.set('buildingId', buildingId);
+            if (month) params.set('month', month);
+            if (year) params.set('year', year);
+            if (fromYear) {
+                params.set('fromMonth', '1');
+                params.set('fromYear', fromYear);
+            }
+            if (toYear) {
+                params.set('toMonth', '12');
+                params.set('toYear', toYear);
+            }
+
+            window.AdminExport.downloadExcel({
+                url: `${API_BASE}/reports/admin/utility-records/excel?${params.toString()}`,
+                token,
+                button: document.getElementById('btnExportUtility'),
+                defaultFilename: 'chi-so-dien-nuoc.xlsx',
+                loadingText: 'Đang xuất Excel...',
+                fallbackError: 'Xuất Excel điện nước thất bại.',
+                onSuccess: () => showToast('Đã xuất báo cáo Excel chỉ số điện nước.'),
+                onError: (error) => showToast(error.message || 'Xuất Excel điện nước thất bại.', 'error')
+            });
+        }
+
         async function loadBuildingsAndRooms() {
             try {
                 const [bRes, rRes] = await Promise.all([
@@ -1293,6 +1336,7 @@
             loadRecords();
             loadTimeline();
         });
+        document.getElementById('btnExportUtility').addEventListener('click', exportUtilityRecordsExcel);
 
         document.getElementById('btnLoadChart').addEventListener('click', loadTimeline);
         document.getElementById('btnSavePricing').addEventListener('click', async () => {

@@ -48,6 +48,18 @@ public class StudentManagementController {
     }
 
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/residents")
+    public ResponseEntity<ApiResponse<PagedResponseDTO<StudentListItemDTO>>> getResidentStudents(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+        PagedResponseDTO<StudentListItemDTO> result = studentService.searchResidentStudents(keyword, page, size, sortBy, direction);
+        return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), "Lấy danh sách sinh viên nội trú thành công", result));
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<StudentDTO>> getStudentById(@PathVariable Long id) {
         StudentDTO result = studentService.getStudentById(id);

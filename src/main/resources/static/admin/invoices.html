@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/ui/theme.css">
     <script src="/ui/admin-sidebar.js" defer></script>
+    <script src="/ui/admin-export.js" defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -130,6 +131,12 @@
                     <div class="flex gap-2 mb-4">
                         <button id="btnSearch" type="button" class="rounded-base bg-secondary hover:bg-blue-600 text-white px-4 py-2 text-sm font-medium">Tìm kiếm</button>
                         <button id="btnReset" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Đặt lại</button>
+                        <button id="btnExportInvoices" type="button" class="rounded-base border border-secondary text-secondary px-4 py-2 text-sm font-medium hover:bg-blue-50 inline-flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9m-6-6 6 6m-9 4 2 3 2-3m-4 6h4" />
+                            </svg>
+                            <span>Xuất Excel</span>
+                        </button>
                     </div>
 
                     <div class="overflow-x-auto rounded-base border border-border">
@@ -467,6 +474,35 @@
             renderRows();
         }
 
+        async function exportInvoicesExcel() {
+            const params = new URLSearchParams({
+                sortBy: 'createdAt',
+                direction: 'desc'
+            });
+            const month = document.getElementById('filterMonth').value;
+            const year = document.getElementById('filterYear').value;
+            const status = document.getElementById('filterStatus').value;
+            const buildingId = document.getElementById('filterBuilding').value;
+            const keyword = document.getElementById('filterKeyword').value.trim();
+
+            if (month) params.set('month', month);
+            if (year) params.set('year', year);
+            if (status) params.set('status', status);
+            if (buildingId) params.set('buildingId', buildingId);
+            if (keyword) params.set('keyword', keyword);
+
+            window.AdminExport.downloadExcel({
+                url: `${API_BASE}/reports/admin/invoices/excel?${params.toString()}`,
+                token,
+                button: document.getElementById('btnExportInvoices'),
+                defaultFilename: 'danh-sach-hoa-don.xlsx',
+                loadingText: 'Đang xuất Excel...',
+                fallbackError: 'Xuất Excel hóa đơn thất bại.',
+                onSuccess: () => showToast('Đã xuất báo cáo Excel hóa đơn.'),
+                onError: (error) => showToast(error.message || 'Xuất Excel hóa đơn thất bại.', 'error')
+            });
+        }
+
         async function generateMonthlyInvoices() {
             const month = Number(document.getElementById('genMonth').value || 0);
             const year = Number(document.getElementById('genYear').value || 0);
@@ -575,6 +611,7 @@
             document.getElementById('filterKeyword').value = '';
             loadInvoices(0);
         });
+        document.getElementById('btnExportInvoices').addEventListener('click', exportInvoicesExcel);
         document.getElementById('btnGenerate').addEventListener('click', async () => {
             try {
                 await generateMonthlyInvoices();
