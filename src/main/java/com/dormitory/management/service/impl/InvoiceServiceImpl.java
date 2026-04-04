@@ -99,6 +99,9 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Value("${app.payos.cancel-url:https://studentdormitorymanagement-production.up.railway.app/user/payment-cancel.html}")
     private String payosCancelUrl;
 
+    @Value("${app.frontend.url:https://studentdormitorymanagement-production.up.railway.app}")
+    private String frontendUrl;
+
     private PricingPolicy getPricingPolicy() {
         return pricingPolicyRepository.findTopByOrderByIdDesc()
                 .orElseGet(() -> {
@@ -540,8 +543,10 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         int payableAmountInt = payableAmount.intValue();
         String description = buildPayOsDescription(invoice);
-        String returnUrl = enrichReturnUrl(payosReturnUrl, orderCodeStr, payableAmountInt);
-        String cancelUrl = enrichReturnUrl(payosCancelUrl, orderCodeStr, payableAmountInt);
+        String effectiveReturnUrl = resolvePayOsUrl(payosReturnUrl, "/user/payment-return.html");
+        String effectiveCancelUrl = resolvePayOsUrl(payosCancelUrl, "/user/payment-cancel.html");
+        String returnUrl = enrichReturnUrl(effectiveReturnUrl, orderCodeStr, payableAmountInt);
+        String cancelUrl = enrichReturnUrl(effectiveCancelUrl, orderCodeStr, payableAmountInt);
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("orderCode", orderCode);
@@ -888,11 +893,25 @@ public class InvoiceServiceImpl implements InvoiceService {
                 || payosChecksumKey == null || payosChecksumKey.isBlank()) {
             throw new IllegalStateException("Thiếu cấu hình PayOS (client-id/api-key/checksum-key)");
         }
+    }
 
-        if (isLocalUrl(payosReturnUrl) || isLocalUrl(payosCancelUrl)) {
-            throw new IllegalStateException(
-                    "PayOS không chấp nhận returnUrl/cancelUrl là localhost. Hãy dùng URL public HTTPS (ngrok/cloudflared) cho app.payos.return-url và app.payos.cancel-url.");
+    private String resolvePayOsUrl(String configuredUrl, String defaultPath) {
+        if (!isLocalUrl(configuredUrl)) {
+            return configuredUrl;
         }
+
+        String fallbackBase = frontendUrl == null ? "" : frontendUrl.trim();
+        String fallback = fallbackBase.endsWith("/")
+                ? fallbackBase.substring(0, fallbackBase.length() - 1) + defaultPath
+                : fallbackBase + defaultPath;
+
+        if (isLocalUrl(fallback)) {
+            throw new IllegalStateException(
+                    "PayOS không chấp nhận returnUrl/cancelUrl là localhost. Hãy cấu hình URL public HTTPS cho app.frontend.url hoặc app.payos.return-url/app.payos.cancel-url.");
+        }
+
+        LOGGER.warn("PayOS URL cấu hình đang là localhost. Tự động dùng fallback public: {}", fallback);
+        return fallback;
     }
 
     private boolean isLocalUrl(String url) {

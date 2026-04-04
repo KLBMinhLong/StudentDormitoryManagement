@@ -409,7 +409,7 @@
                     throw new Error(data.message || 'Không thể gửi yêu cầu đặt lại mật khẩu');
                 }
 
-                showForgotMessage('success', 'Hướng dẫn đặt lại mật khẩu đã được gửi về email của bạn. Vui lòng kiểm tra email trong vài phút.');
+                showForgotMessage('success', data.message || 'Hướng dẫn đặt lại mật khẩu đã được gửi về email của bạn. Vui lòng kiểm tra email trong vài phút.');
                 
                 setTimeout(() => {
                     closeForgotModal();

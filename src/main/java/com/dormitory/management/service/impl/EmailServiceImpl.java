@@ -10,7 +10,6 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import com.dormitory.management.service.EmailService;
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
 @Service
@@ -25,21 +24,21 @@ public class EmailServiceImpl implements EmailService {
     private String fromEmail;
 
     @Override
-    public void sendResetPasswordEmail(String email, String resetLink) {
+    public boolean sendResetPasswordEmail(String email, String resetLink) {
         String subject = "🔐 Đặt lại mật khẩu - Ký túc xá sinh viên";
         String htmlContent = buildResetPasswordEmailHtml(resetLink);
-        sendHtmlEmail(email, subject, htmlContent);
+        return sendHtmlEmail(email, subject, htmlContent);
     }
 
     @Override
-    public void sendNotificationEmail(String email, String subject, String message) {
-        sendSimpleEmail(email, subject, message);
+    public boolean sendNotificationEmail(String email, String subject, String message) {
+        return sendSimpleEmail(email, subject, message);
     }
 
-    private void sendSimpleEmail(String toEmail, String subject, String body) {
+    private boolean sendSimpleEmail(String toEmail, String subject, String body) {
         if (javaMailSender == null) {
             LOGGER.warn("JavaMailSender is not configured. Skipping simple email to: {} with subject: {}", toEmail, subject);
-            return;
+            return false;
         }
 
         try {
@@ -51,15 +50,17 @@ public class EmailServiceImpl implements EmailService {
 
             javaMailSender.send(message);
             LOGGER.info("Simple email sent successfully to: {}", toEmail);
+            return true;
         } catch (Exception e) {
             LOGGER.error("Failed to send simple email to: {}", toEmail, e);
+            return false;
         }
     }
 
-    private void sendHtmlEmail(String toEmail, String subject, String htmlContent) {
+    private boolean sendHtmlEmail(String toEmail, String subject, String htmlContent) {
         if (javaMailSender == null) {
             LOGGER.warn("JavaMailSender is not configured. Skipping HTML email to: {} with subject: {}", toEmail, subject);
-            return;
+            return false;
         }
 
         try {
@@ -73,8 +74,10 @@ public class EmailServiceImpl implements EmailService {
 
             javaMailSender.send(message);
             LOGGER.info("HTML email sent successfully to: {}", toEmail);
+            return true;
         } catch (Exception e) {
             LOGGER.error("Failed to send HTML email to: {}", toEmail, e);
+            return false;
         }
     }
 
