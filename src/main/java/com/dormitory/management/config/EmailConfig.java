@@ -36,6 +36,9 @@ public class EmailConfig {
     @Value("${spring.mail.properties.mail.smtp.ssl.protocols:TLSv1.2}")
     private String sslProtocols;
 
+    @Value("${spring.mail.properties.mail.smtp.ssl.enable:false}")
+    private String sslEnable;
+
     @Value("${spring.mail.properties.mail.smtp.connectiontimeout:20000}")
     private String smtpConnectionTimeout;
 
@@ -58,6 +61,7 @@ public class EmailConfig {
         props.put("mail.smtp.auth", smtpAuth);
         props.put("mail.smtp.starttls.enable", startTlsEnable);
         props.put("mail.smtp.starttls.required", startTlsRequired);
+        props.put("mail.smtp.ssl.enable", sslEnable);
         props.put("mail.smtp.ssl.protocols", sslProtocols);
         props.put("mail.smtp.connectiontimeout", smtpConnectionTimeout);
         props.put("mail.smtp.timeout", smtpTimeout);
