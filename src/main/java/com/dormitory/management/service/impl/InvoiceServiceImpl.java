@@ -100,7 +100,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private String payosCancelUrl;
 
     private PricingPolicy getPricingPolicy() {
-        return pricingPolicyRepository.getLatestPolicy()
+        return pricingPolicyRepository.findTopByOrderByIdDesc()
                 .orElseGet(() -> {
                     PricingPolicy defaultPolicy = PricingPolicy.builder()
                             .electricUnitPrice(new BigDecimal("3500"))
