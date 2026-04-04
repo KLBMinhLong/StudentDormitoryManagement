@@ -1,11 +1,14 @@
 package com.dormitory.management.service.impl;
 
+import java.util.Properties;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +25,24 @@ public class EmailServiceImpl implements EmailService {
 
     @Value("${app.email.from:Ký Túc Xá Sinh Viên <dormitory@example.com>}")
     private String fromEmail;
+
+    @Value("${app.email.smtp-fallback-enabled:true}")
+    private boolean smtpFallbackEnabled;
+
+    @Value("${app.email.smtp-fallback-host:smtp-relay.brevo.com}")
+    private String smtpFallbackHost;
+
+    @Value("${app.email.smtp-fallback-port:465}")
+    private int smtpFallbackPort;
+
+    @Value("${spring.mail.properties.mail.smtp.connectiontimeout:20000}")
+    private String smtpConnectionTimeout;
+
+    @Value("${spring.mail.properties.mail.smtp.timeout:20000}")
+    private String smtpTimeout;
+
+    @Value("${spring.mail.properties.mail.smtp.writetimeout:20000}")
+    private String smtpWriteTimeout;
 
     @Override
     public boolean sendResetPasswordEmail(String email, String resetLink) {
@@ -77,6 +98,49 @@ public class EmailServiceImpl implements EmailService {
             return true;
         } catch (Exception e) {
             LOGGER.error("Failed to send HTML email to: {}", toEmail, e);
+            return sendHtmlEmailViaFallback(toEmail, subject, htmlContent, e);
+        }
+    }
+
+    private boolean sendHtmlEmailViaFallback(String toEmail, String subject, String htmlContent, Exception primaryException) {
+        if (!smtpFallbackEnabled) {
+            return false;
+        }
+
+        if (!(javaMailSender instanceof JavaMailSenderImpl primarySender)) {
+            return false;
+        }
+
+        try {
+            JavaMailSenderImpl fallbackSender = new JavaMailSenderImpl();
+            fallbackSender.setHost(smtpFallbackHost);
+            fallbackSender.setPort(smtpFallbackPort);
+            fallbackSender.setUsername(primarySender.getUsername());
+            fallbackSender.setPassword(primarySender.getPassword());
+
+            Properties props = fallbackSender.getJavaMailProperties();
+            props.put("mail.smtp.auth", "true");
+            props.put("mail.smtp.starttls.enable", "false");
+            props.put("mail.smtp.starttls.required", "false");
+            props.put("mail.smtp.ssl.enable", "true");
+            props.put("mail.smtp.ssl.protocols", "TLSv1.2");
+            props.put("mail.smtp.connectiontimeout", smtpConnectionTimeout);
+            props.put("mail.smtp.timeout", smtpTimeout);
+            props.put("mail.smtp.writetimeout", smtpWriteTimeout);
+
+            MimeMessage message = fallbackSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+
+            fallbackSender.send(message);
+            LOGGER.warn("Primary SMTP send failed, fallback SMTP send succeeded via {}:{} for {}", smtpFallbackHost, smtpFallbackPort, toEmail);
+            return true;
+        } catch (Exception fallbackException) {
+            LOGGER.error("Fallback SMTP send also failed for: {}", toEmail, fallbackException);
+            LOGGER.debug("Primary SMTP failure root cause:", primaryException);
             return false;
         }
     }
