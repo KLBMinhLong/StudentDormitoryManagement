@@ -48,6 +48,10 @@ public class DataInitializer {
     @ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true", matchIfMissing = false)
     public CommandLineRunner initializeAuthData() {
         return args -> {
+            if (isSeedDataAlreadyPresent()) {
+                return;
+            }
+
             // Initialize roles
             Role adminRole = findOrCreateRole("ROLE_ADMIN");
             Role studentRole = findOrCreateRole("ROLE_STUDENT");
@@ -64,6 +68,16 @@ public class DataInitializer {
             // Initialize mock students
             initializeMockStudents(studentRole);
         };
+    }
+
+    private boolean isSeedDataAlreadyPresent() {
+        return roleRepository.findByRoleName("ROLE_ADMIN").isPresent()
+            && roleRepository.findByRoleName("ROLE_STUDENT").isPresent()
+                && buildingRepository.count() > 0
+                && roomTypeRepository.count() > 0
+                && roomRepository.count() > 0
+                && bedRepository.count() > 0
+                && studentRepository.count() > 0;
     }
 
     private void initializeSystemUsers(Role adminRole, Role studentRole) {
