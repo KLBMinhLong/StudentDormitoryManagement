@@ -183,6 +183,7 @@
     let toastTimer = null;
 
     let allAvailableRooms = [];
+    let allBuildings = [];
     let filteredRooms = [];
     let roomPage = 1;
     let currentModalRoom = null;
@@ -276,17 +277,54 @@
         return [...items].sort((a, b) => String(a[key] || '').localeCompare(String(b[key] || ''), 'vi', { sensitivity: 'base' }));
     }
 
+    function parseServerDateToMs(rawValue) {
+        if (!rawValue) {
+            return NaN;
+        }
+
+        const text = String(rawValue).trim();
+        if (!text) {
+            return NaN;
+        }
+
+        const hasZone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(text);
+        const normalized = text.includes('T') ? text : text.replace(' ', 'T');
+        const preferred = hasZone ? normalized : `${normalized}Z`;
+        const ms = Date.parse(preferred);
+
+        if (!Number.isNaN(ms)) {
+            return ms;
+        }
+
+        return Date.parse(normalized);
+    }
+
+    function formatServerDateTime(rawValue) {
+        const timestamp = parseServerDateToMs(rawValue);
+        if (Number.isNaN(timestamp)) {
+            return '---';
+        }
+        return new Date(timestamp).toLocaleString('vi-VN');
+    }
+
     function renderFilterOptions() {
-        const uniqueBuildings = [];
-        const buildingSeen = new Set();
-        allAvailableRooms.forEach((room) => {
-            const id = room.buildingId;
-            if (id == null || buildingSeen.has(String(id))) {
-                return;
-            }
-            buildingSeen.add(String(id));
-            uniqueBuildings.push({ id, name: room.buildingName || `Tòa #${id}` });
-        });
+        const uniqueBuildings = allBuildings.length
+            ? allBuildings
+                .filter((item) => item && item.id != null)
+                .map((item) => ({ id: item.id, name: item.name || `Tòa #${item.id}` }))
+            : (() => {
+                const fallbackBuildings = [];
+                const buildingSeen = new Set();
+                allAvailableRooms.forEach((room) => {
+                    const id = room.buildingId;
+                    if (id == null || buildingSeen.has(String(id))) {
+                        return;
+                    }
+                    buildingSeen.add(String(id));
+                    fallbackBuildings.push({ id, name: room.buildingName || `Tòa #${id}` });
+                });
+                return fallbackBuildings;
+            })();
 
         const uniqueRoomTypes = [];
         const roomTypeSeen = new Set();
@@ -396,7 +434,7 @@
                 ? 'Đang giữ chỗ'
                 : (occupied ? 'Đã có sinh viên' : 'Còn trống');
             const subtitle = reserved
-                ? `Giữ đến: ${bed.reservedUntil ? new Date(bed.reservedUntil).toLocaleString('vi-VN') : '---'}`
+                ? `Giữ đến: ${formatServerDateTime(bed.reservedUntil)}`
                 : (occupied ? 'Có sinh viên đang ở' : 'Giường trống, có thể chọn');
 
             return `
@@ -495,6 +533,21 @@
         return payload.result || {};
     }
 
+    async function fetchBuildingsForFilter() {
+        try {
+            const response = await fetch('/api/v1/buildings?page=0&size=200&sortBy=name&direction=asc');
+            const payload = await response.json();
+
+            if (!response.ok) {
+                throw new Error(payload.message || 'Không tải được danh sách tòa nhà');
+            }
+
+            allBuildings = Array.isArray(payload.result?.content) ? payload.result.content : [];
+        } catch {
+            allBuildings = [];
+        }
+    }
+
     async function syncRemainingRoomsInBackground(startPage, totalPages) {
         if (backgroundRoomSyncRunning) {
             return;
@@ -517,6 +570,7 @@
                 });
             }
 
+            renderFilterOptions();
             applyRoomFilters();
         } catch {
             // Keep already loaded rooms to preserve interactive behavior.
@@ -527,6 +581,7 @@
 
     async function loadData() {
         try {
+            await fetchBuildingsForFilter();
             const firstPageResult = await fetchAvailableRoomsPage(0);
             const firstRows = Array.isArray(firstPageResult.content) ? firstPageResult.content : [];
             const totalPages = Number(firstPageResult.totalPages || 0);
