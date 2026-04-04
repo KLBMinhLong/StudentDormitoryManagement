@@ -12,7 +12,7 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 @Configuration
 public class EmailConfig {
 
-    @Value("${spring.mail.host:smtp.gmail.com}")
+    @Value("${spring.mail.host:smtp-relay.brevo.com}")
     private String host;
 
     @Value("${spring.mail.port:587}")
