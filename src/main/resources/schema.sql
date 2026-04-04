@@ -247,7 +247,7 @@ BEGIN
     ) THEN
         ALTER TABLE building
             ALTER COLUMN gender_allowed TYPE VARCHAR(20)
-            USING convert_from(gender_allowed, 'UTF8')
+            USING convert_from(gender_allowed, 'UTF8');
     END IF;
 
     IF EXISTS (
@@ -257,7 +257,7 @@ BEGIN
     ) THEN
         ALTER TABLE room_type
             ALTER COLUMN gender_allowed TYPE VARCHAR(20)
-            USING convert_from(gender_allowed, 'UTF8')
+            USING convert_from(gender_allowed, 'UTF8');
     END IF;
 
     IF EXISTS (
@@ -267,7 +267,7 @@ BEGIN
     ) THEN
         ALTER TABLE room
             ALTER COLUMN room_number TYPE VARCHAR(20)
-            USING convert_from(room_number, 'UTF8')
+            USING convert_from(room_number, 'UTF8');
     END IF;
 
     IF EXISTS (
@@ -277,7 +277,7 @@ BEGIN
     ) THEN
         ALTER TABLE room
             ALTER COLUMN gender_allowed TYPE VARCHAR(20)
-            USING convert_from(gender_allowed, 'UTF8')
+            USING convert_from(gender_allowed, 'UTF8');
     END IF;
 END $$
 @@
