@@ -1,5 +1,11 @@
 package com.dormitory.management.service.impl;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Properties;
 
 import org.slf4j.Logger;
@@ -44,6 +50,15 @@ public class EmailServiceImpl implements EmailService {
     @Value("${spring.mail.properties.mail.smtp.writetimeout:20000}")
     private String smtpWriteTimeout;
 
+    @Value("${app.email.brevo-api-fallback-enabled:true}")
+    private boolean brevoApiFallbackEnabled;
+
+    @Value("${app.email.brevo-api-key:}")
+    private String brevoApiKey;
+
+    @Value("${app.email.brevo-api-url:https://api.brevo.com/v3/smtp/email}")
+    private String brevoApiUrl;
+
     @Override
     public boolean sendResetPasswordEmail(String email, String resetLink) {
         String subject = "🔐 Đặt lại mật khẩu - Ký túc xá sinh viên";
@@ -81,7 +96,7 @@ public class EmailServiceImpl implements EmailService {
     private boolean sendHtmlEmail(String toEmail, String subject, String htmlContent) {
         if (javaMailSender == null) {
             LOGGER.warn("JavaMailSender is not configured. Skipping HTML email to: {} with subject: {}", toEmail, subject);
-            return false;
+            return sendHtmlEmailViaBrevoApi(toEmail, subject, htmlContent, null);
         }
 
         try {
@@ -98,7 +113,11 @@ public class EmailServiceImpl implements EmailService {
             return true;
         } catch (Exception e) {
             LOGGER.error("Failed to send HTML email to: {}", toEmail, e);
-            return sendHtmlEmailViaFallback(toEmail, subject, htmlContent, e);
+            boolean smtpFallbackSent = sendHtmlEmailViaFallback(toEmail, subject, htmlContent, e);
+            if (smtpFallbackSent) {
+                return true;
+            }
+            return sendHtmlEmailViaBrevoApi(toEmail, subject, htmlContent, e);
         }
     }
 
@@ -143,6 +162,105 @@ public class EmailServiceImpl implements EmailService {
             LOGGER.debug("Primary SMTP failure root cause:", primaryException);
             return false;
         }
+    }
+
+    private boolean sendHtmlEmailViaBrevoApi(String toEmail, String subject, String htmlContent, Exception primaryException) {
+        if (!brevoApiFallbackEnabled) {
+            return false;
+        }
+
+        if (brevoApiKey == null || brevoApiKey.isBlank()) {
+            LOGGER.warn("Brevo API fallback is enabled but app.email.brevo-api-key is missing.");
+            return false;
+        }
+
+        String senderEmail = extractSenderEmail(fromEmail);
+        if (senderEmail == null || senderEmail.isBlank()) {
+            LOGGER.warn("Brevo API fallback skipped because sender email is invalid: {}", fromEmail);
+            return false;
+        }
+
+        String senderName = extractSenderName(fromEmail);
+
+        try {
+            HttpClient httpClient = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(20))
+                    .build();
+
+            String payload = "{" +
+                    "\"sender\":{" +
+                    "\"name\":\"" + jsonEscape(senderName) + "\"," +
+                    "\"email\":\"" + jsonEscape(senderEmail) + "\"}," +
+                    "\"to\":[{\"email\":\"" + jsonEscape(toEmail) + "\"}]," +
+                    "\"subject\":\"" + jsonEscape(subject) + "\"," +
+                    "\"htmlContent\":\"" + jsonEscape(htmlContent) + "\"}";
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(brevoApiUrl))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("accept", "application/json")
+                    .header("content-type", "application/json")
+                    .header("api-key", brevoApiKey.trim())
+                    .POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            int statusCode = response.statusCode();
+            if (statusCode >= 200 && statusCode < 300) {
+                LOGGER.warn("SMTP send failed but Brevo API fallback succeeded for: {}", toEmail);
+                return true;
+            }
+
+            LOGGER.error("Brevo API fallback failed with status {} for {}. Response: {}", statusCode, toEmail, response.body());
+            if (primaryException != null) {
+                LOGGER.debug("Primary SMTP failure root cause:", primaryException);
+            }
+            return false;
+        } catch (Exception ex) {
+            LOGGER.error("Brevo API fallback request failed for: {}", toEmail, ex);
+            if (primaryException != null) {
+                LOGGER.debug("Primary SMTP failure root cause:", primaryException);
+            }
+            return false;
+        }
+    }
+
+    private String extractSenderEmail(String sender) {
+        if (sender == null) {
+            return "";
+        }
+
+        String text = sender.trim();
+        int left = text.indexOf('<');
+        int right = text.indexOf('>');
+        if (left >= 0 && right > left) {
+            return text.substring(left + 1, right).trim();
+        }
+        return text;
+    }
+
+    private String extractSenderName(String sender) {
+        if (sender == null) {
+            return "KTX Sinh Vien";
+        }
+
+        String text = sender.trim();
+        int left = text.indexOf('<');
+        if (left > 0) {
+            return text.substring(0, left).trim();
+        }
+        return "KTX Sinh Vien";
+    }
+
+    private String jsonEscape(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r");
     }
 
     private String buildResetPasswordEmailHtml(String resetLink) {
