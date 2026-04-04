@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS building (
     total_floors INT NOT NULL,
     gender_allowed VARCHAR(20) NOT NULL,
     description TEXT
-);
+)
+@@
 
 CREATE TABLE IF NOT EXISTS room_type (
     id BIGSERIAL PRIMARY KEY,
@@ -16,14 +17,16 @@ CREATE TABLE IF NOT EXISTS room_type (
     capacity INT NOT NULL,
     base_price NUMERIC(18,2) NOT NULL,
     gender_allowed VARCHAR(20) NOT NULL
-);
+)
+@@
 
 CREATE TABLE IF NOT EXISTS roles (
     id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     role_name VARCHAR(50) NOT NULL UNIQUE
-);
+)
+@@
 
 CREATE TABLE IF NOT EXISTS student (
     id BIGSERIAL PRIMARY KEY,
@@ -37,7 +40,8 @@ CREATE TABLE IF NOT EXISTS student (
     cccd VARCHAR(20) NOT NULL UNIQUE,
     email VARCHAR(120),
     avatar_url VARCHAR(255)
-);
+)
+@@
 
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
@@ -50,7 +54,8 @@ CREATE TABLE IF NOT EXISTS users (
     student_id BIGINT UNIQUE,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT fk_users_student FOREIGN KEY (student_id) REFERENCES student(id)
-);
+)
+@@
 
 CREATE TABLE IF NOT EXISTS user_roles (
     user_id BIGINT NOT NULL,
@@ -59,7 +64,8 @@ CREATE TABLE IF NOT EXISTS user_roles (
     CONSTRAINT uk_user_roles_user_role UNIQUE (user_id, role_id),
     CONSTRAINT fk_user_roles_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_user_roles_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
-);
+)
+@@
 
 CREATE TABLE IF NOT EXISTS room (
     id BIGSERIAL PRIMARY KEY,
@@ -73,7 +79,8 @@ CREATE TABLE IF NOT EXISTS room (
     CONSTRAINT uk_room_building_room_number UNIQUE (building_id, room_number),
     CONSTRAINT fk_room_building FOREIGN KEY (building_id) REFERENCES building(id),
     CONSTRAINT fk_room_room_type FOREIGN KEY (room_type_id) REFERENCES room_type(id)
-);
+)
+@@
 
 CREATE TABLE IF NOT EXISTS bed (
     id BIGSERIAL PRIMARY KEY,
@@ -87,7 +94,8 @@ CREATE TABLE IF NOT EXISTS bed (
     student_id BIGINT UNIQUE,
     CONSTRAINT fk_bed_room FOREIGN KEY (room_id) REFERENCES room(id) ON DELETE CASCADE,
     CONSTRAINT fk_bed_student FOREIGN KEY (student_id) REFERENCES student(id)
-);
+)
+@@
 
 CREATE TABLE IF NOT EXISTS contract (
     id BIGSERIAL PRIMARY KEY,
@@ -115,7 +123,8 @@ CREATE TABLE IF NOT EXISTS contract (
     CONSTRAINT fk_contract_student FOREIGN KEY (student_id) REFERENCES student(id),
     CONSTRAINT fk_contract_room FOREIGN KEY (room_id) REFERENCES room(id),
     CONSTRAINT fk_contract_bed FOREIGN KEY (bed_id) REFERENCES bed(id)
-);
+)
+@@
 
 CREATE TABLE IF NOT EXISTS utility_record (
     id BIGSERIAL PRIMARY KEY,
@@ -131,7 +140,8 @@ CREATE TABLE IF NOT EXISTS utility_record (
     room_id BIGINT NOT NULL,
     CONSTRAINT uk_utility_record_room_period UNIQUE (room_id, month, year),
     CONSTRAINT fk_utility_record_room FOREIGN KEY (room_id) REFERENCES room(id) ON DELETE CASCADE
-);
+)
+@@
 
 CREATE TABLE IF NOT EXISTS invoice (
     id BIGSERIAL PRIMARY KEY,
@@ -170,7 +180,8 @@ CREATE TABLE IF NOT EXISTS invoice (
     room_id BIGINT NOT NULL,
     CONSTRAINT fk_invoice_student FOREIGN KEY (student_id) REFERENCES student(id),
     CONSTRAINT fk_invoice_room FOREIGN KEY (room_id) REFERENCES room(id)
-);
+)
+@@
 
 CREATE TABLE IF NOT EXISTS issue (
     id BIGSERIAL PRIMARY KEY,
@@ -183,7 +194,8 @@ CREATE TABLE IF NOT EXISTS issue (
     room_id BIGINT NOT NULL,
     CONSTRAINT fk_issue_student FOREIGN KEY (student_id) REFERENCES student(id),
     CONSTRAINT fk_issue_room FOREIGN KEY (room_id) REFERENCES room(id)
-);
+)
+@@
 
 CREATE TABLE IF NOT EXISTS contract_change_request (
     id BIGSERIAL PRIMARY KEY,
@@ -200,7 +212,8 @@ CREATE TABLE IF NOT EXISTS contract_change_request (
     student_id BIGINT NOT NULL,
     CONSTRAINT fk_change_request_contract FOREIGN KEY (contract_id) REFERENCES contract(id),
     CONSTRAINT fk_change_request_student FOREIGN KEY (student_id) REFERENCES student(id)
-);
+)
+@@
 
 CREATE TABLE IF NOT EXISTS pricing_policy (
     id BIGSERIAL PRIMARY KEY,
@@ -211,7 +224,8 @@ CREATE TABLE IF NOT EXISTS pricing_policy (
     service_fee NUMERIC(18,2) NOT NULL,
     effective_from VARCHAR(100) NOT NULL,
     notes TEXT
-);
+)
+@@
 
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id BIGSERIAL PRIMARY KEY,
@@ -221,7 +235,8 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     used BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL,
     CONSTRAINT fk_password_reset_tokens_user FOREIGN KEY (app_user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+)
+@@
 
 DO $$
 BEGIN
@@ -232,7 +247,7 @@ BEGIN
     ) THEN
         ALTER TABLE building
             ALTER COLUMN gender_allowed TYPE VARCHAR(20)
-            USING convert_from(gender_allowed, 'UTF8');
+            USING convert_from(gender_allowed, 'UTF8')
     END IF;
 
     IF EXISTS (
@@ -242,7 +257,7 @@ BEGIN
     ) THEN
         ALTER TABLE room_type
             ALTER COLUMN gender_allowed TYPE VARCHAR(20)
-            USING convert_from(gender_allowed, 'UTF8');
+            USING convert_from(gender_allowed, 'UTF8')
     END IF;
 
     IF EXISTS (
@@ -252,7 +267,7 @@ BEGIN
     ) THEN
         ALTER TABLE room
             ALTER COLUMN room_number TYPE VARCHAR(20)
-            USING convert_from(room_number, 'UTF8');
+            USING convert_from(room_number, 'UTF8')
     END IF;
 
     IF EXISTS (
@@ -262,6 +277,7 @@ BEGIN
     ) THEN
         ALTER TABLE room
             ALTER COLUMN gender_allowed TYPE VARCHAR(20)
-            USING convert_from(gender_allowed, 'UTF8');
+            USING convert_from(gender_allowed, 'UTF8')
     END IF;
-END $$;
+END $$
+@@
