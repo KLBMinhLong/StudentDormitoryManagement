@@ -73,7 +73,7 @@ public class EmailServiceImpl implements EmailService {
 
             javaMailSender.send(message);
             LOGGER.info("HTML email sent successfully to: {}", toEmail);
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             LOGGER.error("Failed to send HTML email to: {}", toEmail, e);
         }
     }
