@@ -93,10 +93,10 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Value("${app.payos.checksum-key:}")
     private String payosChecksumKey;
 
-    @Value("${app.payos.return-url:http://localhost:8081/user/my-invoices.html}")
+    @Value("${app.payos.return-url:https://studentdormitorymanagement-production.up.railway.app/user/payment-return.html}")
     private String payosReturnUrl;
 
-    @Value("${app.payos.cancel-url:http://localhost:8081/user/my-invoices.html}")
+    @Value("${app.payos.cancel-url:https://studentdormitorymanagement-production.up.railway.app/user/payment-cancel.html}")
     private String payosCancelUrl;
 
     private PricingPolicy getPricingPolicy() {

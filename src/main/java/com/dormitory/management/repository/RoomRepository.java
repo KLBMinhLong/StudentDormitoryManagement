@@ -20,11 +20,13 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 						where (:genderAllowed is null or r.genderAllowed = :genderAllowed)
 							and (:buildingId is null or r.building.id = :buildingId)
 							and (:status is null or r.status = :status)
+							and (:keyword is null or :keyword = '' or lower(r.roomNumber) like lower(concat('%', :keyword, '%')))
 						""")
 		Page<Room> findByFilters(
 				@Param("genderAllowed") String genderAllowed,
 				@Param("buildingId") Long buildingId,
 				@Param("status") RoomStatus status,
+				@Param("keyword") String keyword,
 				Pageable pageable);
 
 		boolean existsByBuildingIdAndRoomNumberIgnoreCase(Long buildingId, String roomNumber);

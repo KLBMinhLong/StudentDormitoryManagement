@@ -67,7 +67,7 @@ public class RoomServiceImpl implements RoomService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
         String normalizedKeyword = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
         String normalizedGenderAllowed = (genderAllowed == null || genderAllowed.isBlank()) ? null : genderAllowed.trim();
-        Page<Room> roomPage = roomRepository.findByFilters(normalizedGenderAllowed, buildingId, status, pageable);
+        Page<Room> roomPage = roomRepository.findByFilters(normalizedGenderAllowed, buildingId, status, normalizedKeyword, pageable);
         Map<Long, int[]> roomStats = summarizeRoomOccupancy(roomPage.getContent());
         Page<RoomDTO> result = roomPage.map((room) -> toRoomDto(room, roomStats.get(room.getId())));
         return PagedResponseDTO.fromPage(result);
