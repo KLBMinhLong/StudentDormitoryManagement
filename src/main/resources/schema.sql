@@ -222,3 +222,46 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     created_at TIMESTAMP NOT NULL,
     CONSTRAINT fk_password_reset_tokens_user FOREIGN KEY (app_user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'building' AND column_name = 'gender_allowed' AND udt_name = 'bytea'
+    ) THEN
+        ALTER TABLE building
+            ALTER COLUMN gender_allowed TYPE VARCHAR(20)
+            USING convert_from(gender_allowed, 'UTF8');
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'room_type' AND column_name = 'gender_allowed' AND udt_name = 'bytea'
+    ) THEN
+        ALTER TABLE room_type
+            ALTER COLUMN gender_allowed TYPE VARCHAR(20)
+            USING convert_from(gender_allowed, 'UTF8');
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'room' AND column_name = 'room_number' AND udt_name = 'bytea'
+    ) THEN
+        ALTER TABLE room
+            ALTER COLUMN room_number TYPE VARCHAR(20)
+            USING convert_from(room_number, 'UTF8');
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'room' AND column_name = 'gender_allowed' AND udt_name = 'bytea'
+    ) THEN
+        ALTER TABLE room
+            ALTER COLUMN gender_allowed TYPE VARCHAR(20)
+            USING convert_from(gender_allowed, 'UTF8');
+    END IF;
+END $$;
