@@ -38,8 +38,7 @@ public class EmailServiceImpl implements EmailService {
 
     private void sendSimpleEmail(String toEmail, String subject, String body) {
         if (javaMailSender == null) {
-            LOGGER.warn("JavaMailSender is not configured. Email would be sent to: {} with subject: {}", toEmail, subject);
-            return;
+            throw new IllegalStateException("Cấu hình gửi email chưa sẵn sàng. Vui lòng kiểm tra SMTP.");
         }
 
         try {
@@ -53,13 +52,13 @@ public class EmailServiceImpl implements EmailService {
             LOGGER.info("Simple email sent successfully to: {}", toEmail);
         } catch (Exception e) {
             LOGGER.error("Failed to send simple email to: {}", toEmail, e);
+            throw new IllegalStateException("Không thể gửi email thông báo. Vui lòng thử lại sau.", e);
         }
     }
 
     private void sendHtmlEmail(String toEmail, String subject, String htmlContent) {
         if (javaMailSender == null) {
-            LOGGER.warn("JavaMailSender is not configured. Email would be sent to: {} with subject: {}", toEmail, subject);
-            return;
+            throw new IllegalStateException("Cấu hình gửi email chưa sẵn sàng. Vui lòng kiểm tra SMTP.");
         }
 
         try {
@@ -75,6 +74,7 @@ public class EmailServiceImpl implements EmailService {
             LOGGER.info("HTML email sent successfully to: {}", toEmail);
         } catch (Exception e) {
             LOGGER.error("Failed to send HTML email to: {}", toEmail, e);
+            throw new IllegalStateException("Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau.", e);
         }
     }
 
