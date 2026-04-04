@@ -107,7 +107,7 @@ public class Invoice extends BaseEntity {
     @Column(name = "provider_transaction_id", length = 100)
     private String providerTransactionId;
 
-    @Column(name = "provider_raw_payload", columnDefinition = "nvarchar(max)")
+    @Column(name = "provider_raw_payload", columnDefinition = "text")
     private String providerRawPayload;
 
     @Column(name = "manual_approved_by", length = 100)
@@ -116,7 +116,7 @@ public class Invoice extends BaseEntity {
     @Column(name = "manual_approved_at")
     private LocalDateTime manualApprovedAt;
 
-    @Column(name = "manual_approval_note", columnDefinition = "nvarchar(500)")
+    @Column(name = "manual_approval_note", columnDefinition = "text")
     private String manualApprovalNote;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -38,16 +38,16 @@ public class ContractChangeRequest extends BaseEntity {
     @Column(name = "requested_end_date")
     private LocalDate requestedEndDate;
 
-    @Column(name = "reason", columnDefinition = "nvarchar(500)")
+    @Column(name = "reason", columnDefinition = "text")
     private String reason;
 
-    @Column(name = "admin_note", columnDefinition = "nvarchar(500)")
+    @Column(name = "admin_note", columnDefinition = "text")
     private String adminNote;
 
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
 
-    @Column(name = "resolved_by", columnDefinition = "nvarchar(120)")
+    @Column(name = "resolved_by", length = 120)
     private String resolvedBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
