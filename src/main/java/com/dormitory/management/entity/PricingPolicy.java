@@ -29,9 +29,9 @@ public class PricingPolicy extends BaseEntity {
     @Column(name = "service_fee", nullable = false, precision = 18, scale = 2)
     private BigDecimal serviceFee;
 
-    @Column(name = "effective_from", nullable = false, columnDefinition = "nvarchar(100)")
+    @Column(name = "effective_from", nullable = false, length = 100)
     private String effectiveFrom;
 
-    @Column(name = "notes", columnDefinition = "nvarchar(500)")
+    @Column(name = "notes", columnDefinition = "text")
     private String notes;
 }

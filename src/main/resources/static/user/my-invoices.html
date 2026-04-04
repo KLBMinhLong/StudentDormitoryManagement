@@ -108,8 +108,8 @@
 
 <script src="/ui/user-sidebar.js"></script>
 
-<div id="invoiceDetailModal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm p-4">
-    <div class="max-w-2xl mx-auto bg-bg-card rounded-base border border-border shadow-soft overflow-hidden">
+<div id="invoiceDetailModal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="max-w-2xl mx-auto my-4 bg-bg-card rounded-base border border-border shadow-soft overflow-hidden max-h-[calc(100vh-2rem)] flex flex-col">
         <div class="px-5 py-4 border-b border-border flex items-center justify-between gap-3">
             <div>
                 <p class="text-xs text-text-muted">Chi tiết hóa đơn</p>
@@ -117,8 +117,8 @@
             </div>
             <button id="detailCloseBtn" type="button" class="rounded-base border border-border px-3 py-1.5 text-sm hover:bg-slate-50">Đóng</button>
         </div>
-        <div id="detailBody" class="p-5 space-y-4"></div>
-        <div class="px-5 py-4 border-t border-border flex flex-wrap justify-end gap-2">
+        <div id="detailBody" class="p-5 space-y-4 overflow-y-auto flex-1"></div>
+        <div class="px-5 py-4 border-t border-border flex flex-wrap justify-end gap-2 bg-bg-card">
             <button id="detailPaymentBtn" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">Thanh toán ngay</button>
         </div>
     </div>

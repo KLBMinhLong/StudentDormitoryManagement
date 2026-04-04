@@ -34,25 +34,25 @@ import lombok.ToString;
         })
 public class Student extends BaseEntity {
 
-    @Column(name = "student_code", nullable = false, columnDefinition = "nvarchar(50)")
+        @Column(name = "student_code", nullable = false, length = 50)
     private String studentCode;
 
-    @Column(name = "full_name", nullable = false, columnDefinition = "nvarchar(150)")
+        @Column(name = "full_name", nullable = false, length = 150)
     private String fullName;
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
-    @Column(name = "gender", columnDefinition = "nvarchar(20)")
+        @Column(name = "gender", length = 20)
     private String gender;
 
-    @Column(name = "phone", columnDefinition = "nvarchar(20)")
+        @Column(name = "phone", length = 20)
     private String phone;
 
-    @Column(name = "cccd", nullable = false, columnDefinition = "nvarchar(20)")
+        @Column(name = "cccd", nullable = false, length = 20)
     private String cccd;
 
-    @Column(name = "email", columnDefinition = "nvarchar(120)")
+        @Column(name = "email", length = 120)
     private String email;
 
     @Column(name = "avatar_url", length = 255)

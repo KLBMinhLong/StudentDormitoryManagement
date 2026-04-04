@@ -54,28 +54,31 @@ public class IssueServiceImpl implements IssueService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<IssueResponseDTO> getMyIssues(String username) {
         Student student = resolveStudentByUsername(username);
-        return issueRepository.findByStudent_Id(student.getId())
+        return issueRepository.findDetailedByStudentId(student.getId())
                 .stream()
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<IssueResponseDTO> getAllIssues() {
-        return issueRepository.findAll()
+        return issueRepository.findAllDetailed()
                 .stream()
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
         @Override
+        @Transactional(readOnly = true)
         public List<IssueResponseDTO> getIssuesByStudentId(Long studentId) {
         studentRepository.findById(studentId)
             .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy sinh viên"));
 
-        return issueRepository.findByStudent_Id(studentId)
+        return issueRepository.findDetailedByStudentId(studentId)
             .stream()
             .map(this::toResponseDTO)
             .collect(Collectors.toList());

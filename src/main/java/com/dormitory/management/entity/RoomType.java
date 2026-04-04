@@ -26,7 +26,7 @@ import lombok.ToString;
 @Table(name = "room_type")
 public class RoomType extends BaseEntity {
 
-    @Column(name = "name", nullable = false, columnDefinition = "nvarchar(100)")
+    @Column(name = "name", nullable = false, length = 100)
     private String name;
 
     @Column(name = "capacity", nullable = false)
@@ -35,7 +35,7 @@ public class RoomType extends BaseEntity {
     @Column(name = "base_price", nullable = false, precision = 18, scale = 2)
     private BigDecimal basePrice;
 
-    @Column(name = "gender_allowed", nullable = false, columnDefinition = "nvarchar(20)")
+    @Column(name = "gender_allowed", nullable = false, length = 20)
     private String genderAllowed;
 
     @JsonIgnore

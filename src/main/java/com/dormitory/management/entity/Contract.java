@@ -64,19 +64,19 @@ public class Contract extends BaseEntity {
     @Column(name = "activated_at")
     private LocalDateTime activatedAt;
 
-    @Column(name = "emergency_contact_name", columnDefinition = "nvarchar(120)")
+    @Column(name = "emergency_contact_name", length = 120)
     private String emergencyContactName;
 
-    @Column(name = "emergency_contact_phone", columnDefinition = "nvarchar(20)")
+    @Column(name = "emergency_contact_phone", length = 20)
     private String emergencyContactPhone;
 
-    @Column(name = "guardian_name", columnDefinition = "nvarchar(120)")
+    @Column(name = "guardian_name", length = 120)
     private String guardianName;
 
-    @Column(name = "guardian_phone", columnDefinition = "nvarchar(20)")
+    @Column(name = "guardian_phone", length = 20)
     private String guardianPhone;
 
-    @Column(name = "student_note", columnDefinition = "nvarchar(500)")
+    @Column(name = "student_note", columnDefinition = "text")
     private String studentNote;
 
     @ManyToOne(fetch = FetchType.LAZY)

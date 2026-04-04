@@ -217,6 +217,28 @@
         return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + ' đ';
     }
 
+    function parseServerDateToMs(rawValue) {
+        if (!rawValue) {
+            return NaN;
+        }
+
+        const text = String(rawValue).trim();
+        if (!text) {
+            return NaN;
+        }
+
+        const hasZone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(text);
+        const normalized = text.includes('T') ? text : text.replace(' ', 'T');
+        const preferred = hasZone ? normalized : `${normalized}Z`;
+        const ms = Date.parse(preferred);
+
+        if (!Number.isNaN(ms)) {
+            return ms;
+        }
+
+        return Date.parse(normalized);
+    }
+
     function updatePricePreview() {
         if (!currentContract) {
             return;
@@ -238,7 +260,15 @@
             clearInterval(countdownTimer);
         }
 
-        const endTime = new Date(holdExpiresAt).getTime();
+        const endTime = parseServerDateToMs(holdExpiresAt);
+        if (Number.isNaN(endTime)) {
+            countdownEl.textContent = '--:--:--';
+            showMessage('error', 'Không đọc được thời gian giữ chỗ. Vui lòng tải lại trang.');
+            submitBtn.disabled = true;
+            submitStickyBtn.disabled = true;
+            return;
+        }
+
         const tick = () => {
             const now = Date.now();
             const diff = endTime - now;

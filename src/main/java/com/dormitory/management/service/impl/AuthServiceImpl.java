@@ -181,7 +181,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void forgotPassword(ForgotPasswordRequestDTO request) {
+    public boolean forgotPassword(ForgotPasswordRequestDTO request) {
         String email = request.getEmail() == null ? null : request.getEmail().trim().toLowerCase();
 
         if (!StringUtils.hasText(email)) {
@@ -209,10 +209,12 @@ public class AuthServiceImpl implements AuthService {
         passwordResetTokenRepository.save(token);
 
         // Send email with reset link
-        if (emailService != null) {
-            String resetLink = frontendUrl + "/reset-password.html?token=" + resetToken;
-            emailService.sendResetPasswordEmail(appUser.getEmail() != null ? appUser.getEmail() : email, resetLink);
+        if (emailService == null) {
+            return false;
         }
+
+        String resetLink = frontendUrl + "/reset-password.html?token=" + resetToken;
+        return emailService.sendResetPasswordEmail(appUser.getEmail() != null ? appUser.getEmail() : email, resetLink);
     }
 
     @Override

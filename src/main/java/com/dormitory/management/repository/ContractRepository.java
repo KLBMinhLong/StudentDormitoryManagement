@@ -24,6 +24,7 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
 
     Optional<Contract> findFirstByStudentIdAndStatusOrderByCreatedAtDesc(Long studentId, ContractStatus status);
 
+    @EntityGraph(attributePaths = {"student"})
     Optional<Contract> findFirstByBedIdAndStatusInOrderByCreatedAtDesc(Long bedId, Set<ContractStatus> statuses);
 
     boolean existsByStudentIdAndStatusIn(Long studentId, Set<ContractStatus> statuses);
@@ -52,7 +53,6 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
               AND (:status IS NULL OR c.status = :status)
               AND (
                 :keyword IS NULL OR :keyword = ''
-                OR LOWER(r.roomNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
                 OR LOWER(COALESCE(c.studentNote, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
               )
             """)
@@ -75,7 +75,6 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
               )
               AND (
                 :keyword IS NULL OR :keyword = ''
-                OR LOWER(r.roomNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
                 OR LOWER(b.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
               )
             """)
@@ -99,7 +98,6 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
                 :keyword IS NULL OR :keyword = ''
                 OR LOWER(s.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
                 OR LOWER(s.studentCode) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(r.roomNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
                 OR LOWER(COALESCE(c.studentNote, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
               )
             """)

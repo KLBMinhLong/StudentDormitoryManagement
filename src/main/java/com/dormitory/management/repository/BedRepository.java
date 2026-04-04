@@ -38,7 +38,7 @@ public interface BedRepository extends JpaRepository<Bed, Long> {
 
     @Query(value = """
             SELECT b.room_id,
-                   COUNT_BIG(b.id),
+                   COUNT(b.id),
                    COUNT(DISTINCT CASE
                        WHEN ((b.reserved_until IS NOT NULL AND b.reserved_until > :now)
                            OR c.bed_id IS NOT NULL)

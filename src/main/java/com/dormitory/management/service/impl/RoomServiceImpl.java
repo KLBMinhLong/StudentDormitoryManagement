@@ -151,11 +151,19 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @Transactional
     public PagedResponseDTO<BedDTO> getBedsByRoomId(Long roomId, int page, int size, String sortBy, String direction) {
-        roomRepository.findById(roomId)
+        Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found with id: " + roomId));
 
-        List<BedDTO> beds = bedRepository.findByRoomIdOrderByBedNumberAsc(roomId)
+        List<Bed> bedEntities = bedRepository.findByRoomIdOrderByBedNumberAsc(roomId);
+        if (bedEntities.isEmpty() && room.getRoomType() != null && room.getRoomType().getCapacity() > 0) {
+            // Auto-repair legacy rooms that were created without bed rows.
+            syncBedsForRoom(room, room.getRoomType().getCapacity());
+            bedEntities = bedRepository.findByRoomIdOrderByBedNumberAsc(roomId);
+        }
+
+        List<BedDTO> beds = bedEntities
                 .stream()
                 .map(this::toBedDto)
                 .toList();

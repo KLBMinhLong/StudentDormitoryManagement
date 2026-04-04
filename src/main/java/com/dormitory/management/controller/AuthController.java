@@ -52,9 +52,12 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDTO request) {
-        authService.forgotPassword(request);
+        boolean emailSent = authService.forgotPassword(request);
+        String message = emailSent
+            ? "Hướng dẫn đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra email của bạn."
+            : "Yêu cầu đặt lại mật khẩu đã được tạo nhưng gửi email chưa thành công. Vui lòng thử lại sau.";
         return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), 
-            "Hướng dẫn đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra email của bạn.", null));
+            message, null));
     }
 
     @PostMapping("/reset-password")

@@ -15,7 +15,7 @@ public interface AuthService {
 
     CurrentUserResponseDTO getCurrentUser();
 
-    void forgotPassword(ForgotPasswordRequestDTO request);
+    boolean forgotPassword(ForgotPasswordRequestDTO request);
 
     void resetPassword(ResetPasswordRequestDTO request);
 }

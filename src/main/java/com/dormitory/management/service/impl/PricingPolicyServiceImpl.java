@@ -27,7 +27,7 @@ public class PricingPolicyServiceImpl implements PricingPolicyService {
     @Override
     @Cacheable(cacheNames = PRICING_LATEST_CACHE)
     public PricingPolicyResponseDTO getLatestPolicy() {
-        PricingPolicy policy = pricingPolicyRepository.getLatestPolicy()
+        PricingPolicy policy = pricingPolicyRepository.findTopByOrderByIdDesc()
                 .orElseGet(() -> {
                     PricingPolicy defaultPolicy = PricingPolicy.builder()
                             .electricUnitPrice(new BigDecimal("3500"))

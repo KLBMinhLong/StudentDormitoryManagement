@@ -162,7 +162,7 @@
             </p>
 
             <!-- Forgot Password Form -->
-            <form id="forgotPasswordForm" class="space-y-4">
+            <form id="forgotPasswordForm" class="space-y-4" method="post">
                 <div>
                     <label for="forgotEmail" class="block text-sm font-medium text-text-main mb-2">
                         Email
@@ -409,7 +409,7 @@
                     throw new Error(data.message || 'Không thể gửi yêu cầu đặt lại mật khẩu');
                 }
 
-                showForgotMessage('success', 'Hướng dẫn đặt lại mật khẩu đã được gửi về email của bạn. Vui lòng kiểm tra email trong vài phút.');
+                showForgotMessage('success', data.message || 'Hướng dẫn đặt lại mật khẩu đã được gửi về email của bạn. Vui lòng kiểm tra email trong vài phút.');
                 
                 setTimeout(() => {
                     closeForgotModal();
