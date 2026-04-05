@@ -41,13 +41,13 @@ public class EmailServiceImpl implements EmailService {
     @Value("${app.email.smtp-fallback-port:465}")
     private int smtpFallbackPort;
 
-    @Value("${spring.mail.properties.mail.smtp.connectiontimeout:20000}")
+    @Value("${spring.mail.properties.mail.smtp.connectiontimeout:2000}")
     private String smtpConnectionTimeout;
 
-    @Value("${spring.mail.properties.mail.smtp.timeout:20000}")
+    @Value("${spring.mail.properties.mail.smtp.timeout:2000}")
     private String smtpTimeout;
 
-    @Value("${spring.mail.properties.mail.smtp.writetimeout:20000}")
+    @Value("${spring.mail.properties.mail.smtp.writetimeout:2000}")
     private String smtpWriteTimeout;
 
     @Value("${app.email.brevo-api-fallback-enabled:true}")
@@ -184,7 +184,7 @@ public class EmailServiceImpl implements EmailService {
 
         try {
             HttpClient httpClient = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(20))
+                    .connectTimeout(Duration.ofSeconds(2))
                     .build();
 
             String payload = "{" +

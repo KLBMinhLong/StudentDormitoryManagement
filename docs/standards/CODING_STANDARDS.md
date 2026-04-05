@@ -1,80 +1,106 @@
 # Coding Standards - Student Dormitory Management
 
-## Naming Convention
+## 1) Naming Convention
 
-- Java class: PascalCase.
-- Java method/field: camelCase.
-- SQL Server table/column: snake_case (explicit with `@Table`, `@Column`).
-- API endpoint: kebab-case (example: `/api/v1/room-types`).
+- Java class names: PascalCase.
+- Java method and variable names: camelCase.
+- Database table and column names: snake_case (khai báo rõ bằng `@Table`, `@Column`).
+- API endpoint: kebab-case, base prefix `/api/v1`.
 
-## API Response Contract
+## 2) API Response Standard
 
-- Use one response wrapper only:
-  - `ApiResponse<T> { code, message, result }`
-- Controllers must return `ResponseEntity<ApiResponse<T>>`.
+- Bắt buộc dùng `ApiResponse<T>` với đúng 3 field: `code`, `message`, `result`.
+- Mọi controller API JSON trả `ResponseEntity<ApiResponse<T>>`.
+- Quy ước code thành công:
+  - GET/PUT: `200`
+  - POST: `201`
+  - DELETE: `204` với `result = null`
 
-## Global Exception Contract
+## 3) Exception Handling Standard
 
-- Use `@RestControllerAdvice` for all exceptions.
-- Required error codes:
-  - 400 Validation Error
-  - 404 Not Found
-  - 500 Internal Server Error
+- Bắt buộc xử lý lỗi tập trung bằng `@RestControllerAdvice`.
+- Chuẩn mã lỗi tối thiểu:
+  - `400`: validation hoặc lỗi nghiệp vụ đầu vào
+  - `404`: không tìm thấy tài nguyên
+  - `500`: lỗi hệ thống
+- Response lỗi vẫn dùng `ApiResponse<T>`.
 
-## DTO Rule (No Entity in Controller)
+## 4) DTO-First Rule
 
-- Do not return Entity from controller.
-- Request body type: `*RequestDTO`.
-- Response body type: `*ResponseDTO`.
-- Mapping via ModelMapper or MapStruct.
+- Không expose JPA Entity trực tiếp từ controller.
+- Input dùng `*RequestDTO`.
+- Output dùng `*ResponseDTO` hoặc DTO nghiệp vụ tương đương.
+- Mapping xử lý ở service layer.
 
-## Pagination Rule (List API)
+## 5) Pagination Rule
 
-- All list-returning endpoints MUST implement pagination.
-- Default page size: **10 items per page**.
-- Pagination Request Parameters:
-  - `page`: default `0` (zero-based index).
-  - `size`: default `10`.
-  - `sortBy`: default `id` (or `createdAt`).
-  - `direction`: default `desc`.
-- Pagination Response Wrapper:
-  - Use `PagedResponseDTO<T> { content: List<T>, pageNo, pageSize, totalElements, totalPages, last }`.
-  - Nested within the `result` field of `ApiResponse<T>`.
+- Tất cả API trả danh sách phải có phân trang.
+- Tham số mặc định:
+  - `page = 0`
+  - `size = 10`
+  - `sortBy = id` hoặc `createdAt`
+  - `direction = desc`
+- Kết quả phân trang bọc bằng `PagedResponseDTO<T>` và đặt trong `ApiResponse.result`.
 
-## UI Pagination Standard
+## 6) Security Rule
 
-- Navigation: Use "Previous/Next" buttons combined with page numbers.
-- Indicator: Always display "Showing X-Y of Z results" (Hiển thị X-Y trên tổng số Z kết quả).
-- Interaction: Smooth scroll to top of the list/card after page change.
+- Cơ chế xác thực chuẩn: JWT Bearer token.
+- Endpoint cần bảo vệ phải khai báo rõ quyền (`ROLE_ADMIN`, `ROLE_STUDENT`).
+- Không hardcode secret trong code; dùng biến môi trường.
 
+## 7) Service and Repository Rule
 
-## UI Consistency
+- Service chứa nghiệp vụ, transaction boundary và chuẩn hóa dữ liệu.
+- Repository chỉ tập trung truy vấn và không chứa logic nghiệp vụ phức tạp.
+- Luôn kiểm tra trạng thái nghiệp vụ trước khi chuyển bước vòng đời (hợp đồng, hóa đơn, chỉ số điện nước).
 
-- Use `ui-ux-pro-max` workflow before implementing UI.
-- Default stack: `html-tailwind`.
-- Project visual style: simple, gentle, data-friendly.
-- Mandatory color tokens:
-  - Primary: #0EA5A5
-  - Primary Hover: #0B8F8F
-  - Secondary: #3B82F6
-  - Accent: #10B981
-  - Page Background: #F8FAFC
-  - Card Background: #FFFFFF
-  - Main Text: #0F172A
-  - Muted Text: #475569
-  - Border: #E2E8F0
-  - Success: #16A34A
-  - Warning: #D97706
-  - Danger: #DC2626
-- Typography tokens:
+## 8) Database and Schema Rule
+
+- Database hiện tại: PostgreSQL.
+- Không dùng `ddl-auto=create` trong production.
+- Mọi thay đổi schema cần được tài liệu hóa ở `docs/architecture` và `docs/deployment`.
+
+## 9) Testing Rule
+
+- Tối thiểu phải có unit test cho service cốt lõi khi thêm logic mới.
+- Với thay đổi ảnh hưởng endpoint quan trọng, cần smoke test API trước merge.
+- Không merge nếu không build được bằng Maven wrapper.
+
+## 10) Logging and Observability Rule
+
+- Log cần đủ thông tin để truy vết nhưng không lộ dữ liệu nhạy cảm.
+- Không log secret, token, password, checksum key.
+- Các tác vụ scheduler cần log số lượng bản ghi đã xử lý.
+
+## 11) UI Consistency Rule
+
+- Stack mặc định: `html-tailwind` (trừ khi có yêu cầu khác).
+- Thiết kế nhẹ, rõ dữ liệu, tránh hiệu ứng nặng.
+- Token màu bắt buộc:
+  - Primary: `#0EA5A5`
+  - Primary Hover: `#0B8F8F`
+  - Secondary: `#3B82F6`
+  - Accent: `#10B981`
+  - Page Background: `#F8FAFC`
+  - Card Background: `#FFFFFF`
+  - Main Text: `#0F172A`
+  - Muted Text: `#475569`
+  - Border: `#E2E8F0`
+  - Success: `#16A34A`
+  - Warning: `#D97706`
+  - Danger: `#DC2626`
+- Typography:
   - Heading: Be Vietnam Pro (600/700)
-  - Body/UI: Inter (400/500)
-- Layout tokens:
-  - Container max width: 1200px
-  - Radius: 12px
-  - Section spacing: 24px mobile, 32px desktop
-  - Card shadow: 0 4px 12px rgba(15, 23, 42, 0.06)
-- Do not use purple-dominant palette in this project unless explicitly requested.
-- A11y minimum: keyboard-friendly, focus-visible, semantic HTML, readable contrast.
-- Text content rule: all Vietnamese UI labels/messages/placeholders must use full diacritics.
-- Input data rule: user-entered Vietnamese content must preserve diacritics (do not strip accents).
+  - Body: Inter (400/500)
+- Layout baseline:
+  - Container max width: `1200px`
+  - Radius: `12px`
+  - Section spacing: `24px` mobile, `32px` desktop
+  - Shadow: `0 4px 12px rgba(15, 23, 42, 0.06)`
+- Không dùng bảng màu tím làm chủ đạo nếu không có yêu cầu đặc biệt.
+
+## 12) Vietnamese Diacritics Rule
+
+- Toàn bộ text tiếng Việt trên UI phải có dấu đầy đủ.
+- Không dùng tiếng Việt không dấu cho label, thông báo, placeholder.
+- Dữ liệu tiếng Việt do người dùng nhập phải giữ nguyên dấu.
