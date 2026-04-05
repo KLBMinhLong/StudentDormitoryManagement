@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/ui/theme.css">
     <script src="/ui/admin-sidebar.js" defer></script>
+    <script src="/ui/admin-export.js" defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -48,7 +49,7 @@
         <main class="space-y-6">
             <div id="message" class="hidden rounded-base px-4 py-3 text-sm"></div>
 
-            <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
+            <section id="requestSection" class="rounded-base bg-bg-card border border-border shadow-soft p-6">
                 <div class="flex items-start justify-between gap-3 flex-wrap">
                     <div>
                         <h2 class="font-heading text-2xl">Quản lý hợp đồng nội trú</h2>
@@ -57,13 +58,19 @@
                     <div class="flex items-center gap-2">
                         <a href="/admin/contract_registration.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Lập hợp đồng mới</a>
                         <button id="refreshBtn" type="button" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Làm mới</button>
+                        <button id="btnExportContracts" type="button" class="rounded-base border border-secondary text-secondary px-3 py-2 text-sm font-medium hover:bg-blue-50 inline-flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9m-6-6 6 6m-9 4 2 3 2-3m-4 6h4" />
+                            </svg>
+                            <span>Xuất Excel</span>
+                        </button>
                     </div>
                 </div>
 
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
                     <div class="md:col-span-2">
                         <label class="text-sm text-text-muted block mb-1">Từ khóa</label>
-                        <input id="keywordInput" type="text" placeholder="Tìm theo tên, mã sinh viên, phòng..." class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                        <input id="keywordInput" type="text" placeholder="Tìm theo tên, mã sinh viên, phòng hoặc #mã hợp đồng..." class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                     </div>
                     <div>
                         <label class="text-sm text-text-muted block mb-1">Trạng thái</label>
@@ -96,7 +103,7 @@
             </section>
 
             <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
-                <div class="overflow-x-auto rounded-base border border-border">
+                <div class="hidden 2xl:block overflow-x-auto rounded-base border border-border">
                     <table class="w-full min-w-[1200px] text-sm">
                         <thead class="bg-slate-50">
                         <tr>
@@ -117,6 +124,8 @@
                     </table>
                 </div>
 
+                <div id="contractCards" class="mt-4 grid grid-cols-1 gap-3 2xl:hidden"></div>
+
                 <div id="pagination" class="mt-4 flex items-center justify-between gap-2 flex-wrap"></div>
             </section>
 
@@ -124,7 +133,7 @@
                 <h3 class="font-heading text-xl">Yêu cầu gia hạn/hủy hợp đồng từ sinh viên</h3>
                 <p class="text-text-muted text-sm mt-1">Admin duyệt sau khi sinh viên hoàn tất đối soát tiền tại ban quản lý.</p>
 
-                <div class="mt-4 overflow-x-auto rounded-base border border-border">
+                <div class="mt-4 hidden 2xl:block overflow-x-auto rounded-base border border-border">
                     <table class="w-full min-w-[1100px] text-sm">
                         <thead class="bg-slate-50">
                         <tr>
@@ -139,10 +148,14 @@
                         </thead>
                         <tbody id="requestBody">
                         <tr>
-                            <td colspan="7" class="px-4 py-6 text-center text-text-muted">Đang tải danh sách yêu cầu...</td>
+                            <td colspan="7" class="px-4 py-6 text-center text-text-muted">Danh sách yêu cầu sẽ được tải khi bạn cuộn đến khu vực này.</td>
                         </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <div id="requestCards" class="mt-4 grid grid-cols-1 gap-3 2xl:hidden">
+                    <div class="rounded-base border border-border bg-slate-50 px-4 py-6 text-center text-sm text-text-muted">Danh sách yêu cầu sẽ được tải khi bạn cuộn đến khu vực này.</div>
                 </div>
 
                 <div id="requestPagination" class="mt-4 flex items-center justify-between gap-2 flex-wrap"></div>
@@ -158,6 +171,16 @@
             <button id="closeModalBtn" type="button" class="rounded-base border border-border px-3 py-1.5 text-sm hover:bg-slate-50">Đóng</button>
         </div>
         <div id="detailContent" class="px-5 py-4 text-sm grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+    </div>
+</div>
+
+<div id="requestDetailModal" class="hidden fixed inset-0 z-40 bg-slate-900/35 backdrop-blur-sm p-4 md:p-8">
+    <div class="max-w-3xl mx-auto bg-bg-card border border-border rounded-base shadow-soft overflow-hidden">
+        <div class="px-5 py-4 border-b border-border flex items-center justify-between gap-3">
+            <h4 class="font-heading text-lg">Chi tiết yêu cầu thay đổi</h4>
+            <button id="closeRequestModalBtn" type="button" class="rounded-base border border-border px-3 py-1.5 text-sm hover:bg-slate-50">Đóng</button>
+        </div>
+        <div id="requestDetailContent" class="px-5 py-4 text-sm grid grid-cols-1 md:grid-cols-2 gap-3"></div>
     </div>
 </div>
 
@@ -210,15 +233,20 @@
 
     const message = document.getElementById('message');
     const body = document.getElementById('contractBody');
+    const contractCards = document.getElementById('contractCards');
     const pagination = document.getElementById('pagination');
     const keywordInput = document.getElementById('keywordInput');
     const statusSelect = document.getElementById('statusSelect');
     const occupancySelect = document.getElementById('occupancySelect');
     const sortSelect = document.getElementById('sortSelect');
+    const requestSection = document.getElementById('requestSection');
     const requestBody = document.getElementById('requestBody');
+    const requestCards = document.getElementById('requestCards');
     const requestPagination = document.getElementById('requestPagination');
     const detailModal = document.getElementById('detailModal');
     const detailContent = document.getElementById('detailContent');
+    const requestDetailModal = document.getElementById('requestDetailModal');
+    const requestDetailContent = document.getElementById('requestDetailContent');
     const actionModal = document.getElementById('actionModal');
     const actionModalTitle = document.getElementById('actionModalTitle');
     const actionModalMessage = document.getElementById('actionModalMessage');
@@ -227,6 +255,13 @@
     const actionModalCancel = document.getElementById('actionModalCancel');
     const actionModalConfirm = document.getElementById('actionModalConfirm');
     let resolveActionModal = null;
+    let deepLinkContractId = null;
+    let latestRequestRows = [];
+    let requestSectionObserver = null;
+    let hasLoadedChangeRequests = false;
+    let isLoadingChangeRequests = false;
+    let contractsAbortController = null;
+    let changeRequestsAbortController = null;
 
     const requestState = {
         page: 0,
@@ -265,6 +300,16 @@
 
     function formatCurrency(value) {
         return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + ' đ';
+    }
+
+    function debounce(fn, delay = 400) {
+        let timer = null;
+        return (...args) => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+            timer = setTimeout(() => fn(...args), delay);
+        };
     }
 
     function statusBadge(status) {
@@ -397,7 +442,7 @@
 
     function actionButtons(item) {
         const status = String(item.status || '').toUpperCase();
-        let actions = `<button data-id="${item.id}" data-action="detail" class="rounded-base border border-border px-3 py-1.5 text-xs font-medium hover:bg-slate-50">Chi tiết</button>`;
+        let actions = `<button data-id="${item.id}" data-action="detail" class="rounded-base border border-border px-3 py-1.5 text-xs font-medium hover:bg-slate-50">Xem chi tiết</button>`;
 
         if (status === 'PENDING') {
             actions += `<button data-id="${item.id}" data-action="approve" class="rounded-base bg-primary text-white px-3 py-1.5 text-xs font-medium hover:bg-primary-hover">Duyệt</button>`;
@@ -409,6 +454,33 @@
         }
 
         return actions;
+    }
+
+    function renderContractCards(rows) {
+        if (!Array.isArray(rows) || rows.length === 0) {
+            contractCards.innerHTML = '<div class="rounded-base border border-border bg-slate-50 px-4 py-6 text-center text-sm text-text-muted">Không có hợp đồng phù hợp.</div>';
+            return;
+        }
+
+        contractCards.innerHTML = rows.map((item) => `
+            <article class="rounded-base border border-border bg-bg-card shadow-soft p-3 space-y-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <p class="font-semibold text-sm truncate">${item.studentName || '-'}</p>
+                            <span class="text-xs text-text-muted">#${item.id}</span>
+                        </div>
+                        <p class="text-xs text-text-muted truncate mt-0.5">${item.studentCode || '-'} · Phòng ${item.roomNumber || '-'} / Giường ${item.bedNumber || '-'}</p>
+                    </div>
+                    <div class="shrink-0">${statusBadge(item.status)}</div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    ${occupancyBadge(item)}
+                    ${actionButtons(item)}
+                </div>
+            </article>
+        `).join('');
     }
 
     function renderRequestPagination(meta) {
@@ -447,8 +519,70 @@
         });
     }
 
+    function renderRequestCards(rows) {
+        if (!Array.isArray(rows) || rows.length === 0) {
+            requestCards.innerHTML = '<div class="rounded-base border border-border bg-slate-50 px-4 py-6 text-center text-sm text-text-muted">Không có yêu cầu thay đổi nào.</div>';
+            return;
+        }
+
+        requestCards.innerHTML = rows.map((item) => `
+            <article class="rounded-base border border-border bg-bg-card shadow-soft p-3 space-y-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <p class="font-semibold text-sm truncate">${item.studentName || '-'}</p>
+                            <span class="text-xs text-text-muted">#${item.id}</span>
+                        </div>
+                        <p class="text-xs text-text-muted truncate mt-0.5">${item.studentCode || '-'} · HĐ #${item.contractId} · ${requestTypeLabel(item.changeType)}</p>
+                    </div>
+                    <div class="shrink-0">${requestStatusBadge(item.status)}</div>
+                </div>
+
+                <p class="text-sm text-text-main max-h-[2.75rem] overflow-hidden">${item.reason || '-'}</p>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    ${requestActionButtons(item)}
+                </div>
+            </article>
+        `).join('');
+    }
+
+    function openRequestDetail(requestId) {
+        const request = latestRequestRows.find((item) => Number(item.id) === Number(requestId));
+        if (!request) {
+            showMessage('error', 'Không tìm thấy chi tiết yêu cầu thay đổi.');
+            return;
+        }
+
+        requestDetailContent.innerHTML = `
+            <div><p class="text-text-muted">Mã yêu cầu</p><p class="font-medium">#${request.id}</p></div>
+            <div><p class="text-text-muted">Trạng thái</p><p>${requestStatusBadge(request.status)}</p></div>
+            <div><p class="text-text-muted">Sinh viên</p><p class="font-medium">${request.studentName || '-'} (${request.studentCode || '-'})</p></div>
+            <div><p class="text-text-muted">Hợp đồng</p><p class="font-medium">#${request.contractId} - Phòng ${request.roomNumber || '-'} / Giường ${request.bedNumber || '-'}</p></div>
+            <div><p class="text-text-muted">Loại yêu cầu</p><p class="font-medium">${requestTypeLabel(request.changeType)}</p></div>
+            <div><p class="text-text-muted">Ngày tạo</p><p class="font-medium">${formatDateTime(request.createdAt)}</p></div>
+            <div class="md:col-span-2"><p class="text-text-muted">Lý do</p><p class="font-medium">${request.reason || '-'}</p></div>
+            <div class="md:col-span-2"><p class="text-text-muted">Ghi chú admin</p><p class="font-medium">${request.adminNote || '-'}</p></div>
+            <div><p class="text-text-muted">Đề nghị đến</p><p class="font-medium">${request.changeType === 'EXTEND' ? formatDate(request.requestedEndDate) : '-'}</p></div>
+            <div><p class="text-text-muted">Xử lý lúc</p><p class="font-medium">${formatDateTime(request.resolvedAt)}</p></div>
+            <div><p class="text-text-muted">Xử lý bởi</p><p class="font-medium">${request.resolvedBy || '-'}</p></div>
+            <div class="md:col-span-2 pt-1 flex flex-wrap gap-2">
+                <button type="button" data-action="open-related-contract" data-contract-id="${request.contractId}" class="rounded-base border border-secondary text-secondary px-3 py-1.5 text-sm font-medium hover:bg-blue-50">Xem hợp đồng</button>
+            </div>
+        `;
+
+        requestDetailModal.classList.remove('hidden');
+    }
+
     async function loadContracts() {
         body.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-text-muted">Đang tải dữ liệu...</td></tr>';
+        contractCards.innerHTML = '<div class="rounded-base border border-border bg-slate-50 px-4 py-6 text-center text-sm text-text-muted">Đang tải dữ liệu...</div>';
+
+        if (contractsAbortController) {
+            contractsAbortController.abort();
+        }
+        contractsAbortController = new AbortController();
+        const currentSignal = contractsAbortController.signal;
 
         const params = new URLSearchParams({
             page: String(state.page),
@@ -462,11 +596,12 @@
         if (state.occupancyType) params.set('occupancyType', state.occupancyType);
 
         try {
-            const result = await fetchAPI(`/api/v1/contracts/admin/management?${params.toString()}`);
+            const result = await fetchAPI(`/api/v1/contracts/admin/management?${params.toString()}`, { signal: currentSignal });
             const rows = Array.isArray(result.content) ? result.content : [];
 
             if (rows.length === 0) {
                 body.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-text-muted">Không có hợp đồng phù hợp.</td></tr>';
+                renderContractCards([]);
                 renderPagination(result);
                 return;
             }
@@ -491,15 +626,46 @@
                 </tr>
             `).join('');
 
+            renderContractCards(rows);
+
             renderPagination(result);
         } catch (error) {
+            if (error && error.name === 'AbortError') {
+                return;
+            }
             body.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-danger">${error.message || 'Không thể tải danh sách hợp đồng.'}</td></tr>`;
+            contractCards.innerHTML = `<div class="rounded-base border border-red-100 bg-red-50 px-4 py-6 text-center text-sm text-danger">${error.message || 'Không thể tải danh sách hợp đồng.'}</div>`;
+        } finally {
+            if (contractsAbortController && contractsAbortController.signal === currentSignal) {
+                contractsAbortController = null;
+            }
         }
+    }
+
+    async function exportContractsExcel() {
+        const params = new URLSearchParams({
+            sortBy: state.sortBy,
+            direction: state.direction
+        });
+        if (state.keyword) params.set('keyword', state.keyword);
+        if (state.status) params.set('status', state.status);
+        if (state.occupancyType) params.set('occupancyType', state.occupancyType);
+
+        window.AdminExport.downloadExcel({
+            url: `/api/v1/reports/admin/contracts/excel?${params.toString()}`,
+            token,
+            button: document.getElementById('btnExportContracts'),
+            defaultFilename: 'danh-sach-hop-dong.xlsx',
+            loadingText: 'Đang xuất Excel...',
+            fallbackError: 'Xuất Excel hợp đồng thất bại.',
+            onSuccess: () => showMessage('success', 'Đã xuất báo cáo Excel hợp đồng.'),
+            onError: (error) => showMessage('error', error.message || 'Xuất Excel hợp đồng thất bại.')
+        });
     }
 
     function requestActionButtons(item) {
         const status = String(item.status || '').toUpperCase();
-        let actions = '';
+        let actions = `<button data-request-id="${item.id}" data-request-action="detail" class="rounded-base border border-border px-3 py-1.5 text-xs font-medium hover:bg-slate-50">Xem chi tiết</button>`;
 
         if (status === 'PENDING') {
             actions += `<button data-request-id="${item.id}" data-request-action="approve" class="rounded-base bg-primary text-white px-3 py-1.5 text-xs font-medium hover:bg-primary-hover">Duyệt</button>`;
@@ -512,7 +678,19 @@
     }
 
     async function loadChangeRequests() {
+        if (isLoadingChangeRequests) {
+            return;
+        }
+
+        isLoadingChangeRequests = true;
         requestBody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-text-muted">Đang tải danh sách yêu cầu...</td></tr>';
+        requestCards.innerHTML = '<div class="rounded-base border border-border bg-slate-50 px-4 py-6 text-center text-sm text-text-muted">Đang tải danh sách yêu cầu...</div>';
+
+        if (changeRequestsAbortController) {
+            changeRequestsAbortController.abort();
+        }
+        changeRequestsAbortController = new AbortController();
+        const currentSignal = changeRequestsAbortController.signal;
 
         const params = new URLSearchParams({
             page: String(requestState.page),
@@ -526,11 +704,14 @@
         if (requestState.keyword) params.set('keyword', requestState.keyword);
 
         try {
-            const result = await fetchAPI(`/api/v1/contracts/admin/change-requests?${params.toString()}`);
+            const result = await fetchAPI(`/api/v1/contracts/admin/change-requests?${params.toString()}`, { signal: currentSignal });
             const rows = Array.isArray(result.content) ? result.content : [];
+            latestRequestRows = rows;
+            hasLoadedChangeRequests = true;
 
             if (rows.length === 0) {
                 requestBody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-text-muted">Không có yêu cầu thay đổi nào.</td></tr>';
+                renderRequestCards([]);
                 renderRequestPagination(result);
                 return;
             }
@@ -553,14 +734,71 @@
                 </tr>
             `).join('');
 
+            renderRequestCards(rows);
+
             renderRequestPagination(result);
         } catch (error) {
+            if (error && error.name === 'AbortError') {
+                return;
+            }
             requestBody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-danger">${error.message || 'Không thể tải danh sách yêu cầu.'}</td></tr>`;
+            requestCards.innerHTML = `<div class="rounded-base border border-red-100 bg-red-50 px-4 py-6 text-center text-sm text-danger">${error.message || 'Không thể tải danh sách yêu cầu.'}</div>`;
+        } finally {
+            isLoadingChangeRequests = false;
+            if (changeRequestsAbortController && changeRequestsAbortController.signal === currentSignal) {
+                changeRequestsAbortController = null;
+            }
         }
+    }
+
+    function scheduleInitialChangeRequestLoad() {
+        const runLoad = () => {
+            if (!hasLoadedChangeRequests) {
+                loadChangeRequests();
+            }
+        };
+
+        if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(runLoad, { timeout: 1500 });
+        } else {
+            window.setTimeout(runLoad, 900);
+        }
+    }
+
+    function setupRequestSectionLazyLoad() {
+        if (!requestSection || typeof window.IntersectionObserver !== 'function') {
+            scheduleInitialChangeRequestLoad();
+            return;
+        }
+
+        requestSectionObserver = new IntersectionObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.isIntersecting) {
+                    loadChangeRequests();
+                    requestSectionObserver.disconnect();
+                    requestSectionObserver = null;
+                    break;
+                }
+            }
+        }, {
+            root: null,
+            rootMargin: '120px 0px',
+            threshold: 0.05
+        });
+
+        requestSectionObserver.observe(requestSection);
+
+        // Fallback to avoid stale placeholder if user never scrolls to this section.
+        scheduleInitialChangeRequestLoad();
     }
 
     async function handleRequestAction(requestId, action) {
         try {
+            if (action === 'detail') {
+                openRequestDetail(Number(requestId));
+                return;
+            }
+
             if (action === 'approve') {
                 const dialog = await openActionModal({
                     title: 'Duyệt yêu cầu thay đổi',
@@ -609,11 +847,14 @@
     async function openDetail(contractId) {
         try {
             const detail = await fetchAPI(`/api/v1/contracts/admin/${contractId}`);
+            const roomKeyword = encodeURIComponent(detail.roomNumber || '');
             detailContent.innerHTML = `
                 <div><p class="text-text-muted">Mã hợp đồng</p><p class="font-medium">#${detail.id}</p></div>
                 <div><p class="text-text-muted">Trạng thái</p><p>${statusBadge(detail.status)}</p></div>
                 <div><p class="text-text-muted">Sinh viên</p><p class="font-medium">${detail.studentName || '-'} (${detail.studentCode || '-'})</p></div>
-                <div><p class="text-text-muted">Phòng/Giường</p><p class="font-medium">Phòng ${detail.roomNumber || '-'} - Giường ${detail.bedNumber || '-'}</p></div>
+                <div><p class="text-text-muted">Liên hệ sinh viên</p><p class="font-medium">${detail.studentPhone || '-'} / ${detail.studentEmail || '-'}</p></div>
+                <div><p class="text-text-muted">CCCD sinh viên</p><p class="font-medium">${detail.studentCccd || '-'}</p></div>
+                <div><p class="text-text-muted">Tòa/Phòng/Giường</p><p class="font-medium">${detail.buildingName || '-'} / ${detail.roomNumber || '-'} / ${detail.bedNumber || '-'}</p></div>
                 <div><p class="text-text-muted">Thời gian ở</p><p class="font-medium">${formatDate(detail.startDate)} - ${formatDate(detail.endDate)}</p></div>
                 <div><p class="text-text-muted">Tiền phòng/tháng</p><p class="font-medium">${formatCurrency(detail.monthlyRoomPrice)}</p></div>
                 <div><p class="text-text-muted">Tiền cọc</p><p class="font-medium">${formatCurrency(detail.depositAmount)}</p></div>
@@ -622,7 +863,13 @@
                 <div><p class="text-text-muted">Thực tế ở</p><p class="font-medium">${detail.everActivated ? 'Đã từng ở thực tế' : 'Chưa từng ở thực tế'}</p></div>
                 <div><p class="text-text-muted">Kích hoạt hợp đồng</p><p class="font-medium">${formatDateTime(detail.activatedAt)}</p></div>
                 <div><p class="text-text-muted">Thời điểm tạo</p><p class="font-medium">${formatDateTime(detail.createdAt)}</p></div>
-                <div class="md:col-span-2"><p class="text-text-muted">Ghi chú</p><p class="font-medium">${detail.studentNote || '-'}</p></div>
+                <div><p class="text-text-muted">Liên hệ khẩn cấp</p><p class="font-medium">${detail.emergencyContactName || '-'} / ${detail.emergencyContactPhone || '-'}</p></div>
+                <div><p class="text-text-muted">Người bảo hộ</p><p class="font-medium">${detail.guardianName || '-'} / ${detail.guardianPhone || '-'}</p></div>
+                <div class="md:col-span-2"><p class="text-text-muted">Ghi chú sinh viên</p><p class="font-medium">${detail.studentNote || '-'}</p></div>
+                <div class="md:col-span-2 pt-1">
+                    <a href="/admin/student_management.html?studentId=${detail.studentId}&scope=ALL&keyword=${encodeURIComponent(detail.studentCode || '')}" class="text-secondary hover:underline mr-4">Mở hồ sơ sinh viên</a>
+                    <a href="/admin/rooms.html?keyword=${roomKeyword}" class="text-primary hover:underline">Mở trang phòng</a>
+                </div>
             `;
             detailModal.classList.remove('hidden');
         } catch (error) {
@@ -699,6 +946,14 @@
         await handleAction(contractId, action);
     });
 
+    contractCards.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        const contractId = Number(button.dataset.id);
+        const action = button.dataset.action;
+        await handleAction(contractId, action);
+    });
+
     requestBody.addEventListener('click', async (event) => {
         const button = event.target.closest('button[data-request-action]');
         if (!button) return;
@@ -707,13 +962,38 @@
         await handleRequestAction(requestId, action);
     });
 
+    requestCards.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-request-action]');
+        if (!button) return;
+        const requestId = Number(button.dataset.requestId);
+        const action = button.dataset.requestAction;
+        await handleRequestAction(requestId, action);
+    });
+
+    requestDetailContent.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-action="open-related-contract"]');
+        if (!button) return;
+        requestDetailModal.classList.add('hidden');
+        await openDetail(Number(button.dataset.contractId));
+    });
+
     document.getElementById('closeModalBtn').addEventListener('click', () => {
         detailModal.classList.add('hidden');
+    });
+
+    document.getElementById('closeRequestModalBtn').addEventListener('click', () => {
+        requestDetailModal.classList.add('hidden');
     });
 
     detailModal.addEventListener('click', (event) => {
         if (event.target === detailModal) {
             detailModal.classList.add('hidden');
+        }
+    });
+
+    requestDetailModal.addEventListener('click', (event) => {
+        if (event.target === requestDetailModal) {
+            requestDetailModal.classList.add('hidden');
         }
     });
 
@@ -737,11 +1017,13 @@
         }
     });
 
-    keywordInput.addEventListener('input', () => {
+    const onKeywordInput = debounce(() => {
         state.keyword = keywordInput.value.trim();
         state.page = 0;
         loadContracts();
-    });
+    }, 450);
+
+    keywordInput.addEventListener('input', onKeywordInput);
 
     statusSelect.addEventListener('change', () => {
         state.status = statusSelect.value;
@@ -767,9 +1049,25 @@
         loadContracts();
         loadChangeRequests();
     });
+    document.getElementById('btnExportContracts').addEventListener('click', exportContractsExcel);
+
+    (() => {
+        const params = new URLSearchParams(window.location.search);
+        const contractIdParam = Number(params.get('contractId') || 0);
+        if (contractIdParam > 0) {
+            deepLinkContractId = contractIdParam;
+        }
+    })();
 
     loadContracts();
-    loadChangeRequests();
+    setupRequestSectionLazyLoad();
+
+    if (deepLinkContractId) {
+        openDetail(deepLinkContractId);
+        const url = new URL(window.location.href);
+        url.searchParams.delete('contractId');
+        window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : ''));
+    }
 </script>
 </body>
 

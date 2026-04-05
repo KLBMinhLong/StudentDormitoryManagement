@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/ui/theme.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -39,29 +40,21 @@
 </head>
 
 <body class="font-body text-text-main bg-bg-page min-h-screen">
-<header class="border-b border-border bg-bg-card">
-    <div class="max-w-[1200px] mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <p class="text-xs text-text-muted">Khu vực sinh viên</p>
-            <h1 class="font-heading text-xl">Quản lý thông tin cá nhân</h1>
-        </div>
-        <nav class="flex flex-wrap items-center gap-2">
-            <a href="/home.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Trang chủ</a>
-            <a href="/user/contracts.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Hợp đồng của tôi</a>
-            <a href="/user/utility-dashboard.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Biểu đồ điện nước</a>
-            <a href="/user/my-invoices.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Hóa đơn của tôi</a>
-            <button id="logoutBtn" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium transition-colors">Đăng xuất</button>
-        </nav>
-    </div>
-</header>
+<div id="userLayout" class="user-layout max-w-[1200px] mx-auto px-4 py-4 md:py-6">
+    <div id="userSidebarMount"></div>
 
-<main class="max-w-[900px] mx-auto px-4 py-8">
+<main class="user-content min-w-0 space-y-6">
     <div id="message" class="hidden mb-6 rounded-base px-4 py-3 text-sm"></div>
 
     <section class="bg-bg-card rounded-base shadow-soft border border-border p-8">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="font-heading text-2xl">Hồ sơ sinh viên</h2>
-            <button onclick="openPasswordModal()" class="rounded-base bg-slate-100 hover:bg-slate-200 text-text-main border border-border px-4 py-2 text-sm font-medium transition-colors">Đổi mật khẩu</button>
+            <div class="flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-secondary">
+                    <i class="fa-regular fa-user"></i>
+                </div>
+                <h2 class="font-heading text-2xl">Hồ sơ sinh viên</h2>
+            </div>
+            <button onclick="openPasswordModal()" class="rounded-base bg-slate-100 hover:bg-slate-200 text-text-main border border-border px-4 py-2 text-sm font-medium transition-colors inline-flex items-center gap-2"><i class="fa-solid fa-lock"></i><span>Đổi mật khẩu</span></button>
         </div>
 
         <form id="profileForm">
@@ -70,7 +63,7 @@
                     <img id="profileAvatar" src="/ui/avatar-default.png" onerror="this.src='/ui/avatar-default.png'" alt="Ảnh đại diện" class="w-40 h-40 rounded-full border-2 border-border object-cover bg-slate-100">
                     <div class="flex flex-col items-center gap-2 w-full mt-2">
                         <input type="file" id="myAvatarInput" accept="image/*" class="text-xs w-full max-w-[200px] border border-border p-1 rounded-base">
-                        <button type="button" onclick="uploadMyAvatar()" class="rounded-base bg-slate-100 hover:bg-slate-200 text-text-main border border-border px-3 py-1.5 text-xs font-medium w-full max-w-[200px]">Tải ảnh mới lên</button>
+                        <button type="button" onclick="uploadMyAvatar()" class="rounded-base bg-slate-100 hover:bg-slate-200 text-text-main border border-border px-3 py-1.5 text-xs font-medium w-full max-w-[200px] inline-flex items-center justify-center gap-2"><i class="fa-regular fa-image"></i><span>Tải ảnh mới lên</span></button>
                     </div>
                 </div>
 
@@ -114,8 +107,8 @@
             </div>
 
             <div class="mt-8 flex justify-end gap-3 pt-6 border-t border-border">
-                <button type="button" onclick="window.location.href='/home.html'" class="rounded-base border border-border px-6 py-2 text-sm font-medium hover:bg-slate-50">Hủy</button>
-                <button type="submit" class="rounded-base bg-primary hover:bg-primary-hover text-white px-6 py-2 text-sm font-medium">Lưu thay đổi</button>
+                <button type="button" onclick="window.location.href='/home.html'" class="rounded-base border border-border px-6 py-2 text-sm font-medium hover:bg-slate-50 inline-flex items-center gap-2"><i class="fa-solid fa-arrow-left"></i><span>Hủy</span></button>
+                <button type="submit" class="rounded-base bg-primary hover:bg-primary-hover text-white px-6 py-2 text-sm font-medium inline-flex items-center gap-2"><i class="fa-solid fa-floppy-disk"></i><span>Lưu thay đổi</span></button>
             </div>
         </form>
     </section>
@@ -123,12 +116,19 @@
     <section id="residenceHistorySection" class="bg-bg-card rounded-base shadow-soft border border-border p-8 mt-6">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
             <div>
-                <h2 class="font-heading text-2xl">Timeline lịch sử cư trú</h2>
-                <p id="historySummary" class="text-sm text-text-muted mt-1">Đang tải lịch sử nội trú...</p>
+                <div class="flex items-center gap-3">
+                    <div class="flex h-11 w-11 items-center justify-center rounded-full bg-teal-50 text-primary">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-heading text-2xl">Timeline lịch sử cư trú</h2>
+                        <p id="historySummary" class="text-sm text-text-muted mt-1">Đang tải lịch sử nội trú...</p>
+                    </div>
+                </div>
             </div>
             <div class="w-full md:w-auto flex items-center gap-2">
                 <input id="historyKeyword" type="text" placeholder="Tìm theo tòa nhà hoặc phòng" class="w-full md:w-72 border border-border rounded-base px-3 py-2 text-sm focus:outline-none focus:border-primary">
-                <button id="historySearchBtn" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium">Tìm</button>
+                <button id="historySearchBtn" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium inline-flex items-center gap-2"><i class="fa-solid fa-magnifying-glass"></i><span>Tìm</span></button>
             </div>
         </div>
 
@@ -144,6 +144,9 @@
         </div>
     </section>
 </main>
+</div>
+
+<script src="/ui/user-sidebar.js"></script>
 
 <div id="passwordModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
     <div class="bg-bg-card rounded-base w-full max-w-md p-6 shadow-soft mx-4">
@@ -196,6 +199,10 @@
 
     if (!token) {
         window.location.href = '/login.html';
+    }
+
+    if (window.UserSidebar) {
+        window.UserSidebar.mount({ active: 'profile', authenticated: true, caption: 'Hồ sơ của tôi' });
     }
 
     function showMessage(type, text) {
@@ -464,11 +471,6 @@
     historyNextBtn.addEventListener('click', () => {
         historyState.page += 1;
         loadResidenceHistory();
-    });
-
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('dormitory_access_token');
-        window.location.href = '/login.html';
     });
 
     Promise.all([loadProfile(), loadResidenceHistory()]);

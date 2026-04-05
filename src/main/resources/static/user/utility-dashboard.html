@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/ui/theme.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -38,48 +39,43 @@
 </head>
 
 <body class="font-body text-text-main bg-bg-page min-h-screen">
-<header class="border-b border-border bg-bg-card">
-    <div class="max-w-[1200px] mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <p class="text-xs text-text-muted">Khu vực sinh viên</p>
-            <h1 class="font-heading text-xl">Biểu đồ điện nước của tôi</h1>
-        </div>
-        <nav class="flex flex-wrap items-center gap-2">
-            <a href="/home.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Trang chủ</a>
-            <a href="/user/student-profile.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Hồ sơ</a>
-            <a href="/user/my-invoices.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Hóa đơn của tôi</a>
-            <button id="logoutBtn" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium">Đăng xuất</button>
-        </nav>
-    </div>
-</header>
+<div id="userLayout" class="user-layout max-w-[1200px] mx-auto px-4 py-4 md:py-6">
+    <div id="userSidebarMount"></div>
 
-<main class="max-w-[1200px] mx-auto px-4 py-8">
+<main class="user-content min-w-0 space-y-6">
     <div id="message" class="hidden mb-6 rounded-base px-4 py-3 text-sm"></div>
 
     <section class="bg-bg-card rounded-base shadow-soft border border-border p-6">
         <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
             <div>
-                <h2 class="font-heading text-2xl">Phân tích tiêu thụ điện nước</h2>
-                <p id="utilityChartSummary" class="text-sm text-text-muted mt-1">Theo phòng đang ở hoặc phòng gần nhất của bạn.</p>
+                <div class="flex items-center gap-3">
+                    <div class="flex h-11 w-11 items-center justify-center rounded-full bg-teal-50 text-primary">
+                        <i class="fa-solid fa-chart-column"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-heading text-2xl">Phân tích tiêu thụ điện nước</h2>
+                        <p id="utilityChartSummary" class="text-sm text-text-muted mt-1">Theo phòng đang ở hoặc phòng gần nhất của bạn.</p>
+                    </div>
+                </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full lg:w-auto">
                 <input id="utilityFromYear" type="number" min="2000" max="2099" placeholder="Từ năm" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                 <input id="utilityToYear" type="number" min="2000" max="2099" placeholder="Đến năm" class="rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                <button id="utilityReloadBtn" type="button" class="rounded-base bg-secondary hover:bg-blue-600 text-white px-4 py-2 text-sm font-medium">Xem biểu đồ</button>
+                <button id="utilityReloadBtn" type="button" class="rounded-base bg-secondary hover:bg-blue-600 text-white px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-2"><i class="fa-solid fa-arrow-rotate-right"></i><span>Xem biểu đồ</span></button>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
             <div class="rounded-base border border-border p-3 bg-blue-50">
-                <p class="text-xs text-text-muted">Tổng điện tiêu thụ</p>
+                <p class="text-xs text-text-muted inline-flex items-center gap-1"><i class="fa-solid fa-bolt"></i> Tổng điện tiêu thụ</p>
                 <p id="utilitySumElectric" class="font-heading text-xl text-secondary mt-1">0 kWh</p>
             </div>
             <div class="rounded-base border border-border p-3 bg-teal-50">
-                <p class="text-xs text-text-muted">Tổng nước tiêu thụ</p>
+                <p class="text-xs text-text-muted inline-flex items-center gap-1"><i class="fa-solid fa-droplet"></i> Tổng nước tiêu thụ</p>
                 <p id="utilitySumWater" class="font-heading text-xl text-primary mt-1">0 m³</p>
             </div>
             <div class="rounded-base border border-border p-3 bg-slate-50">
-                <p class="text-xs text-text-muted">Số kỳ ghi nhận</p>
+                <p class="text-xs text-text-muted inline-flex items-center gap-1"><i class="fa-regular fa-calendar-days"></i> Số kỳ ghi nhận</p>
                 <p id="utilityPeriodCount" class="font-heading text-xl text-text-main mt-1">0 kỳ</p>
             </div>
         </div>
@@ -92,6 +88,9 @@
         </div>
     </section>
 </main>
+</div>
+
+<script src="/ui/user-sidebar.js"></script>
 
 <script>
     const token = localStorage.getItem('dormitory_access_token');
@@ -105,6 +104,10 @@
 
     if (!token) {
         window.location.href = '/login.html';
+    }
+
+    if (window.UserSidebar) {
+        window.UserSidebar.mount({ active: 'utilities', authenticated: true, caption: 'Biểu đồ điện nước' });
     }
 
     function showMessage(type, text) {
@@ -232,10 +235,6 @@
     }
 
     utilityReloadBtn.addEventListener('click', loadMyUtilityTimeline);
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('dormitory_access_token');
-        window.location.href = '/login.html';
-    });
 
     const years = getDefaultYears();
     utilityFromYearInput.value = years.from;

@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/ui/theme.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -38,17 +39,10 @@
     </script>
 </head>
 <body class="font-body text-text-main bg-bg-page min-h-screen">
-<header class="border-b border-border bg-bg-card">
-    <div class="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between gap-3">
-        <div>
-            <p class="text-xs text-text-muted">Hồ sơ nội trú</p>
-            <h1 class="font-heading text-xl">Bước 2 - Hoàn tất thông tin hợp đồng</h1>
-        </div>
-        <a href="/home.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Về trang chủ</a>
-    </div>
-</header>
+<div id="userLayout" class="user-layout max-w-[1200px] mx-auto px-4 py-4 md:py-6">
+    <div id="userSidebarMount"></div>
 
-<main class="max-w-[1200px] mx-auto px-4 py-6 space-y-6">
+<main class="user-content min-w-0 space-y-6">
     <section class="rounded-base bg-amber-50 border border-amber-200 p-4">
         <p class="text-sm text-warning font-medium">Giữ chỗ giường còn lại:</p>
         <p id="countdown" class="text-2xl font-heading mt-1">--:--:--</p>
@@ -154,15 +148,18 @@
             <div id="message" class="hidden rounded-base px-4 py-3 text-sm"></div>
 
             <div class="flex items-center justify-end">
-                <button id="submitBtn" type="submit" class="rounded-base bg-primary text-white px-4 py-2.5 text-sm font-medium hover:bg-primary-hover">Submit bước 2 - Nộp hồ sơ hợp đồng</button>
+                <button id="submitBtn" type="submit" class="rounded-base bg-primary text-white px-4 py-2.5 text-sm font-medium hover:bg-primary-hover inline-flex items-center gap-2"><i class="fa-solid fa-paper-plane"></i><span>Submit bước 2 - Nộp hồ sơ hợp đồng</span></button>
             </div>
         </form>
     </section>
 
     <div class="fixed bottom-4 right-4 z-40">
-        <button id="submitStickyBtn" type="button" class="rounded-base bg-primary text-white px-4 py-2.5 text-sm font-medium shadow-soft hover:bg-primary-hover">Submit bước 2</button>
+        <button id="submitStickyBtn" type="button" class="rounded-base bg-primary text-white px-4 py-2.5 text-sm font-medium shadow-soft hover:bg-primary-hover inline-flex items-center gap-2"><i class="fa-solid fa-paper-plane"></i><span>Submit bước 2</span></button>
     </div>
 </main>
+</div>
+
+<script src="/ui/user-sidebar.js"></script>
 
 <div id="toastCenter" class="hidden fixed inset-0 z-[60] bg-slate-900/30 flex items-center justify-center p-4">
     <div id="toastCard" class="w-full max-w-md rounded-base border shadow-soft bg-bg-card p-4">
@@ -191,6 +188,10 @@
         window.location.href = '/login.html';
     }
 
+    if (window.UserSidebar) {
+        window.UserSidebar.mount({ active: 'contracts', authenticated: true, caption: 'Hoàn tất hợp đồng' });
+    }
+
     function showMessage(type, text) {
         if (toastTimer) {
             clearTimeout(toastTimer);
@@ -216,6 +217,28 @@
         return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + ' đ';
     }
 
+    function parseServerDateToMs(rawValue) {
+        if (!rawValue) {
+            return NaN;
+        }
+
+        const text = String(rawValue).trim();
+        if (!text) {
+            return NaN;
+        }
+
+        const hasZone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(text);
+        const normalized = text.includes('T') ? text : text.replace(' ', 'T');
+        const preferred = hasZone ? normalized : `${normalized}Z`;
+        const ms = Date.parse(preferred);
+
+        if (!Number.isNaN(ms)) {
+            return ms;
+        }
+
+        return Date.parse(normalized);
+    }
+
     function updatePricePreview() {
         if (!currentContract) {
             return;
@@ -237,7 +260,15 @@
             clearInterval(countdownTimer);
         }
 
-        const endTime = new Date(holdExpiresAt).getTime();
+        const endTime = parseServerDateToMs(holdExpiresAt);
+        if (Number.isNaN(endTime)) {
+            countdownEl.textContent = '--:--:--';
+            showMessage('error', 'Không đọc được thời gian giữ chỗ. Vui lòng tải lại trang.');
+            submitBtn.disabled = true;
+            submitStickyBtn.disabled = true;
+            return;
+        }
+
         const tick = () => {
             const now = Date.now();
             const diff = endTime - now;

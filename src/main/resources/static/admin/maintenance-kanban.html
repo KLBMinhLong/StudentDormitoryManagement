@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KTX Admin - Quản lý sửa chữa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/theme.css">
+    <script src="/ui/admin-sidebar.js" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0EA5A5',
+                        'primary-hover': '#0B8F8F',
+                        secondary: '#3B82F6',
+                        'bg-page': '#F8FAFC',
+                        'bg-card': '#FFFFFF',
+                        'text-main': '#0F172A',
+                        'text-muted': '#475569',
+                        border: '#E2E8F0',
+                        warning: '#EAB308',
+                        danger: '#EF4444'
+                    },
+                    boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
+                    borderRadius: { base: '12px' },
+                    fontFamily: {
+                        heading: ['Be Vietnam Pro', 'sans-serif'],
+                        body: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        .kanban-column { min-height: 500px; transition: background-color 0.2s ease, border-color 0.2s ease; }
+        .kanban-column.drop-target { background-color: rgba(14, 165, 165, 0.08); border-color: rgba(14, 165, 165, 0.45); }
+        .issue-card { cursor: grab; transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease; }
+        .issue-card:active { cursor: grabbing; }
+        .issue-card.dragging { opacity: 0.45; transform: scale(0.98); }
+    </style>
+</head>
+<body class="font-body text-text-main bg-bg-page min-h-screen">
+<div id="adminLayout" class="w-full max-w-[1440px] mx-auto p-4 md:p-6 min-h-screen">
+    <div class="admin-grid grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6 min-h-[calc(100vh-3rem)]">
+        <div id="adminSidebarMount"></div>
+
+        <main class="space-y-6">
+            <header class="flex items-center justify-between">
+                <div>
+                    <h2 class="font-heading text-2xl">Quản lý sửa chữa vật dụng</h2>
+                    <p class="text-text-muted mt-1">Theo dõi và cập nhật trạng thái các yêu cầu báo hỏng từ sinh viên.</p>
+                </div>
+            </header>
+
+            <section class="rounded-base bg-bg-card border border-border shadow-soft p-4 md:p-5">
+                <div class="grid grid-cols-1 md:grid-cols-[minmax(200px,1fr)_minmax(160px,0.8fr)_minmax(0,1.2fr)_auto] gap-3 items-end">
+                    <div>
+                        <label for="filterBuilding" class="text-sm text-text-muted block mb-1">Tòa nhà</label>
+                        <select id="filterBuilding" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
+                            <option value="">Tất cả tòa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filterRoom" class="text-sm text-text-muted block mb-1">Phòng</label>
+                        <select id="filterRoom" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-bg-card">
+                            <option value="">Tất cả phòng</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filterKeyword" class="text-sm text-text-muted block mb-1">Tìm kiếm</label>
+                        <input id="filterKeyword" type="text" placeholder="Tìm theo tên sinh viên, mã sinh viên, nội dung..." class="w-full rounded-base border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <button id="resetFiltersBtn" type="button" class="rounded-base border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50">Đặt lại</button>
+                </div>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Column: PENDING -->
+                <div class="flex flex-col gap-4">
+                    <div class="flex items-center justify-between px-2">
+                        <h3 class="font-heading font-bold text-slate-700 flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-slate-400"></span>
+                            Tiếp nhận
+                        </h3>
+                        <span id="count-PENDING" class="bg-slate-200 text-slate-700 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="col-PENDING" class="kanban-column flex flex-col gap-3 rounded-base bg-slate-100/50 p-3 border border-dashed border-slate-300">
+                        <!-- Cards -->
+                    </div>
+                </div>
+
+                <!-- Column: IN_PROGRESS -->
+                <div class="flex flex-col gap-4">
+                    <div class="flex items-center justify-between px-2">
+                        <h3 class="font-heading font-bold text-blue-700 flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                            Đang sửa
+                        </h3>
+                        <span id="count-IN_PROGRESS" class="bg-blue-200 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="col-IN_PROGRESS" class="kanban-column flex flex-col gap-3 rounded-base bg-blue-50/50 p-3 border border-dashed border-blue-200">
+                        <!-- Cards -->
+                    </div>
+                </div>
+
+                <!-- Column: RESOLVED -->
+                <div class="flex flex-col gap-4">
+                    <div class="flex items-center justify-between px-2">
+                        <h3 class="font-heading font-bold text-green-700 flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                            Hoàn thành
+                        </h3>
+                        <span id="count-RESOLVED" class="bg-green-200 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="col-RESOLVED" class="kanban-column flex flex-col gap-3 rounded-base bg-green-50/50 p-3 border border-dashed border-green-200">
+                        <!-- Cards -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Modal for details/update -->
+<div id="updateModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-bg-card rounded-base border border-border shadow-soft w-full max-w-md overflow-hidden">
+        <div class="px-5 py-4 border-b border-border flex items-center justify-between">
+            <h4 class="font-heading text-lg">Cập nhật yêu cầu</h4>
+            <button onclick="closeModal()" class="text-text-muted hover:text-text-main">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div id="modalInfo" class="text-sm space-y-2">
+                <!-- Info injected here -->
+            </div>
+            <hr class="border-border">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">Độ ưu tiên</label>
+                    <select id="updatePriority" class="w-full rounded-base border border-border px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+                        <option value="LOW">Thấp</option>
+                        <option value="MEDIUM">Trung bình</option>
+                        <option value="HIGH">Cao</option>
+                    </select>
+                </div>
+            </div>
+            <button onclick="saveUpdate()" id="saveBtn" class="w-full mt-2 rounded-base bg-primary text-white py-2.5 font-medium hover:bg-primary-hover transition-colors">
+                Lưu thay đổi
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('dormitory_access_token');
+    const statusOrder = { PENDING: 0, IN_PROGRESS: 1, RESOLVED: 2 };
+    const statusLabel = { PENDING: 'Tiếp nhận', IN_PROGRESS: 'Đang sửa', RESOLVED: 'Hoàn thành' };
+    const columns = {
+        PENDING: document.getElementById('col-PENDING'),
+        IN_PROGRESS: document.getElementById('col-IN_PROGRESS'),
+        RESOLVED: document.getElementById('col-RESOLVED')
+    };
+    const counts = {
+        PENDING: document.getElementById('count-PENDING'),
+        IN_PROGRESS: document.getElementById('count-IN_PROGRESS'),
+        RESOLVED: document.getElementById('count-RESOLVED')
+    };
+
+    let allIssues = [];
+    let filteredIssues = [];
+    let currentIssueId = null;
+    let draggingIssueId = null;
+
+    const filterBuilding = document.getElementById('filterBuilding');
+    const filterRoom = document.getElementById('filterRoom');
+    const filterKeyword = document.getElementById('filterKeyword');
+
+    function initAdminSidebar() {
+        if (!window.AdminSidebar) {
+            setTimeout(initAdminSidebar, 50);
+            return;
+        }
+        window.AdminSidebar.mount({ active: 'maintenance' });
+    }
+    initAdminSidebar();
+
+    function getPriorityClass(p) {
+        if (p === 'HIGH') return 'bg-red-100 text-red-600 border-red-200';
+        if (p === 'MEDIUM') return 'bg-amber-100 text-amber-600 border-amber-200';
+        return 'bg-slate-100 text-slate-600 border-slate-200';
+    }
+
+    function getIssueById(issueId) {
+        return allIssues.find((item) => Number(item.id) === Number(issueId));
+    }
+
+    function normalizeText(value) {
+        return String(value || '').toLowerCase().trim();
+    }
+
+    function applyFilters() {
+        const building = filterBuilding.value;
+        const room = filterRoom.value;
+        const keyword = normalizeText(filterKeyword.value);
+
+        filteredIssues = allIssues.filter((issue) => {
+            const matchBuilding = !building || String(issue.buildingName || '') === building;
+            const matchRoom = !room || String(issue.roomNumber || '') === room;
+
+            if (!matchBuilding || !matchRoom) {
+                return false;
+            }
+
+            if (!keyword) {
+                return true;
+            }
+
+            const combined = normalizeText([
+                issue.studentName,
+                issue.studentCode,
+                issue.description,
+                issue.buildingName,
+                issue.roomNumber
+            ].join(' '));
+            return combined.includes(keyword);
+        });
+
+        renderCards();
+    }
+
+    function populateBuildingOptions() {
+        const selected = filterBuilding.value;
+        const buildingNames = [...new Set(allIssues.map((issue) => String(issue.buildingName || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'));
+        filterBuilding.innerHTML = '<option value="">Tất cả tòa</option>';
+        buildingNames.forEach((name) => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            filterBuilding.appendChild(option);
+        });
+        if (buildingNames.includes(selected)) {
+            filterBuilding.value = selected;
+        }
+    }
+
+    function populateRoomOptions() {
+        const selectedBuilding = filterBuilding.value;
+        const selectedRoom = filterRoom.value;
+        const roomNumbers = [...new Set(
+            allIssues
+                .filter((issue) => !selectedBuilding || String(issue.buildingName || '') === selectedBuilding)
+                .map((issue) => String(issue.roomNumber || '').trim())
+                .filter(Boolean)
+        )].sort((a, b) => a.localeCompare(b, 'vi', { numeric: true }));
+
+        filterRoom.innerHTML = '<option value="">Tất cả phòng</option>';
+        roomNumbers.forEach((room) => {
+            const option = document.createElement('option');
+            option.value = room;
+            option.textContent = room;
+            filterRoom.appendChild(option);
+        });
+
+        if (roomNumbers.includes(selectedRoom)) {
+            filterRoom.value = selectedRoom;
+        }
+    }
+
+    function renderEmptyColumn(targetColumn, message) {
+        const empty = document.createElement('div');
+        empty.className = 'rounded-base border border-dashed border-border bg-white/70 p-3 text-center text-xs text-text-muted';
+        empty.textContent = message;
+        targetColumn.appendChild(empty);
+    }
+
+    function renderCards() {
+        Object.values(columns).forEach(col => col.innerHTML = '');
+        const currentCounts = { PENDING: 0, IN_PROGRESS: 0, RESOLVED: 0 };
+
+        filteredIssues.forEach(issue => {
+            currentCounts[issue.status]++;
+            const card = document.createElement('div');
+            card.className = 'issue-card bg-white rounded-base border border-border shadow-sm p-4 hover:shadow-md';
+            card.draggable = true;
+            card.dataset.issueId = String(issue.id);
+            card.addEventListener('dragstart', (event) => {
+                draggingIssueId = issue.id;
+                card.classList.add('dragging');
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', String(issue.id));
+            });
+            card.addEventListener('dragend', () => {
+                draggingIssueId = null;
+                card.classList.remove('dragging');
+                Object.values(columns).forEach((col) => col.classList.remove('drop-target'));
+            });
+            card.innerHTML = `
+                <div class="flex items-start justify-between mb-2">
+                    <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border ${getPriorityClass(issue.priority)}">
+                        ${issue.priority}
+                    </span>
+                    <span class="text-[11px] text-text-muted">${new Date(issue.createdAt).toLocaleDateString('vi-VN')}</span>
+                </div>
+                <p class="text-sm font-medium mb-3 line-clamp-3">${issue.description}</p>
+                <div class="flex items-center gap-2 pt-3 border-t border-slate-50">
+                    <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                        ${issue.studentName.charAt(0)}
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold leading-none">${issue.studentName}</p>
+                        <p class="text-[10px] text-text-muted mt-1 uppercase">${issue.buildingName} - Phòng ${issue.roomNumber}</p>
+                    </div>
+                </div>
+                <div class="pt-3 mt-3 border-t border-slate-100 flex justify-end">
+                    <button type="button" data-action="edit" data-id="${issue.id}" class="text-xs rounded-base border border-border px-2.5 py-1 hover:bg-slate-50">Chi tiết</button>
+                </div>
+            `;
+            columns[issue.status].appendChild(card);
+        });
+
+        Object.entries(columns).forEach(([status, column]) => {
+            if (!column.children.length) {
+                renderEmptyColumn(column, `Không có yêu cầu ở trạng thái ${statusLabel[status].toLowerCase()}.`);
+            }
+        });
+
+        document.querySelectorAll('button[data-action="edit"]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const issue = getIssueById(Number(button.dataset.id));
+                if (issue) {
+                    openEditModal(issue);
+                }
+            });
+        });
+
+        Object.keys(counts).forEach(status => counts[status].textContent = currentCounts[status]);
+    }
+
+    async function updateIssueStatus(issue, nextStatus) {
+        const payload = {
+            status: nextStatus,
+            priority: issue.priority
+        };
+
+        const res = await fetch(`/api/v1/issues/${issue.id}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            throw new Error('Không thể cập nhật trạng thái yêu cầu.');
+        }
+
+        issue.status = nextStatus;
+    }
+
+    function registerColumnDropEvents() {
+        Object.entries(columns).forEach(([targetStatus, targetColumn]) => {
+            targetColumn.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                targetColumn.classList.add('drop-target');
+            });
+
+            targetColumn.addEventListener('dragleave', () => {
+                targetColumn.classList.remove('drop-target');
+            });
+
+            targetColumn.addEventListener('drop', async (event) => {
+                event.preventDefault();
+                targetColumn.classList.remove('drop-target');
+                const droppedIssueId = Number(event.dataTransfer.getData('text/plain') || draggingIssueId || 0);
+                if (!droppedIssueId) {
+                    return;
+                }
+
+                const issue = getIssueById(droppedIssueId);
+                if (!issue || issue.status === targetStatus) {
+                    return;
+                }
+
+                const isBackward = statusOrder[targetStatus] < statusOrder[issue.status];
+                if (isBackward) {
+                    const confirmed = window.confirm(`Yêu cầu đang ở trạng thái ${statusLabel[issue.status].toLowerCase()}. Bạn có chắc muốn chuyển ngược về ${statusLabel[targetStatus].toLowerCase()}?`);
+                    if (!confirmed) {
+                        return;
+                    }
+                }
+
+                const previousStatus = issue.status;
+                issue.status = targetStatus;
+                applyFilters();
+
+                try {
+                    await updateIssueStatus(issue, targetStatus);
+                } catch (error) {
+                    issue.status = previousStatus;
+                    applyFilters();
+                    window.alert(error.message || 'Cập nhật trạng thái thất bại.');
+                }
+            });
+        });
+    }
+
+    async function fetchIssues() {
+        try {
+            const res = await fetch('/api/v1/issues', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                allIssues = Array.isArray(data.result) ? data.result : [];
+                populateBuildingOptions();
+                populateRoomOptions();
+                applyFilters();
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function openEditModal(issue) {
+        currentIssueId = issue.id;
+        const modalInfo = document.getElementById('modalInfo');
+        modalInfo.innerHTML = `
+            <p><strong>Người gửi:</strong> ${issue.studentName} (${issue.studentCode})</p>
+            <p><strong>Vị trí:</strong> ${issue.buildingName} - Phòng ${issue.roomNumber}</p>
+            <p><strong>Trạng thái hiện tại:</strong> ${statusLabel[issue.status] || issue.status}</p>
+            <p><strong>Nội dung:</strong> ${issue.description}</p>
+        `;
+        document.getElementById('updatePriority').value = issue.priority;
+        document.getElementById('updateModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('updateModal').classList.add('hidden');
+        currentIssueId = null;
+    }
+
+    async function saveUpdate() {
+        const btn = document.getElementById('saveBtn');
+        btn.disabled = true;
+        btn.textContent = 'Đang lưu...';
+
+        const issue = getIssueById(currentIssueId);
+        if (!issue) {
+            btn.disabled = false;
+            btn.textContent = 'Lưu thay đổi';
+            return;
+        }
+
+        const payload = {
+            status: issue.status,
+            priority: document.getElementById('updatePriority').value
+        };
+
+        try {
+            const res = await fetch(`/api/v1/issues/${currentIssueId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                issue.priority = payload.priority;
+                closeModal();
+                applyFilters();
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Lưu thay đổi';
+        }
+    }
+
+    filterBuilding.addEventListener('change', () => {
+        populateRoomOptions();
+        applyFilters();
+    });
+
+    filterRoom.addEventListener('change', applyFilters);
+    filterKeyword.addEventListener('input', applyFilters);
+
+    document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+        filterBuilding.value = '';
+        populateRoomOptions();
+        filterRoom.value = '';
+        filterKeyword.value = '';
+        applyFilters();
+    });
+
+    registerColumnDropEvents();
+
+    fetchIssues();
+</script>
+</body>
+</html>

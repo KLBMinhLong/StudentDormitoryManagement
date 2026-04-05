@@ -518,6 +518,14 @@
 
         function bindEvents() {
             document.getElementById('btnOpenCreate').addEventListener('click', () => openRoomModal(null));
+            const triggerRoomSearch = debounce(async () => {
+                try {
+                    await loadRooms(0);
+                } catch (error) {
+                    showToast(error.message, 'error');
+                }
+            }, 250);
+
             document.getElementById('btnApplyFilter').addEventListener('click', async () => {
                 try {
                     await loadRooms(0);
@@ -526,6 +534,7 @@
                 }
             });
 
+            document.getElementById('filterKeyword').addEventListener('input', triggerRoomSearch);
             document.getElementById('filterKeyword').addEventListener('keydown', async (event) => {
                 if (event.key !== 'Enter') return;
                 event.preventDefault();
@@ -575,13 +584,28 @@
             });
         }
 
+        function debounce(fn, delay = 250) {
+            let timer = null;
+            return (...args) => {
+                if (timer) {
+                    clearTimeout(timer);
+                }
+                timer = window.setTimeout(() => fn(...args), delay);
+            };
+        }
+
         (async () => {
             try {
                 initAdminSidebar();
                 bindEvents();
                 await ensureAdmin();
                 await loadMetadata();
-                await loadRooms();
+                const params = new URLSearchParams(window.location.search);
+                const keywordParam = params.get('keyword');
+                if (keywordParam) {
+                    document.getElementById('filterKeyword').value = keywordParam;
+                }
+                await loadRooms(0);
             } catch (error) {
                 showToast(error.message || 'Có lỗi xảy ra khi tải trang quản lý phòng.', 'error');
                 setTimeout(() => {

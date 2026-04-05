@@ -1,15 +1,16 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KTX - Bảng điều khiển quản trị</title>
+    <title>KTX - Dashboard quản trị</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/ui/theme.css">
     <script src="/ui/admin-sidebar.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -19,12 +20,14 @@
                         primary: '#0EA5A5',
                         'primary-hover': '#0B8F8F',
                         secondary: '#3B82F6',
+                        danger: '#DC2626',
+                        warning: '#D97706',
+                        success: '#16A34A',
                         'bg-page': '#F8FAFC',
                         'bg-card': '#FFFFFF',
                         'text-main': '#0F172A',
                         'text-muted': '#475569',
-                        border: '#E2E8F0',
-                        warning: '#D97706'
+                        border: '#E2E8F0'
                     },
                     boxShadow: { soft: '0 4px 12px rgba(15, 23, 42, 0.06)' },
                     borderRadius: { base: '12px' },
@@ -44,101 +47,99 @@
         <div id="adminSidebarMount"></div>
 
         <main class="space-y-6">
+            <div id="message" class="hidden rounded-base px-4 py-3 text-sm"></div>
+
             <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
-                <h2 class="font-heading text-2xl">Xin chào quản trị viên, <span id="fullName">...</span></h2>
-                <p class="text-text-muted mt-2">Tổng quan thống kê và lối tắt điều hướng hệ thống.</p>
-
-                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <!-- Quản lý chính -->
-                    <a href="/admin/student_management.html" class="rounded-base border border-border p-4 bg-blue-50 hover:bg-blue-100 transition-colors block">
-                        <p class="text-xs text-text-muted uppercase font-medium">Quản lý</p>
-                        <p class="mt-2 font-heading text-lg">Sinh Viên</p>
-                        <p class="text-xs text-text-muted mt-1">Quản lý hồ sơ sinh viên</p>
-                    </a>
-
-                    <a href="/admin/contracts-management.html" class="rounded-base border border-border p-4 bg-teal-50 hover:bg-teal-100 transition-colors block">
-                        <p class="text-xs text-text-muted uppercase font-medium">Quản lý</p>
-                        <p class="mt-2 font-heading text-lg">Hợp Đồng</p>
-                        <p class="text-xs text-text-muted mt-1">Duyệt & cập nhật HĐ</p>
-                    </a>
-
-                    <!-- Tác vụ -->
-                    <a href="/admin/contract_registration.html" class="rounded-base border border-border p-4 bg-green-50 hover:bg-green-100 transition-colors block">
-                        <p class="text-xs text-text-muted uppercase font-medium">Tác vụ</p>
-                        <p class="mt-2 font-heading text-lg">Lập HĐ Mới</p>
-                        <p class="text-xs text-text-muted mt-1">Tạo hợp đồng mới</p>
-                    </a>
-
-                    <a href="/home.html" class="rounded-base border border-border p-4 hover:bg-slate-50 transition-colors block">
-                        <p class="text-xs text-text-muted uppercase font-medium">Exit</p>
-                        <p class="mt-2 font-heading text-lg">Trang Chủ</p>
-                        <p class="text-xs text-text-muted mt-1">Quay về trang chủ</p>
-                    </a>
-
-                    <!-- Thống kê -->
-                    <div class="rounded-base border border-border p-4 bg-orange-50">
-                        <p class="text-xs text-text-muted uppercase font-medium">Thống kê</p>
-                        <p id="adminRoles" class="mt-2 font-heading text-sm">...</p>
-                        <p class="text-xs text-text-muted mt-1">Vai trò hiện tại</p>
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div>
+                        <h2 class="font-heading text-2xl">Dashboard quản trị vận hành</h2>
+                        <p class="text-text-muted text-sm mt-1">Theo dõi doanh thu thanh toán và tỷ lệ lấp đầy phòng theo thời gian thực.</p>
                     </div>
-
-                    <div class="rounded-base border border-border p-4 bg-cyan-50">
-                        <p class="text-xs text-text-muted uppercase font-medium">Thống kê</p>
-                        <p class="mt-2 text-2xl font-heading text-primary"><span id="buildingCount">0</span> / <span id="roomCount">0</span></p>
-                        <p class="text-xs text-text-muted mt-1">Tòa nhà / Phòng</p>
-                    </div>
-
-                    <div class="rounded-base border border-border p-4 bg-indigo-50">
-                        <p class="text-xs text-text-muted uppercase font-medium">Thống kê</p>
-                        <p class="mt-2 text-2xl font-heading text-secondary"><span id="contractCount">0</span> <span class="text-sm font-normal text-text-muted">HĐ</span></p>
-                        <p class="text-xs text-text-muted mt-1">Tổng hợp đồng</p>
-                    </div>
-
-                    <div class="rounded-base border border-border p-4">
-                        <p class="text-xs text-text-muted uppercase font-medium">Hệ thống</p>
-                        <p class="mt-2 font-heading text-sm">Đã sẵn sàng</p>
-                        <p class="text-xs text-text-muted mt-1">✓ API active + DB sync</p>
+                    <div class="flex items-center gap-2">
+                        <a href="/admin/invoices.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50 inline-flex items-center gap-2"><i class="fa-solid fa-receipt"></i><span>Quản lý hóa đơn</span></a>
+                        <a href="/admin/rooms.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50 inline-flex items-center gap-2"><i class="fa-solid fa-door-open"></i><span>Quản lý phòng</span></a>
+                        <button id="btnReload" type="button" class="rounded-base bg-primary hover:bg-primary-hover text-white px-3 py-2 text-sm font-medium inline-flex items-center gap-2"><i class="fa-solid fa-rotate"></i><span>Làm mới số liệu</span></button>
                     </div>
                 </div>
             </section>
 
+            <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                <article class="rounded-base bg-bg-card border border-border shadow-soft p-4">
+                    <p class="text-xs text-text-muted uppercase tracking-wide inline-flex items-center gap-1"><i class="fa-solid fa-sack-dollar"></i> Tổng doanh thu đã thu</p>
+                    <p id="kpiTotalRevenue" class="mt-2 font-heading text-2xl text-primary">0 đ</p>
+                </article>
+                <article class="rounded-base bg-bg-card border border-border shadow-soft p-4">
+                    <p class="text-xs text-text-muted uppercase tracking-wide inline-flex items-center gap-1"><i class="fa-solid fa-chart-line"></i> Doanh thu tháng này</p>
+                    <p id="kpiMonthRevenue" class="mt-2 font-heading text-2xl text-secondary">0 đ</p>
+                </article>
+                <article class="rounded-base bg-bg-card border border-border shadow-soft p-4">
+                    <p class="text-xs text-text-muted uppercase tracking-wide inline-flex items-center gap-1"><i class="fa-solid fa-bed"></i> Tỷ lệ lấp đầy giường</p>
+                    <p id="kpiBedOccupancy" class="mt-2 font-heading text-2xl text-success">0%</p>
+                    <p id="kpiBedOccupancyDetail" class="text-xs text-text-muted mt-1">0 / 0 giường</p>
+                </article>
+                <article class="rounded-base bg-bg-card border border-border shadow-soft p-4">
+                    <p class="text-xs text-text-muted uppercase tracking-wide inline-flex items-center gap-1"><i class="fa-solid fa-building"></i> Tỷ lệ lấp đầy phòng</p>
+                    <p id="kpiRoomOccupancy" class="mt-2 font-heading text-2xl text-warning">0%</p>
+                    <p id="kpiRoomOccupancyDetail" class="text-xs text-text-muted mt-1">0 / 0 phòng</p>
+                </article>
+            </section>
+
+            <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <article class="xl:col-span-2 rounded-base bg-bg-card border border-border shadow-soft p-5">
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <div>
+                            <h3 class="font-heading text-xl">Doanh thu 6 tháng gần nhất</h3>
+                            <p class="text-xs text-text-muted mt-1">Dựa trên hóa đơn đã thanh toán.</p>
+                        </div>
+                    </div>
+                    <div class="h-[320px]">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </article>
+
+                <article class="rounded-base bg-bg-card border border-border shadow-soft p-5">
+                    <div class="mb-4">
+                        <h3 class="font-heading text-xl">Trạng thái hóa đơn</h3>
+                        <p class="text-xs text-text-muted mt-1">Theo số lượng hóa đơn.</p>
+                    </div>
+                    <div class="h-[320px]">
+                        <canvas id="invoiceStatusChart"></canvas>
+                    </div>
+                </article>
+            </section>
+
             <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
-                <div class="flex items-center justify-between gap-3">
-                    <h3 class="font-heading text-xl">Danh sách tòa nhà</h3>
-                    <a href="/admin/buildings" class="text-sm text-primary hover:underline">Mở trang quản lý tòa nhà</a>
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                    <div>
+                        <h3 class="font-heading text-xl">Tỷ lệ lấp đầy theo tòa nhà</h3>
+                        <p class="text-xs text-text-muted mt-1">Theo số giường đã có sinh viên thực tế.</p>
+                    </div>
                 </div>
 
-                <div class="mt-4 overflow-x-auto rounded-base border border-border">
-                        <table class="w-full min-w-[760px]">
-                            <thead>
-                        <tr class="bg-slate-50 border-b border-border text-text-muted text-left text-xs uppercase tracking-wide font-medium">
-                            <th class="px-4 py-3 w-16">ID</th>
-                            <th class="px-4 py-3">Tên tòa</th>
-                            <th class="px-4 py-3 w-24">Số tầng</th>
-                            <th class="px-4 py-3 w-24">Quy định</th>
-                            <th class="px-4 py-3 flex-1">Mô tả</th>
+                <div class="overflow-x-auto rounded-base border border-border">
+                    <table class="w-full min-w-[760px] text-sm">
+                        <thead>
+                        <tr class="bg-slate-50 border-b border-border text-left text-xs uppercase tracking-wide text-text-muted">
+                            <th class="px-4 py-3">Tòa nhà</th>
+                            <th class="px-4 py-3">Giường đã ở</th>
+                            <th class="px-4 py-3">Tổng giường</th>
+                            <th class="px-4 py-3">Tỷ lệ lấp đầy</th>
                         </tr>
                         </thead>
-                        <tbody id="buildingBody" class="divide-y divide-border"></tbody>
+                        <tbody id="buildingOccupancyBody">
+                        <tr><td colspan="4" class="px-4 py-8 text-center text-text-muted">Đang tải dữ liệu...</td></tr>
+                        </tbody>
                     </table>
                 </div>
-                <div id="buildingPagination" class="mt-4 flex items-center justify-end gap-2"></div>
             </section>
         </main>
     </div>
 </div>
 
 <script>
-    const ITEMS_PER_PAGE = 10;
     const token = localStorage.getItem('dormitory_access_token');
-    const AUTH_EXPIRED = 'AUTH_EXPIRED';
-
-    let buildingItems = [];
-    let buildingPage = 1;
-
-    if (!token) {
-        window.location.href = '/login.html';
-    }
+    let revenueChart;
+    let invoiceStatusChart;
 
     function initAdminSidebar() {
         if (!window.AdminSidebar || typeof window.AdminSidebar.mount !== 'function') {
@@ -149,159 +150,183 @@
         window.AdminSidebar.mount({
             mountId: 'adminSidebarMount',
             active: 'dashboard',
-            caption: 'Quản trị hệ thống'
+            caption: 'Bảng điều khiển'
         });
     }
 
-    initAdminSidebar();
-
-    function escHtml(str) {
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
+    function showMessage(type, text) {
+        const message = document.getElementById('message');
+        message.className = 'rounded-base px-4 py-3 text-sm block';
+        if (type === 'error') {
+            message.classList.add('bg-red-50', 'text-danger', 'border', 'border-red-100');
+        } else {
+            message.classList.add('bg-green-50', 'text-success', 'border', 'border-green-100');
+        }
+        message.textContent = text;
+        setTimeout(() => message.classList.add('hidden'), 3000);
     }
 
-    function paginate(items, page) {
-        const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
-        const safePage = Math.min(Math.max(page, 1), totalPages);
-        const start = (safePage - 1) * ITEMS_PER_PAGE;
-        return {
-            safePage,
-            totalPages,
-            data: items.slice(start, start + ITEMS_PER_PAGE)
-        };
+    function authHeaders() {
+        return { Authorization: `Bearer ${token}` };
     }
 
-    function renderPagination(container, page, totalPages, onChange) {
-        if (totalPages <= 1) {
-            container.innerHTML = '';
-            return;
+    function fmtMoney(value) {
+        return `${Number(value || 0).toLocaleString('vi-VN')} đ`;
+    }
+
+    function renderKpis(data) {
+        document.getElementById('kpiTotalRevenue').textContent = fmtMoney(data.totalRevenuePaid);
+        document.getElementById('kpiMonthRevenue').textContent = fmtMoney(data.revenueThisMonth);
+        document.getElementById('kpiBedOccupancy').textContent = `${Number(data.bedOccupancyRate || 0).toFixed(2)}%`;
+        document.getElementById('kpiBedOccupancyDetail').textContent = `${data.occupiedBeds || 0} / ${data.totalBeds || 0} giường`;
+        document.getElementById('kpiRoomOccupancy').textContent = `${Number(data.roomOccupancyRate || 0).toFixed(2)}%`;
+        document.getElementById('kpiRoomOccupancyDetail').textContent = `${data.occupiedRooms || 0} / ${data.totalRooms || 0} phòng`;
+    }
+
+    function renderRevenueChart(points) {
+        const labels = points.map((x) => x.periodLabel || `${x.month}/${x.year}`);
+        const values = points.map((x) => Number(x.revenue || 0));
+        const ctx = document.getElementById('revenueChart');
+
+        if (revenueChart) {
+            revenueChart.destroy();
         }
 
-        const start = Math.max(1, page - 2);
-        const end = Math.min(totalPages, page + 2);
-        let pageButtons = '';
-        for (let i = start; i <= end; i++) {
-            const active = i === page;
-            pageButtons += `<button class="rounded-base border px-3 py-1.5 text-sm ${active ? 'border-primary bg-primary text-white' : 'border-border hover:bg-slate-50'}" data-page="${i}">${i}</button>`;
-        }
-
-        const startResult = (page - 1) * ITEMS_PER_PAGE + 1;
-        const endResult = Math.min(page * ITEMS_PER_PAGE, buildingItems.length);
-
-        container.innerHTML = `
-            <p class="text-sm text-text-muted">Hiển thị ${startResult}-${endResult} trên tổng số ${buildingItems.length} kết quả</p>
-            <div class="flex flex-wrap items-center gap-2">
-                <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === 1 ? 'disabled' : ''} data-page="${page - 1}">Trước</button>
-                ${pageButtons}
-                <button class="rounded-base border border-border px-3 py-1.5 text-sm ${page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}" ${page === totalPages ? 'disabled' : ''} data-page="${page + 1}">Sau</button>
-            </div>
-        `;
-
-        container.querySelectorAll('button[data-page]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                onChange(Number(btn.dataset.page));
-            });
+        revenueChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Doanh thu (VND)',
+                    data: values,
+                    borderColor: '#0EA5A5',
+                    backgroundColor: 'rgba(14, 165, 165, 0.15)',
+                    fill: true,
+                    tension: 0.25,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (v) => `${Number(v).toLocaleString('vi-VN')} đ`
+                        }
+                    }
+                }
+            }
         });
     }
 
-    function renderBuildings(page) {
-        const body = document.getElementById('buildingBody');
-        const pagination = document.getElementById('buildingPagination');
-        const paged = paginate(buildingItems, page);
-        buildingPage = paged.safePage;
+    function renderInvoiceStatusChart(data) {
+        const ctx = document.getElementById('invoiceStatusChart');
+        const values = [
+            Number(data.totalPaidInvoices || 0),
+            Number(data.totalUnpaidInvoices || 0),
+            Number(data.totalOverdueInvoices || 0)
+        ];
 
-        if (!paged.data.length) {
-            body.innerHTML = '<tr><td colspan="5" class="px-4 py-3 text-sm text-text-muted">Chưa có tòa nhà.</td></tr>';
-            pagination.innerHTML = '';
+        if (invoiceStatusChart) {
+            invoiceStatusChart.destroy();
+        }
+
+        invoiceStatusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Đã thanh toán', 'Chưa thanh toán', 'Quá hạn'],
+                datasets: [{
+                    data: values,
+                    backgroundColor: ['#16A34A', '#3B82F6', '#D97706'],
+                    borderColor: '#FFFFFF',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+
+    function renderBuildingOccupancy(rows) {
+        const body = document.getElementById('buildingOccupancyBody');
+        if (!Array.isArray(rows) || rows.length === 0) {
+            body.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-text-muted">Chưa có dữ liệu lấp đầy theo tòa.</td></tr>';
             return;
         }
 
-        body.innerHTML = paged.data.map((item) => `
-            <tr class="hover:bg-slate-50">
-                <td class="px-4 py-3 text-sm font-mono text-text-muted">${item.id ?? '-'}</td>
-                <td class="px-4 py-3 text-sm font-medium">${escHtml(item.name || '-')}</td>
-                <td class="px-4 py-3 text-sm text-text-muted">${Number(item.totalFloors) || 0}</td>
-                <td class="px-4 py-3 text-sm">
-                    <span class="${item.genderAllowed === 'Nam' ? 'text-blue-600' : item.genderAllowed === 'Nữ' ? 'text-pink-600' : 'text-purple-600'}">${escHtml(item.genderAllowed || '-')}</span>
+        body.innerHTML = rows.map((item) => `
+            <tr class="border-t border-border hover:bg-slate-50">
+                <td class="px-4 py-3 font-medium">${item.buildingName || '-'}</td>
+                <td class="px-4 py-3">${Number(item.occupiedBeds || 0).toLocaleString('vi-VN')}</td>
+                <td class="px-4 py-3">${Number(item.totalBeds || 0).toLocaleString('vi-VN')}</td>
+                <td class="px-4 py-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-36 h-2 rounded-full bg-slate-100 overflow-hidden">
+                            <div class="h-full bg-primary" style="width:${Math.min(100, Math.max(0, Number(item.occupancyRate || 0)))}%"></div>
+                        </div>
+                        <span class="text-xs text-text-muted">${Number(item.occupancyRate || 0).toFixed(2)}%</span>
+                    </div>
                 </td>
-                <td class="px-4 py-3 text-sm text-text-muted ">${escHtml(item.description || 'Chưa cập nhật')}</td>
             </tr>
         `).join('');
-
-        renderPagination(pagination, buildingPage, paged.totalPages, renderBuildings);
     }
 
-    async function loadCurrentUser() {
-        const response = await fetch('/api/v1/auth/me', {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+    async function ensureAdmin() {
+        const response = await fetch('/api/v1/auth/me', { headers: authHeaders() });
         const data = await response.json();
-
         if (!response.ok) {
-            throw new Error(AUTH_EXPIRED);
+            throw new Error(data.message || 'Phiên đăng nhập không hợp lệ');
         }
 
-        const user = data.result;
-        const roles = Array.isArray(user.roles) ? user.roles : [];
-
+        const roles = Array.isArray(data.result?.roles) ? data.result.roles : [];
         if (!roles.includes('ROLE_ADMIN')) {
             window.location.href = '/home.html';
-            return;
         }
-
-        document.getElementById('fullName').textContent = user.fullName;
-        document.getElementById('adminRoles').textContent = roles.join(', ');
     }
 
-    async function loadDashboardStats() {
-        const [buildingResponse, roomResponse, contractResponse] = await Promise.all([
-            fetch('/api/v1/buildings?page=0&size=500&sortBy=id&direction=desc', { headers: { Authorization: `Bearer ${token}` } }),
-            fetch('/api/v1/rooms?page=0&size=500&sortBy=id&direction=desc', { headers: { Authorization: `Bearer ${token}` } }),
-            fetch('/api/v1/contracts/admin/management?page=0&size=1&sortBy=id&direction=desc', { headers: { Authorization: `Bearer ${token}` } })
-        ]);
-
-        const buildingPayload = await buildingResponse.json();
-        const roomPayload = await roomResponse.json();
-        const contractPayload = await contractResponse.json();
-
-        if (!buildingResponse.ok) {
-            throw new Error(buildingPayload.message || 'Không tải được danh sách tòa nhà');
-        }
-        if (!roomResponse.ok) {
-            throw new Error(roomPayload.message || 'Không tải được danh sách phòng');
+    async function loadDashboard() {
+        const response = await fetch('/api/v1/admin/dashboard/overview', { headers: authHeaders() });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Không thể tải dữ liệu dashboard');
         }
 
-        buildingItems = Array.isArray(buildingPayload.result?.content) ? buildingPayload.result.content : [];
-        const rooms = Array.isArray(roomPayload.result?.content) ? roomPayload.result.content : [];
-        const roomTotal = typeof roomPayload.result?.totalElements === 'number' ? roomPayload.result.totalElements : rooms.length;
-        const totalContracts = contractResponse.ok && typeof contractPayload.result?.totalElements === 'number'
-            ? contractPayload.result.totalElements
-            : 0;
-
-        document.getElementById('buildingCount').textContent = String(buildingItems.length);
-        document.getElementById('roomCount').textContent = String(roomTotal);
-        document.getElementById('contractCount').textContent = String(totalContracts);
-
-        renderBuildings(1);
+        const result = data.result || {};
+        renderKpis(result);
+        renderRevenueChart(Array.isArray(result.revenueByMonth) ? result.revenueByMonth : []);
+        renderInvoiceStatusChart(result);
+        renderBuildingOccupancy(Array.isArray(result.buildingOccupancy) ? result.buildingOccupancy : []);
     }
 
     (async () => {
         try {
-            await loadCurrentUser();
-            await loadDashboardStats();
-        } catch (error) {
-            if ((error && error.message) === AUTH_EXPIRED) {
-                localStorage.removeItem('dormitory_access_token');
+            if (!token) {
                 window.location.href = '/login.html';
-            } else {
-                console.error(error);
+                return;
             }
+            initAdminSidebar();
+            await ensureAdmin();
+            await loadDashboard();
+        } catch (error) {
+            showMessage('error', error.message || 'Không thể khởi tạo dashboard.');
         }
     })();
+
+    document.getElementById('btnReload').addEventListener('click', async () => {
+        try {
+            await loadDashboard();
+            showMessage('success', 'Đã cập nhật số liệu dashboard.');
+        } catch (error) {
+            showMessage('error', error.message || 'Không thể tải lại dữ liệu.');
+        }
+    });
 </script>
 </body>
 

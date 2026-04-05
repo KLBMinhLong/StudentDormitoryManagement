@@ -1,6 +1,7 @@
 package com.dormitory.management.service.impl;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,13 +26,16 @@ import com.dormitory.management.dto.room.BedOccupancyRequestDTO;
 import com.dormitory.management.dto.room.RoomDTO;
 import com.dormitory.management.dto.room.RoomRequestDTO;
 import com.dormitory.management.entity.Bed;
+import com.dormitory.management.entity.Contract;
 import com.dormitory.management.entity.Building;
 import com.dormitory.management.entity.Room;
 import com.dormitory.management.entity.RoomType;
 import com.dormitory.management.entity.enums.RoomStatus;
+import com.dormitory.management.entity.enums.ContractStatus;
 import com.dormitory.management.exception.ResourceNotFoundException;
 import com.dormitory.management.repository.BedRepository;
 import com.dormitory.management.repository.BuildingRepository;
+import com.dormitory.management.repository.ContractRepository;
 import com.dormitory.management.repository.RoomRepository;
 import com.dormitory.management.repository.RoomTypeRepository;
 import com.dormitory.management.service.RoomService;
@@ -45,6 +49,7 @@ public class RoomServiceImpl implements RoomService {
 
     private final RoomRepository roomRepository;
     private final BedRepository bedRepository;
+    private final ContractRepository contractRepository;
     private final BuildingRepository buildingRepository;
     private final RoomTypeRepository roomTypeRepository;
 
@@ -62,7 +67,9 @@ public class RoomServiceImpl implements RoomService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
         String normalizedKeyword = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
         String normalizedGenderAllowed = (genderAllowed == null || genderAllowed.isBlank()) ? null : genderAllowed.trim();
-        Page<RoomDTO> result = roomRepository.findByFilters(normalizedGenderAllowed, buildingId, status, normalizedKeyword, pageable).map(this::toRoomDto);
+        Page<Room> roomPage = roomRepository.findByFilters(normalizedGenderAllowed, buildingId, status, normalizedKeyword, pageable);
+        Map<Long, int[]> roomStats = summarizeRoomOccupancy(roomPage.getContent());
+        Page<RoomDTO> result = roomPage.map((room) -> toRoomDto(room, roomStats.get(room.getId())));
         return PagedResponseDTO.fromPage(result);
     }
 
@@ -144,11 +151,19 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @Transactional
     public PagedResponseDTO<BedDTO> getBedsByRoomId(Long roomId, int page, int size, String sortBy, String direction) {
-        roomRepository.findById(roomId)
+        Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found with id: " + roomId));
 
-        List<BedDTO> beds = bedRepository.findByRoomIdOrderByBedNumberAsc(roomId)
+        List<Bed> bedEntities = bedRepository.findByRoomIdOrderByBedNumberAsc(roomId);
+        if (bedEntities.isEmpty() && room.getRoomType() != null && room.getRoomType().getCapacity() > 0) {
+            // Auto-repair legacy rooms that were created without bed rows.
+            syncBedsForRoom(room, room.getRoomType().getCapacity());
+            bedEntities = bedRepository.findByRoomIdOrderByBedNumberAsc(roomId);
+        }
+
+        List<BedDTO> beds = bedEntities
                 .stream()
                 .map(this::toBedDto)
                 .toList();
@@ -357,11 +372,38 @@ public class RoomServiceImpl implements RoomService {
         return roomNumber.trim();
     }
 
-    private RoomDTO toRoomDto(Room room) {
-        List<Bed> beds = bedRepository.findByRoomIdOrderByBedNumberAsc(room.getId());
-        int totalBeds = beds.size();
+    private Map<Long, int[]> summarizeRoomOccupancy(Collection<Room> rooms) {
+        Map<Long, int[]> stats = new HashMap<>();
+        if (rooms == null || rooms.isEmpty()) {
+            return stats;
+        }
+
+        List<Long> roomIds = rooms.stream().map(Room::getId).toList();
         LocalDateTime now = LocalDateTime.now();
-        int occupiedBeds = (int) beds.stream().filter((bed) -> isOccupiedOrReserved(bed, now)).count();
+        List<Object[]> rows = bedRepository.summarizeBedOccupancyByRoomIds(
+                roomIds,
+            now);
+
+        for (Object[] row : rows) {
+            Long roomId = row[0] == null ? null : ((Number) row[0]).longValue();
+            if (roomId == null) {
+                continue;
+            }
+            int totalBeds = row[1] == null ? 0 : ((Number) row[1]).intValue();
+            int occupiedBeds = row[2] == null ? 0 : ((Number) row[2]).intValue();
+            stats.put(roomId, new int[]{totalBeds, occupiedBeds});
+        }
+
+        return stats;
+    }
+
+    private RoomDTO toRoomDto(Room room) {
+        return toRoomDto(room, null);
+    }
+
+    private RoomDTO toRoomDto(Room room, int[] stat) {
+        int totalBeds = stat == null ? 0 : stat[0];
+        int occupiedBeds = stat == null ? 0 : stat[1];
 
         return RoomDTO.builder()
                 .id(room.getId())
@@ -411,8 +453,12 @@ public class RoomServiceImpl implements RoomService {
 
     private BedDTO toBedDto(Bed bed) {
         LocalDateTime now = LocalDateTime.now();
-        boolean reserved = isReserved(bed, now);
-        boolean occupied = bed.getStudent() != null || (bed.isOccupied() && !reserved);
+        Contract currentContract = findCurrentBedContract(bed);
+        boolean reserved = isReserved(bed, currentContract, now);
+        boolean occupied = currentContract != null && currentContract.getStatus() == ContractStatus.ACTIVE;
+        String studentName = currentContract != null && currentContract.getStudent() != null
+                ? currentContract.getStudent().getFullName()
+                : null;
 
         String occupancyStatus = reserved
             ? "RESERVED"
@@ -422,19 +468,29 @@ public class RoomServiceImpl implements RoomService {
                 .id(bed.getId())
                 .bedNumber(bed.getBedNumber())
                 .isOccupied(occupied)
-                .studentName(bed.getStudent() != null ? bed.getStudent().getFullName() : null)
+                .studentName(studentName)
             .occupancyStatus(occupancyStatus)
             .reservedUntil(bed.getReservedUntil())
                 .build();
     }
 
-    private boolean isReserved(Bed bed, LocalDateTime now) {
-        return bed.getStudent() == null
+    private boolean isReserved(Bed bed, Contract currentContract, LocalDateTime now) {
+        return currentContract != null
+                && currentContract.getStatus() == ContractStatus.PENDING
                 && bed.getReservedUntil() != null
                 && bed.getReservedUntil().isAfter(now);
     }
 
     private boolean isOccupiedOrReserved(Bed bed, LocalDateTime now) {
-        return bed.getStudent() != null || bed.isOccupied() || isReserved(bed, now);
+        Contract currentContract = findCurrentBedContract(bed);
+        return currentContract != null
+                || (bed.getReservedUntil() != null && bed.getReservedUntil().isAfter(now));
+    }
+
+    private Contract findCurrentBedContract(Bed bed) {
+        return contractRepository.findFirstByBedIdAndStatusInOrderByCreatedAtDesc(
+                bed.getId(),
+                Set.of(ContractStatus.ACTIVE, ContractStatus.PENDING)
+        ).orElse(null);
     }
 }

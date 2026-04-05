@@ -1,5 +1,6 @@
 package com.dormitory.management.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +13,8 @@ import com.dormitory.management.dto.auth.CurrentUserResponseDTO;
 import com.dormitory.management.dto.auth.LoginRequestDTO;
 import com.dormitory.management.dto.auth.LoginResponseDTO;
 import com.dormitory.management.dto.auth.RegisterStudentRequestDTO;
+import com.dormitory.management.dto.auth.ForgotPasswordRequestDTO;
+import com.dormitory.management.dto.auth.ResetPasswordRequestDTO;
 import com.dormitory.management.dto.common.ApiResponse;
 import com.dormitory.management.exception.ErrorCode;
 import com.dormitory.management.service.AuthService;
@@ -45,5 +48,22 @@ public class AuthController {
     public ResponseEntity<ApiResponse<CurrentUserResponseDTO>> getCurrentUser() {
         CurrentUserResponseDTO result = authService.getCurrentUser();
         return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), "Get current user successfully", result));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDTO request) {
+        boolean emailSent = authService.forgotPassword(request);
+        String message = emailSent
+            ? "Hướng dẫn đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra email của bạn."
+            : "Yêu cầu đặt lại mật khẩu đã được tạo nhưng gửi email chưa thành công. Vui lòng thử lại sau.";
+        return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), 
+            message, null));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success(ErrorCode.SUCCESS.getCode(), 
+            "Mật khẩu đã được đặt lại thành công. Vui lòng đăng nhập lại.", null));
     }
 }

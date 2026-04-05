@@ -1,6 +1,9 @@
 package com.dormitory.management.security;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -72,7 +75,32 @@ public class JwtService {
     }
 
     private Key getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
+        byte[] keyBytes = decodeSecretBytes(jwtSecret);
+        if (keyBytes.length < 32) {
+            keyBytes = sha256(keyBytes);
+        }
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    private byte[] decodeSecretBytes(String secret) {
+        String normalized = secret == null ? "" : secret.trim();
+        if (normalized.isEmpty()) {
+            return new byte[0];
+        }
+
+        try {
+            return Decoders.BASE64.decode(normalized);
+        } catch (IllegalArgumentException ex) {
+            return normalized.getBytes(StandardCharsets.UTF_8);
+        }
+    }
+
+    private byte[] sha256(byte[] input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return digest.digest(input);
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 algorithm is not available", ex);
+        }
     }
 }

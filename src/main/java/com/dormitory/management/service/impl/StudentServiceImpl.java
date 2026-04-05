@@ -4,10 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +26,7 @@ import com.dormitory.management.entity.Contract;
 import com.dormitory.management.entity.AppUser;
 import com.dormitory.management.entity.Role;
 import com.dormitory.management.entity.Student;
+import com.dormitory.management.entity.enums.ContractStatus;
 import com.dormitory.management.repository.AppUserRepository;
 import com.dormitory.management.repository.ContractRepository;
 import com.dormitory.management.repository.RoleRepository;
@@ -64,6 +63,24 @@ public class StudentServiceImpl implements StudentService {
         } else {
             studentPage = studentRepository.searchByCodeOrName(keyword.trim(), pageable);
         }
+
+        Page<StudentListItemDTO> mappedPage = studentPage.map(this::mapToListItemDTO);
+        return PagedResponseDTO.fromPage(mappedPage);
+    }
+
+    @Override
+    public PagedResponseDTO<StudentListItemDTO> searchResidentStudents(String keyword, int page, int size, String sortBy, String direction) {
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 10 : Math.min(size, 100);
+        String sortField = StringUtils.hasText(sortBy) ? sortBy : "id";
+
+        Sort sort = "asc".equalsIgnoreCase(direction)
+                ? Sort.by(sortField).ascending()
+                : Sort.by(sortField).descending();
+
+        Pageable pageable = PageRequest.of(safePage, safeSize, sort);
+        String normalizedKeyword = StringUtils.hasText(keyword) ? keyword.trim() : null;
+        Page<Student> studentPage = studentRepository.searchResidentStudents(normalizedKeyword, ContractStatus.ACTIVE, pageable);
 
         Page<StudentListItemDTO> mappedPage = studentPage.map(this::mapToListItemDTO);
         return PagedResponseDTO.fromPage(mappedPage);

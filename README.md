@@ -1,443 +1,287 @@
-# Student Dormitory Management System
+# Hệ Thống Quản Lý Ký Túc Xá Sinh Viên
 
-A comprehensive web application for managing student dormitory operations, including building management, room allocation, student records, contracts, utilities, invoices, and maintenance issues.
+Hệ thống quản lý ký túc xá sinh viên với backend Spring Boot và frontend static, hỗ trợ đầy đủ các quy trình: quản lý cơ sở vật chất, hợp đồng nội trú, điện nước, hóa đơn, thanh toán PayOS và vận hành quản trị.
 
-## 🏗️ Technology Stack
+## Mục lục
 
-### Backend
-- **Language:** Java 25
-- **Framework:** Spring Boot 4.0.4
-- **Database:** Microsoft SQL Server
-- **ORM:** Spring Data JPA (Hibernate)
-- **Build Tool:** Maven 3.x
-- **Code Generation:** Lombok
-- **Validation:** Jakarta Validation API
-- **Security:** Spring Security
-- **Mapping:** ModelMapper 3.2.1
+- [1) Tổng quan](#1-tổng-quan)
+- [2) Tính năng cốt lõi](#2-tính-năng-cốt-lõi)
+- [3) Công nghệ sử dụng](#3-công-nghệ-sử-dụng)
+- [4) Kiến trúc hệ thống](#4-kiến-trúc-hệ-thống)
+- [5) Hướng dẫn chạy nhanh](#5-hướng-dẫn-chạy-nhanh)
+- [6) Cấu trúc thư mục](#6-cấu-trúc-thư-mục)
+- [7) Ảnh màn hình chính](#7-ảnh-màn-hình-chính)
+- [8) Tài liệu chi tiết](#8-tài-liệu-chi-tiết)
+- [9) Endpoint chính](#9-endpoint-chính)
+- [10) Kiểm thử và chất lượng](#10-kiểm-thử-và-chất-lượng)
+- [11) Bảo mật và lưu ý triển khai](#11-bảo-mật-và-lưu-ý-triển-khai)
 
-### Frontend
-- **Markup:** HTML5
-- **Styling:** Tailwind CSS (via CSS variables)
-- **Scripting:** Vanilla JavaScript (ES6+)
-- **Fonts:** Be Vietnam Pro (heading), Inter (body)
-- **Icon Library:** Heroicons / Lucide (recommended)
+## 1) Tổng quan
 
-### DevOps & Tools
-- **Container:** Docker (optional)
-- **Version Control:** Git
-- **Package Manager:** npm / yarn (for frontend assets if needed)
+Mục tiêu của dự án:
+
+- Số hóa quy trình quản lý ký túc xá theo mô hình tập trung.
+- Tăng tính minh bạch trong quản lý hợp đồng, điện nước, hóa đơn và thanh toán.
+- Hỗ trợ cả góc nhìn quản trị và góc nhìn sinh viên trên cùng một hệ thống.
+
+Vai trò người dùng chính:
+
+- `ROLE_ADMIN`: quản trị tòa nhà, phòng, giường, sinh viên, hợp đồng, điện nước, hóa đơn, báo cáo.
+- `ROLE_STUDENT`: quản lý hồ sơ cá nhân, hợp đồng của bản thân, hóa đơn, thanh toán, phản ánh sự cố.
+
+## 2) Tính năng cốt lõi
+
+### 2.1 Quản trị cơ sở vật chất
+
+- Quản lý tòa nhà (`building`).
+- Quản lý loại phòng (`room_type`), phòng (`room`) và giường (`bed`).
+- Cập nhật bố cục giường và trạng thái sử dụng theo phòng.
+
+### 2.2 Quản lý sinh viên
+
+- Quản trị danh sách sinh viên và lịch sử nội trú.
+- Sinh viên cập nhật hồ sơ cá nhân, đổi mật khẩu, cập nhật ảnh đại diện.
+
+### 2.3 Quản lý hợp đồng nội trú
+
+- Sinh viên giữ chỗ giường.
+- Nộp hồ sơ hợp đồng và chờ duyệt.
+- Quản trị duyệt/từ chối hợp đồng.
+- Hỗ trợ yêu cầu thay đổi hợp đồng.
+- Tự động xử lý hợp đồng quá hạn và giải phóng giường.
+
+### 2.4 Điện nước và hóa đơn
+
+- Nhập chỉ số điện nước theo phòng, theo kỳ tháng/năm.
+- Chốt kỳ điện nước.
+- Tự động sinh hóa đơn hàng tháng cho kỳ đã chốt.
+- Theo dõi trạng thái hóa đơn: chưa thanh toán, quá hạn, đã thanh toán.
+
+### 2.5 Thanh toán PayOS
+
+- Sinh viên tạo liên kết thanh toán cho hóa đơn.
+- Hệ thống nhận webhook PayOS và cập nhật trạng thái thanh toán.
+- Hỗ trợ xác nhận thanh toán thủ công cho nghiệp vụ đặc thù.
+
+### 2.6 Dashboard và báo cáo
+
+- Dashboard quản trị tổng quan.
+- Xuất Excel cho sinh viên, hợp đồng, hóa đơn, điện nước.
+
+## 3) Công nghệ sử dụng
+
+- Java 21
+- Spring Boot 4.0.5
+- Spring Web MVC, Spring Security, Spring Data JPA
+- PostgreSQL
+- JWT Bearer Authentication
+- Caffeine Cache
+- Apache POI (xuất Excel)
+- PayOS API (tạo link thanh toán + webhook)
+
+## 4) Kiến trúc hệ thống
+
+Kiến trúc layered:
+
+- `controller`: nhận request/response API.
+- `service` và `service.impl`: xử lý nghiệp vụ.
+- `repository`: truy vấn dữ liệu.
+- `entity`: mô hình dữ liệu quan hệ.
+- `dto`: chuẩn dữ liệu vào/ra.
+- `security`: JWT, phân quyền, 401/403 handling.
+- `config`: security, cache, email, seed data, mapper.
+
+Luồng nghiệp vụ trọng yếu đã tài liệu hóa riêng:
+
+- [docs/workflows/business-workflows-overview.md](docs/workflows/business-workflows-overview.md)
+- [docs/workflows/contract-lifecycle-workflow.md](docs/workflows/contract-lifecycle-workflow.md)
+- [docs/features-deep/monthly-invoice-automation.md](docs/features-deep/monthly-invoice-automation.md)
+- [docs/features-deep/bed-status-expiry-automation.md](docs/features-deep/bed-status-expiry-automation.md)
+
+## 5) Hướng dẫn chạy nhanh
+
+### 5.1 Yêu cầu môi trường
+
+- JDK 21
+- PostgreSQL
+- Maven Wrapper (`mvnw`, `mvnw.cmd`)
+
+### 5.2 Chạy local
+
+PowerShell:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Hoặc chạy profile cụ thể:
+
+```powershell
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
+```
+
+### 5.3 Build và chạy artifact
+
+```powershell
+.\mvnw.cmd clean package
+java -jar target/management-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
+```
+
+### 5.4 URL truy cập thường dùng
+
+- Đăng nhập: `http://localhost:8080/login`
+- Trang sinh viên: `http://localhost:8080/home`
+- Trang quản trị: `http://localhost:8080/admin`
+
+Chi tiết triển khai xem thêm: [docs/deployment/run-guide.md](docs/deployment/run-guide.md)
+
+## 6) Cấu trúc thư mục
+
+```text
+src/
+	main/
+		java/com/dormitory/management/
+			config/
+			controller/
+			dto/
+			entity/
+			exception/
+			repository/
+			security/
+			service/
+			service/impl/
+		resources/
+			application*.properties
+			schema.sql
+			static/
+				admin/
+				user/
+				ui/
+docs/
+	architecture/
+	deployment/
+	features-deep/
+	operations/
+	standards/
+	ui-ux/
+	workflows/
+```
+
+## 7) Ảnh màn hình chính
+
+### 7.1 Nhóm xác thực và trang chính
+
+![Màn hình đăng nhập](docs/images/01-login.png)
+![Trang tổng quan quản trị](docs/images/02-admin-dashboard.png)
+
+### 7.2 Nhóm quản trị lõi
+
+![Quản lý phòng và giường](docs/images/03-admin-rooms.png)
+![Quản lý hợp đồng](docs/images/04-contract-management.png)
+![Quản lý hóa đơn](docs/images/05-invoice-management.png)
+
+### 7.3 Nhóm sinh viên
+
+![Trang chính sinh viên](docs/images/06-student-portal.png)
+![Hợp đồng của sinh viên](docs/images/07-student-contracts.png)
+![Hóa đơn của sinh viên](docs/images/08-student-invoices.png)
+
+## 8) Tài liệu chi tiết
+
+- Mục lục tài liệu tổng: [docs/README.md](docs/README.md)
+- Kiến trúc: [docs/architecture/README.md](docs/architecture/README.md)
+- Quy trình nghiệp vụ: [docs/workflows/README.md](docs/workflows/README.md)
+- Phân tích sâu theo tính năng: [docs/features-deep/README.md](docs/features-deep/README.md)
+- Chuẩn coding và API: [docs/standards/CODING_STANDARDS.md](docs/standards/CODING_STANDARDS.md), [docs/standards/API_CONTRACT.md](docs/standards/API_CONTRACT.md)
+
+## 9) Endpoint chính
+
+Base API: `/api/v1`
+
+### 9.1 Xác thực
+
+- `POST /auth/register/student`
+- `POST /auth/login`
+- `GET /auth/me`
+- `POST /auth/forgot-password`
+- `POST /auth/reset-password`
+
+### 9.2 Cơ sở vật chất
+
+- `GET /buildings`, `POST /buildings`, `PUT /buildings/{id}`, `DELETE /buildings/{id}`
+- `GET /rooms`, `POST /rooms`, `PUT /rooms/{id}`, `DELETE /rooms/{id}`
+- `GET /rooms/{roomId}/beds`
+- `PUT /rooms/{roomId}/beds/{bedId}/occupancy`
+- `PUT /rooms/{roomId}/beds/layout`
+- `GET /room-types`
+
+### 9.3 Sinh viên
+
+- Admin:
+	- `GET /students`, `GET /students/residents`, `GET /students/{id}`
+	- `POST /students`, `PUT /students/{id}`, `DELETE /students/{id}`
+- Student:
+	- `GET /students/me`, `PUT /students/me`
+	- `PUT /students/me/password`
+	- `POST /students/me/avatar`
+
+### 9.4 Hợp đồng
+
+- Student:
+	- `POST /contracts/reservations`
+	- `PUT /contracts/{contractId}/submit`
+	- `GET /contracts/me/pending`
+	- `GET /contracts/me/contracts`
+- Admin:
+	- `POST /contracts`
+	- `PUT /contracts/{contractId}/approve`
+	- `PUT /contracts/{contractId}/reject`
+	- `GET /contracts/admin/management`
+	- `GET /contracts/admin/change-requests`
+
+### 9.5 Điện nước và hóa đơn
+
+- Utility records:
+	- `POST /utility-records`, `POST /utility-records/batch`
+	- `GET /utility-records/history`, `GET /utility-records/timeline`
+	- `POST /utility-records/period/close`, `POST /utility-records/period/reopen`
+- Invoices:
+	- `POST /invoices/generate-monthly`
+	- `GET /invoices/admin/list`
+	- `GET /invoices/me`
+	- `POST /invoices/me/{invoiceId}/create-payment-link`
+	- `POST /invoices/{invoiceId}/manual-approve`
+
+### 9.6 Thanh toán và báo cáo
+
+- `POST /payment/webhook/payos`
+- `GET /admin/dashboard/overview`
+- `GET /reports/admin/students/excel`
+- `GET /reports/admin/contracts/excel`
+- `GET /reports/admin/invoices/excel`
+- `GET /reports/admin/utility-records/excel`
+
+Danh sách đầy đủ endpoint xem tại [docs/architecture/api-catalog.md](docs/architecture/api-catalog.md).
+
+## 10) Kiểm thử và chất lượng
+
+Chạy test:
+
+```powershell
+.\mvnw.cmd test
+```
+
+Khuyến nghị trước khi merge:
+
+- Build thành công.
+- Smoke test các API trọng yếu (auth, contracts, utility, invoices, payment webhook).
+- Cập nhật tài liệu nếu thay đổi luồng nghiệp vụ hoặc API.
+
+## 11) Bảo mật và lưu ý triển khai
+
+- Không commit secret thật (DB, JWT, SMTP, PayOS).
+- Cấu hình secret qua biến môi trường.
+- Rotate khóa định kỳ trước khi đưa production.
+- Ẩn thông tin nhạy cảm trên ảnh chụp màn hình trước khi commit.
 
 ---
-
-## 📋 Project Structure
-
-```
-student-dormitory-management/
-├── .github/
-│   ├── copilot-instructions.md          # AI coding rules
-│   └── prompts/
-│       └── ui-ux-pro-max/               # UI design workflow
-├── docs/
-│   ├── CODING_STANDARDS.md              # Developer guidelines
-│   ├── TAILWIND_THEME_SNIPPET.md        # Tailwind config example
-│   └── UI_QUICK_START.md                # Frontend setup guide
-├── src/
-│   ├── main/
-│   │   ├── java/com/dormitory/management/
-│   │   │   ├── config/                  # Spring configs (Security, ModelMapper, Swagger)
-│   │   │   ├── controller/              # REST endpoints
-│   │   │   ├── service/                 # Business logic interfaces
-│   │   │   ├── service/impl/            # Service implementations
-│   │   │   ├── repository/              # Spring Data JPA repositories
-│   │   │   ├── entity/                  # JPA Entity classes + enums
-│   │   │   ├── dto/
-│   │   │   │   ├── common/              # ApiResponse<T> wrapper
-│   │   │   │   ├── building/            # Building DTOs
-│   │   │   │   └── error/               # Error response DTOs
-│   │   │   └── exception/               # Custom exceptions + global handler
-│   │   └── resources/
-│   │       ├── application.properties   # App configuration
-│   │       └── static/
-│   │           ├── index.html           # Main dashboard page
-│   │           └── ui/
-│   │               └── theme.css        # Project design tokens
-│   └── test/                            # Unit & integration tests
-├── pom.xml                              # Maven configuration
-└── README.md                            # This file
-
-```
-
----
-
-## 🎯 Core Features
-
-### 1. Building Management
-- **Entities:** Building (name, totalFloors, description)
-- **Operations:** CRUD via `/api/v1/buildings`
-- **Data:** Auto-synced to SQL Server, with timestamps (createdAt, updatedAt)
-
-### 2. Room Management
-- **Entities:** Room (roomNumber, status, building_id, roomType_id)
-- **Status:** AVAILABLE | FULL | MAINTENANCE
-- **Relations:** Each room belongs to 1 building and 1 room type
-
-### 3. Room Type Management
-- **Entities:** RoomType (name, capacity, basePrice, genderAllowed)
-- **Purpose:** Classify room tiers and pricing
-
-### 4. Bed Management
-- **Entities:** Bed (bedNumber, isOccupied, room_id, student_id)
-- **Relations:** Each bed is in 1 room, can host 1 student (nullable)
-
-### 5. Student Management
-- **Entities:** Student (studentCode, fullName, dateOfBirth, gender, phone, cccd, email)
-- **Unique Constraints:** studentCode, cccd
-- **Relations:** 1 student can sign contracts and create issues
-
-### 6. Contract Management
-- **Entities:** Contract (startDate, endDate, depositAmount, status, student_id, room_id, bed_id)
-- **Status:** ACTIVE | EXPIRED | CANCELLED
-- **Purpose:** Record dormitory rental agreements
-
-### 7. Utility Records
-- **Entities:** UtilityRecord (month, year, oldElectric, newElectric, oldWater, newWater, room_id)
-- **Purpose:** Track monthly electric & water consumption per room
-
-### 8. Invoice Management
-- **Entities:** Invoice (month, year, roomFee, electricFee, waterFee, totalAmount, status, room_id)
-- **Status:** UNPAID | PAID | OVERDUE
-- **Purpose:** Generate and track monthly billing
-
-### 9. Maintenance Issues
-- **Entities:** Issue (description, priority, status, student_id, room_id)
-- **Priority:** LOW | MEDIUM | HIGH
-- **Status:** PENDING | IN_PROGRESS | RESOLVED
-- **Purpose:** Report and resolve dormitory problems
-
----
-
-## 🎨 Design System
-
-### Colors (Fixed Palette)
-| Role | Hex | Purpose |
-|------|-----|---------|
-| Primary | #0EA5A5 | Main interactive elements |
-| Primary Hover | #0B8F8F | Hover state for primary |
-| Secondary | #3B82F6 | Secondary buttons, accents |
-| Accent | #10B981 | Success, positive actions |
-| Page Background | #F8FAFC | Main page background |
-| Card Background | #FFFFFF | Card/modal surfaces |
-| Main Text | #0F172A | Primary text color |
-| Muted Text | #475569 | Secondary text, labels |
-| Border | #E2E8F0 | Lines, dividers, borders |
-| Success | #16A34A | Success badges, states |
-| Warning | #D97706 | Warning badges, alerts |
-| Danger | #DC2626 | Error badges, destructive actions |
-
-### Typography
-- **Heading:** Be Vietnam Pro (weights: 600, 700)
-- **Body:** Inter (weights: 400, 500)
-- **Font Stack:** Web-safe fallbacks to sans-serif
-
-### Spacing & Shape
-- **Container Max Width:** 1200px
-- **Border Radius:** 12px (cards, buttons, inputs)
-- **Shadow:** `0 4px 12px rgba(15, 23, 42, 0.06)` (soft only)
-- **Section Spacing:** 24px (mobile), 32px (desktop)
-
-### Rules
-- No purple-dominant palettes in this project
-- All colors defined as CSS variables in `/static/ui/theme.css`
-- Tailwind config snippet available in `docs/TAILWIND_THEME_SNIPPET.md`
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Java 25+
-- Maven 3.6+
-- SQL Server 2019+ (or SQL Server 2022)
-- Node.js (optional, for frontend build tools)
-
-### Database Setup
-
-1. **Create Database:**
-   ```sql
-   CREATE DATABASE StudentDormitoryManagement;
-   USE StudentDormitoryManagement;
-   ```
-
-2. **Configure Connection (application.properties):**
-   ```properties
-   spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=StudentDormitoryManagement;encrypt=true;trustServerCertificate=true
-   spring.datasource.username=sa
-   spring.datasource.password=YourStrong@Passw0rd
-   ```
-
-3. **Hibernate Auto-Create Tables:**
-   - Set `spring.jpa.hibernate.ddl-auto=update` in `application.properties`
-   - Run the app once; tables will auto-generate
-
-### Backend Setup
-
-1. **Clone Repository:**
-   ```bash
-   git clone <repository-url>
-   cd StudentDormitoryManagement
-   ```
-
-2. **Install Dependencies:**
-   ```bash
-   ./mvnw.cmd clean install
-   ```
-
-3. **Run Application:**
-   ```bash
-   ./mvnw.cmd spring-boot:run
-   ```
-
-4. **Access Application:**
-   - Main Dashboard: `http://localhost:8080/`
-   - Building API: `http://localhost:8080/api/v1/buildings`
-
-### Frontend Setup
-
-Include the theme in your HTML:
-```html
-<link rel="stylesheet" href="/ui/theme.css">
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-```
-
-Or use Tailwind with the provided config snippet:
-See `docs/TAILWIND_THEME_SNIPPET.md` for detailed Tailwind `config.js` example.
-
----
-
-## 📡 API Specification
-
-### Standard Response Format
-
-All API responses follow the `ApiResponse<T>` wrapper:
-
-```json
-{
-  "code": 200,
-  "message": "Success message",
-  "result": { ... }
-}
-```
-
-### Error Codes
-- **200:** Success (GET, PUT)
-- **201:** Created (POST)
-- **204:** No Content (DELETE)
-- **400:** Bad Request (validation, business logic errors)
-- **404:** Not Found (resource doesn't exist)
-- **500:** Internal Server Error
-
-### Building Endpoints
-
-#### Get All Buildings
-```
-GET /api/v1/buildings
-Response: { code: 200, message: "...", result: [BuildingDTO, ...] }
-```
-
-#### Get Building by ID
-```
-GET /api/v1/buildings/{id}
-Response: { code: 200, message: "...", result: BuildingDTO }
-```
-
-#### Create Building
-```
-POST /api/v1/buildings
-Body: { name: "string", description: "string" }
-Response: { code: 201, message: "...", result: BuildingDTO }
-```
-
-#### Update Building
-```
-PUT /api/v1/buildings/{id}
-Body: { name: "string", description: "string" }
-Response: { code: 200, message: "...", result: BuildingDTO }
-```
-
-#### Delete Building
-```
-DELETE /api/v1/buildings/{id}
-Response: { code: 204, message: "...", result: null }
-```
-
----
-
-## 🔐 Coding Standards
-
-All code must adhere to the rules in [.github/copilot-instructions.md](.github/copilot-instructions.md) and [docs/CODING_STANDARDS.md](docs/CODING_STANDARDS.md).
-
-### Key Rules
-
-**1. Naming Convention**
-- Java classes: PascalCase (`BuildingController`, `RoomService`)
-- Java methods/variables: camelCase (`getBuildingById`, `totalFloors`)
-- Database tables/columns: snake_case (`building`, `room_number`)
-- API endpoints: kebab-case (`/api/v1/room-types`)
-
-**2. DTO-First Rule**
-- Never return Entity from controller
-- Request body: `*RequestDTO`
-- Response body: `*ResponseDTO`
-- Mapping via ModelMapper
-
-**3. Exception Handling**
-- Use `@RestControllerAdvice` for global handling
-- All errors return `ApiResponse` format
-- Map error codes: 400, 404, 500
-
-**4. Lombok Usage**
-- All entities use `@Data`, `@NoArgsConstructor`, `@AllArgsConstructor`, `@Builder`
-- Exclude circular references in `@EqualsAndHashCode.Exclude`, `@ToString.Exclude`
-- Add `@JsonIgnore` to collection properties to prevent recursion
-
-**5. UI Development**
-- Default stack: `html-tailwind`
-- Run `ui-ux-pro-max` workflow before implementing UI
-- Use fixed color palette from design system
-- Enforce accessibility (a11y): semantic HTML, keyboard navigation, color contrast
-
----
-
-## 📂 Frontend Pages
-
-### Dashboard (None)
-- **URL:** `http://localhost:8081/`
----
-
-## 🧪 Testing
-
-### Unit Tests
-Located in `src/test/java/...`
-
-```bash
-./mvnw.cmd test
-```
-
-### Integration Tests
-- Test core service logic
-- Mock repositories or use in-memory H2 for quick tests
-
-### Manual API Testing
-Use Postman or cURL to test endpoints:
-
-```bash
-# Get all buildings
-curl -X GET http://localhost:8080/api/v1/buildings
-
-# Create building
-curl -X POST http://localhost:8080/api/v1/buildings \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Building A","description":"Main campus"}'
-```
-
----
-
-## 📚 Documentation Files
-
-| File | Purpose |
-|------|---------|
-| [.github/copilot-instructions.md](.github/copilot-instructions.md) | AI code generation rules |
-| [docs/CODING_STANDARDS.md](docs/CODING_STANDARDS.md) | Developer coding guidelines |
-| [docs/TAILWIND_THEME_SNIPPET.md](docs/TAILWIND_THEME_SNIPPET.md) | Tailwind CSS configuration |
-| [docs/UI_QUICK_START.md](docs/UI_QUICK_START.md) | Frontend integration guide |
-| [README.md](README.md) | This file |
-
----
-
-## 🔄 Development Workflow
-
-### Add a New Feature (e.g., New Entity)
-
-1. **Create Entity** in `entity/` directory
-   - Extend `BaseEntity`
-   - Use Lombok annotations
-   - Define relationships with `@OneToMany`, `@ManyToOne`, etc.
-
-2. **Create DTOs** in `dto/`
-   - `*RequestDTO` for input validation
-   - `*ResponseDTO` for output
-
-3. **Create Repository** in `repository/`
-   - Extend `JpaRepository<Entity, Long>`
-   - Add custom query methods if needed
-
-4. **Create Service Interface** in `service/`
-   - Define business logic methods
-   - Return DTOs, not entities
-
-5. **Create Service Implementation** in `service/impl/`
-   - Implement interface
-   - Use ModelMapper for DTO conversion
-   - Handle business logic and validation
-
-6. **Create Controller** in `controller/`
-   - Return `ResponseEntity<ApiResponse<T>>`
-   - Map endpoints to `/api/v1/` path with kebab-case names
-   - Validate input with `@Valid`
-
-7. **Test All Endpoints** via Postman or cURL
-
-### UI Changes
-
-1. Run design-system search if changing layout/colors:
-   ```bash
-   python3 .github/prompts/ui-ux-pro-max/scripts/search.py "your keywords" --design-system
-   ```
-
-2. Override colors if needed, but prefer the fixed palette
-3. Use `/ui/theme.css` variables or Tailwind classes
-4. Test responsive at 375px, 768px, 1024px, 1440px viewports
-
----
-
-## 🐛 Troubleshooting
-
-### Database Connection Issues
-- Verify SQL Server is running
-- Check credentials in `application.properties`
-- Ensure database `StudentDormitoryManagement` exists
-
-### Hibernate DDL Errors
-- If tables don't auto-create, manually run SQL scripts
-- Check `spring.jpa.hibernate.ddl-auto=update` setting
-
-### API Returns 404
-- Verify endpoint URL matches controller `@RequestMapping` path
-- Check if Spring Security permits the route (currently all routes are open in dev)
-
-### Frontend Not Loading
-- Verify static resources are in `src/main/resources/static/`
-- Check browser console for 404 errors on CSS/JS files
-- Ensure fonts load from Google Fonts CDN
-
----
-
-## 📞 Support & Contributing
-
-- **Issues?** Create a GitHub issue with detailed description
-- **PRs?** Follow coding standards and ensure tests pass
-- **Questions?** Reference docs/ folder for guides
-
----
-
-## 📄 License
-
-This project is part of a university dormitory management assignment.
-Use for educational purposes only.
-
----
-
-**Last Updated:** March 23, 2026  
-**Maintainer:** Student Dormitory Management Team  
-**Java Version:** 25  
-**Spring Boot Version:** 4.0.4

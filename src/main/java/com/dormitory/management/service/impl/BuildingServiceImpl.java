@@ -1,5 +1,10 @@
 package com.dormitory.management.service.impl;
 
+import static com.dormitory.management.config.CacheConfig.BUILDINGS_LIST_CACHE;
+import static com.dormitory.management.config.CacheConfig.BUILDING_BY_ID_CACHE;
+
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +30,7 @@ public class BuildingServiceImpl implements BuildingService {
     private final BuildingRepository buildingRepository;
 
     @Override
+    @Cacheable(cacheNames = BUILDINGS_LIST_CACHE)
     public PagedResponseDTO<BuildingResponseDTO> getAllBuildings(int page, int size, String sortBy, String direction) {
         Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
@@ -33,6 +39,7 @@ public class BuildingServiceImpl implements BuildingService {
     }
 
     @Override
+    @Cacheable(cacheNames = BUILDING_BY_ID_CACHE, key = "#id")
     public BuildingResponseDTO getBuildingById(Long id) {
         Building building = findBuildingOrThrow(id);
         return toDto(building);
@@ -40,6 +47,7 @@ public class BuildingServiceImpl implements BuildingService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {BUILDINGS_LIST_CACHE, BUILDING_BY_ID_CACHE}, allEntries = true)
     public BuildingResponseDTO createBuilding(BuildingRequestDTO request) {
         Building building = new Building();
         building.setName(request.getName().trim());
@@ -53,6 +61,7 @@ public class BuildingServiceImpl implements BuildingService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {BUILDINGS_LIST_CACHE, BUILDING_BY_ID_CACHE}, allEntries = true)
     public BuildingResponseDTO updateBuilding(Long id, BuildingRequestDTO request) {
         Building existing = findBuildingOrThrow(id);
         existing.setName(request.getName().trim());
@@ -66,6 +75,7 @@ public class BuildingServiceImpl implements BuildingService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {BUILDINGS_LIST_CACHE, BUILDING_BY_ID_CACHE}, allEntries = true)
     public void deleteBuilding(Long id) {
         Building existing = findBuildingOrThrow(id);
         buildingRepository.delete(existing);

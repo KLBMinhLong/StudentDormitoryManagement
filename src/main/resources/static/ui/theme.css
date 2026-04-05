@@ -193,6 +193,73 @@ h6 {
     justify-content: center;
 }
 
+.user-layout {
+    display: grid;
+    gap: 1.5rem;
+    align-items: start;
+    grid-template-columns: 260px minmax(0, 1fr);
+}
+
+.user-sidebar-shell {
+    position: sticky;
+    top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.user-sidebar-shell .user-sidebar-item,
+.user-sidebar-shell .user-sidebar-logout,
+.user-sidebar-shell .user-sidebar-toggle,
+.user-sidebar-shell .user-sidebar-brand,
+.user-sidebar-shell .user-sidebar-caption,
+.user-sidebar-shell .user-sidebar-title,
+.user-sidebar-shell .user-sidebar-label {
+    transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.user-sidebar-shell .user-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.user-sidebar-shell .user-sidebar-item-icon {
+    width: 18px;
+    flex: 0 0 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#userLayout.sidebar-icons-only {
+    grid-template-columns: 72px minmax(0, 1fr);
+}
+
+#userLayout.sidebar-icons-only .user-sidebar-shell {
+    width: 72px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+#userLayout.sidebar-icons-only .user-sidebar-label,
+#userLayout.sidebar-icons-only .user-sidebar-brand,
+#userLayout.sidebar-icons-only .user-sidebar-caption,
+#userLayout.sidebar-icons-only .user-sidebar-title {
+    display: none;
+}
+
+#userLayout.sidebar-icons-only .user-sidebar-item,
+#userLayout.sidebar-icons-only .user-sidebar-logout {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+    gap: 0;
+}
+
+#userLayout.sidebar-icons-only .user-sidebar-top {
+    justify-content: center;
+}
+
 @media (max-width: 767px) {
     #adminLayout .admin-grid,
     #adminLayout.sidebar-icons-only .admin-grid {
@@ -221,6 +288,36 @@ h6 {
     }
 
     #adminLayout.sidebar-icons-only .sidebar-top {
+        justify-content: space-between;
+    }
+
+    .user-layout,
+    #userLayout.sidebar-icons-only {
+        grid-template-columns: 1fr;
+    }
+
+    #userLayout.sidebar-icons-only .user-sidebar-shell {
+        width: auto;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    #userLayout.sidebar-icons-only .user-sidebar-label,
+    #userLayout.sidebar-icons-only .user-sidebar-brand,
+    #userLayout.sidebar-icons-only .user-sidebar-caption,
+    #userLayout.sidebar-icons-only .user-sidebar-title {
+        display: inline;
+    }
+
+    #userLayout.sidebar-icons-only .user-sidebar-item,
+    #userLayout.sidebar-icons-only .user-sidebar-logout {
+        justify-content: flex-start;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+        gap: 0.625rem;
+    }
+
+    #userLayout.sidebar-icons-only .user-sidebar-top {
         justify-content: space-between;
     }
 }

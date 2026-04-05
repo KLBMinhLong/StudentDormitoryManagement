@@ -10,9 +10,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -23,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -68,6 +72,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InvoiceServiceImpl.class);
     private static final Pattern SIMPLE_EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+    private static final Pattern INVOICE_CODE_PATTERN = Pattern.compile("^INV-[A-Z0-9-]{3,60}$");
 
     private final InvoiceRepository invoiceRepository;
     private final UtilityRecordRepository utilityRecordRepository;
@@ -88,14 +93,17 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Value("${app.payos.checksum-key:}")
     private String payosChecksumKey;
 
-    @Value("${app.payos.return-url:http://localhost:8081/user/my-invoices.html}")
+    @Value("${app.payos.return-url:https://studentdormitorymanagement-production.up.railway.app/user/payment-return.html}")
     private String payosReturnUrl;
 
-    @Value("${app.payos.cancel-url:http://localhost:8081/user/my-invoices.html}")
+    @Value("${app.payos.cancel-url:https://studentdormitorymanagement-production.up.railway.app/user/payment-cancel.html}")
     private String payosCancelUrl;
 
+    @Value("${app.frontend.url:https://studentdormitorymanagement-production.up.railway.app}")
+    private String frontendUrl;
+
     private PricingPolicy getPricingPolicy() {
-        return pricingPolicyRepository.getLatestPolicy()
+        return pricingPolicyRepository.findTopByOrderByIdDesc()
                 .orElseGet(() -> {
                     PricingPolicy defaultPolicy = PricingPolicy.builder()
                             .electricUnitPrice(new BigDecimal("3500"))
@@ -110,8 +118,26 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public List<UtilityRecordResponseDTO> getUtilityRecordsForMonth(Long buildingId, int month, int year) {
         List<UtilityRecord> records = utilityRecordRepository.findByPeriod(buildingId, month, year);
+
+        Set<Long> roomIds = records.stream()
+            .map(record -> record.getRoom() != null ? record.getRoom().getId() : null)
+            .filter(java.util.Objects::nonNull)
+            .collect(Collectors.toSet());
+
+        Set<Long> roomIdsWithInvoices = roomIds.isEmpty()
+            ? Set.of()
+            : new HashSet<>(invoiceRepository.findRoomIdsWithInvoicesForPeriod(
+                roomIds,
+                month,
+                year,
+                InvoiceStatus.CANCELLED));
+
         return records.stream()
-                .map(this::mapUtilityToResponse)
+            .map((record) -> {
+                Long roomId = record.getRoom() != null ? record.getRoom().getId() : null;
+                boolean hasInvoice = roomId != null && roomIdsWithInvoices.contains(roomId);
+                return mapUtilityToResponse(record, hasInvoice);
+            })
                 .collect(Collectors.toList());
     }
 
@@ -305,16 +331,25 @@ public class InvoiceServiceImpl implements InvoiceService {
             int size,
             String sortBy,
             String direction) {
-        Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        Pageable pageable = buildInvoicePageable(page, size, sortBy, direction);
+        String normalizedKeyword = normalizeKeyword(keyword);
+        Long explicitInvoiceId = parseHashIdKeyword(normalizedKeyword);
+        String explicitInvoiceCode = parseInvoiceCodeKeyword(normalizedKeyword);
 
-        Page<InvoiceResponseDTO> result = invoiceRepository.searchInvoicesForAdmin(
-                month,
-                year,
-                status,
-                buildingId,
-                keyword,
-                pageable).map(this::mapToResponse);
+        Page<InvoiceResponseDTO> result;
+        if (explicitInvoiceId != null) {
+            result = findInvoiceForAdminById(explicitInvoiceId, month, year, status, buildingId, pageable);
+        } else if (explicitInvoiceCode != null) {
+            result = findInvoiceForAdminByCode(explicitInvoiceCode, month, year, status, buildingId, pageable);
+        } else {
+            result = invoiceRepository.searchInvoicesForAdmin(
+                    month,
+                    year,
+                    status,
+                    buildingId,
+                    normalizedKeyword,
+                    pageable).map(this::mapToResponse);
+        }
 
         return PagedResponseDTO.fromPage(result);
     }
@@ -335,8 +370,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             throw new IllegalStateException("Tài khoản chưa liên kết sinh viên");
         }
 
-        Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        Pageable pageable = buildInvoicePageable(page, size, sortBy, direction);
 
         Page<InvoiceResponseDTO> result = invoiceRepository.searchInvoicesForStudent(
                 user.getStudent().getId(),
@@ -346,6 +380,111 @@ public class InvoiceServiceImpl implements InvoiceService {
                 pageable).map(this::mapToResponse);
 
         return PagedResponseDTO.fromPage(result);
+    }
+
+    private Pageable buildInvoicePageable(int page, int size, String sortBy, String direction) {
+        String normalizedSortBy = (sortBy == null || sortBy.isBlank()) ? "createdAt" : sortBy.trim();
+        Set<String> allowedSorts = Set.of("id", "createdAt", "updatedAt", "issuedAt", "dueAt", "paidAt", "totalAmount", "month", "year", "status");
+        if (!allowedSorts.contains(normalizedSortBy)) {
+            normalizedSortBy = "createdAt";
+        }
+
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        return PageRequest.of(safePage, safeSize, Sort.by(sortDirection, normalizedSortBy));
+    }
+
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        return keyword.trim();
+    }
+
+    private Long parseHashIdKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank() || !keyword.startsWith("#")) {
+            return null;
+        }
+        String idPart = keyword.substring(1).trim();
+        if (idPart.isEmpty() || !idPart.chars().allMatch(Character::isDigit)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(idPart);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private String parseInvoiceCodeKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        String normalized = keyword.trim().toUpperCase();
+        return INVOICE_CODE_PATTERN.matcher(normalized).matches() ? normalized : null;
+    }
+
+    private Page<InvoiceResponseDTO> findInvoiceForAdminById(
+            Long invoiceId,
+            Integer month,
+            Integer year,
+            InvoiceStatus status,
+            Long buildingId,
+            Pageable pageable) {
+        if (pageable.getPageNumber() > 0) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+
+        Optional<Invoice> invoice = invoiceRepository.findWithRelationsById(invoiceId);
+        if (invoice.isEmpty() || !matchesAdminInvoiceFilters(invoice.get(), month, year, status, buildingId)) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+
+        return new PageImpl<>(List.of(mapToResponse(invoice.get())), pageable, 1);
+    }
+
+    private Page<InvoiceResponseDTO> findInvoiceForAdminByCode(
+            String invoiceCode,
+            Integer month,
+            Integer year,
+            InvoiceStatus status,
+            Long buildingId,
+            Pageable pageable) {
+        if (pageable.getPageNumber() > 0) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+
+        Optional<Invoice> invoice = invoiceRepository.findFirstByInvoiceCodeIgnoreCase(invoiceCode);
+        if (invoice.isEmpty() || !matchesAdminInvoiceFilters(invoice.get(), month, year, status, buildingId)) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+
+        return new PageImpl<>(List.of(mapToResponse(invoice.get())), pageable, 1);
+    }
+
+    private boolean matchesAdminInvoiceFilters(
+            Invoice invoice,
+            Integer month,
+            Integer year,
+            InvoiceStatus status,
+            Long buildingId) {
+        if (month != null && invoice.getMonth() != month) {
+            return false;
+        }
+        if (year != null && invoice.getYear() != year) {
+            return false;
+        }
+        if (status != null && invoice.getStatus() != status) {
+            return false;
+        }
+        if (buildingId != null) {
+            if (invoice.getRoom() == null || invoice.getRoom().getBuilding() == null) {
+                return false;
+            }
+            return buildingId.equals(invoice.getRoom().getBuilding().getId());
+        }
+        return true;
     }
 
     @Override
@@ -404,8 +543,10 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         int payableAmountInt = payableAmount.intValue();
         String description = buildPayOsDescription(invoice);
-        String returnUrl = enrichReturnUrl(payosReturnUrl, orderCodeStr, payableAmountInt);
-        String cancelUrl = enrichReturnUrl(payosCancelUrl, orderCodeStr, payableAmountInt);
+        String effectiveReturnUrl = resolvePayOsUrl(payosReturnUrl, "/user/payment-return.html");
+        String effectiveCancelUrl = resolvePayOsUrl(payosCancelUrl, "/user/payment-cancel.html");
+        String returnUrl = enrichReturnUrl(effectiveReturnUrl, orderCodeStr, payableAmountInt);
+        String cancelUrl = enrichReturnUrl(effectiveCancelUrl, orderCodeStr, payableAmountInt);
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("orderCode", orderCode);
@@ -590,17 +731,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .build();
     }
 
-    private UtilityRecordResponseDTO mapUtilityToResponse(UtilityRecord record) {
-        Long roomId = record.getRoom() != null ? record.getRoom().getId() : null;
-        Integer month = record.getMonth();
-        Integer year = record.getYear();
-        boolean hasInvoice = roomId != null && month != null && year != null
-            && invoiceRepository.existsByRoomIdAndMonthAndYearAndStatusNot(
-                roomId,
-                month,
-                year,
-                InvoiceStatus.CANCELLED);
-
+    private UtilityRecordResponseDTO mapUtilityToResponse(UtilityRecord record, boolean hasInvoice) {
         return UtilityRecordResponseDTO.builder()
                 .id(record.getId())
                 .roomId(record.getRoom() != null ? record.getRoom().getId() : null)
@@ -762,11 +893,25 @@ public class InvoiceServiceImpl implements InvoiceService {
                 || payosChecksumKey == null || payosChecksumKey.isBlank()) {
             throw new IllegalStateException("Thiếu cấu hình PayOS (client-id/api-key/checksum-key)");
         }
+    }
 
-        if (isLocalUrl(payosReturnUrl) || isLocalUrl(payosCancelUrl)) {
-            throw new IllegalStateException(
-                    "PayOS không chấp nhận returnUrl/cancelUrl là localhost. Hãy dùng URL public HTTPS (ngrok/cloudflared) cho app.payos.return-url và app.payos.cancel-url.");
+    private String resolvePayOsUrl(String configuredUrl, String defaultPath) {
+        if (!isLocalUrl(configuredUrl)) {
+            return configuredUrl;
         }
+
+        String fallbackBase = frontendUrl == null ? "" : frontendUrl.trim();
+        String fallback = fallbackBase.endsWith("/")
+                ? fallbackBase.substring(0, fallbackBase.length() - 1) + defaultPath
+                : fallbackBase + defaultPath;
+
+        if (isLocalUrl(fallback)) {
+            throw new IllegalStateException(
+                    "PayOS không chấp nhận returnUrl/cancelUrl là localhost. Hãy cấu hình URL public HTTPS cho app.frontend.url hoặc app.payos.return-url/app.payos.cancel-url.");
+        }
+
+        LOGGER.warn("PayOS URL cấu hình đang là localhost. Tự động dùng fallback public: {}", fallback);
+        return fallback;
     }
 
     private boolean isLocalUrl(String url) {

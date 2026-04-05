@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/ui/theme.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -40,38 +41,34 @@
 </head>
 
 <body class="font-body text-text-main bg-bg-page min-h-screen">
-<header class="border-b border-border bg-bg-card">
-    <div class="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between gap-4">
-        <div>
-            <p class="text-xs text-text-muted">Khu vực sinh viên</p>
-            <h1 class="font-heading text-xl">Hợp đồng nội trú của tôi</h1>
-        </div>
-        <nav class="flex items-center gap-2">
-            <a href="/home.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Trang chủ</a>
-            <a href="/user/student-profile.html" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Hồ sơ</a>
-            <button id="logoutBtn" class="rounded-base bg-primary hover:bg-primary-hover text-white px-4 py-2 text-sm font-medium">Đăng xuất</button>
-        </nav>
-    </div>
-</header>
+<div id="userLayout" class="user-layout max-w-[1200px] mx-auto px-4 py-4 md:py-6">
+    <div id="userSidebarMount"></div>
 
-<main class="max-w-[1200px] mx-auto px-4 py-6 space-y-6">
+<main class="user-content min-w-0 space-y-6">
     <div id="message" class="hidden rounded-base px-4 py-3 text-sm"></div>
 
     <section class="rounded-base bg-bg-card border border-border shadow-soft p-6">
-        <h2 class="font-heading text-2xl">Tổng quan hợp đồng</h2>
-        <p class="text-text-muted mt-1 text-sm">Xem nhanh trạng thái chờ duyệt, hợp đồng đang ở và lịch sử trước đây.</p>
+        <div class="flex items-center gap-3">
+            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-secondary">
+                <i class="fa-solid fa-file-contract"></i>
+            </div>
+            <div>
+                <h2 class="font-heading text-2xl">Tổng quan hợp đồng</h2>
+                <p class="text-text-muted mt-1 text-sm">Xem nhanh trạng thái chờ duyệt, hợp đồng đang ở và lịch sử trước đây.</p>
+            </div>
+        </div>
 
         <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="rounded-base border border-border p-4 bg-amber-50">
-                <p class="text-xs text-text-muted">Đang chờ duyệt</p>
+                <p class="text-xs text-text-muted inline-flex items-center gap-1"><i class="fa-regular fa-hourglass-half"></i> Đang chờ duyệt</p>
                 <p id="pendingSummary" class="mt-2 text-sm font-medium">Không có hợp đồng chờ</p>
             </div>
             <div class="rounded-base border border-border p-4 bg-emerald-50">
-                <p class="text-xs text-text-muted">Phòng ở hiện tại</p>
+                <p class="text-xs text-text-muted inline-flex items-center gap-1"><i class="fa-solid fa-bed"></i> Phòng ở hiện tại</p>
                 <p id="activeSummary" class="mt-2 text-sm font-medium">Chưa có hợp đồng hiệu lực</p>
             </div>
             <div class="rounded-base border border-border p-4">
-                <p class="text-xs text-text-muted">Tổng số hợp đồng</p>
+                <p class="text-xs text-text-muted inline-flex items-center gap-1"><i class="fa-regular fa-folder-open"></i> Tổng số hợp đồng</p>
                 <p id="totalSummary" class="mt-2 text-2xl font-heading">0</p>
             </div>
         </div>
@@ -83,7 +80,7 @@
                 <h3 class="font-heading text-xl">Danh sách hợp đồng</h3>
                 <p class="text-text-muted text-sm mt-1">Lọc theo trạng thái hoặc tìm theo phòng/ghi chú.</p>
             </div>
-            <button id="refreshBtn" type="button" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50">Làm mới</button>
+            <button id="refreshBtn" type="button" class="rounded-base border border-border px-3 py-2 text-sm font-medium hover:bg-slate-50 inline-flex items-center gap-2"><i class="fa-solid fa-rotate"></i><span>Làm mới</span></button>
         </div>
 
         <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -162,6 +159,9 @@
         <div id="requestPagination" class="mt-4 flex items-center justify-between gap-2 flex-wrap"></div>
     </section>
 </main>
+</div>
+
+<script src="/ui/user-sidebar.js"></script>
 
 <div id="detailModal" class="hidden fixed inset-0 z-40 bg-slate-900/35 backdrop-blur-sm p-4 md:p-8">
     <div class="max-w-2xl mx-auto bg-bg-card border border-border rounded-base shadow-soft overflow-hidden">
@@ -287,6 +287,10 @@
 
     if (!token) {
         window.location.href = '/login.html';
+    }
+
+    if (window.UserSidebar) {
+        window.UserSidebar.mount({ active: 'contracts', authenticated: true, caption: 'Hợp đồng của tôi' });
     }
 
     function showMessage(type, text) {
@@ -762,11 +766,6 @@
         loadSummary();
         loadContracts();
         loadRequestHistory();
-    });
-
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('dormitory_access_token');
-        window.location.href = '/login.html';
     });
 
     loadSummary();
